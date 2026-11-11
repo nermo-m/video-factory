@@ -32,6 +32,7 @@ schemas/             JSON Schemas for the pipeline documents
 samples/             original demo spec, assets, recorded model responses
 docs/                plans, decisions and questions
 scripts/             repository checks
+tools/               progress tracker server and sync
 ```
 
 ## Development setup
@@ -43,10 +44,17 @@ Prerequisites: [uv](https://docs.astral.sh/uv/), Node.js 22 or newer with
 make setup        # install Python and Node tooling and the git hooks
 make check        # lint, types, tests and the asset registry check
 make precommit    # run every pre-commit hook on every file
+make progress     # serve the build-status page at http://127.0.0.1:8094
 ```
 
 Without `make` (for example on plain Windows), run the commands inside the
 [Makefile](Makefile) directly: each target is one or two lines.
+
+## Build status
+
+[PROGRESS.html](PROGRESS.html) shows milestones, the current cards and what is being built
+right now. [PROGRESS.json](PROGRESS.json) holds the same facts for tools and is the
+authority: edit it, then run `node tools/sync-progress.mjs`.
 
 ## Two rules for this public repository
 

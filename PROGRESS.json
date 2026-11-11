@@ -1,0 +1,218 @@
+{
+  "contract": "progress/1",
+  "project": "Video Factory Studio",
+  "repo": "video-factory",
+  "updated": "2026-11-11",
+  "theme": {
+    "bg": "#0B0F1A",
+    "primary": "#FF9610",
+    "fg": "#E8ECF4"
+  },
+  "server": {
+    "tool": "tools/progress-server.js",
+    "port": 8094
+  },
+  "gates": [
+    {
+      "id": "M0",
+      "title": "Foundation",
+      "status": "active",
+      "done_when": "CI is green, branch protection is on, docker compose up shows the board and a no-op job completes."
+    },
+    {
+      "id": "M1",
+      "title": "Spec and render",
+      "status": "pending",
+      "done_when": "make demo-render turns the sample spec into a correct 45 second video inside the worker image."
+    },
+    {
+      "id": "M2",
+      "title": "Pipeline and planning",
+      "status": "pending",
+      "done_when": "In demo mode an idea reaches the plan gate, is edited, approved and rendered through the interface."
+    },
+    {
+      "id": "M3",
+      "title": "Assets and clips",
+      "status": "pending",
+      "done_when": "A live episode on the owner's PC passes the asset gate with generated images and at least three Wan 2.2 clips."
+    },
+    {
+      "id": "M4",
+      "title": "QC and export",
+      "status": "pending",
+      "done_when": "The Render tab shows a QC report and the export zip opens with all five items."
+    },
+    {
+      "id": "M5",
+      "title": "Videos and revision loop",
+      "status": "pending",
+      "done_when": "A video is adjusted once and remade once from the Videos screen, all three versions are playable, and Finish writes the export folder."
+    },
+    {
+      "id": "M6",
+      "title": "Critic agent",
+      "status": "pending",
+      "done_when": "In demo mode a video with planted defects is auto-fixed, both versions are visible, and every guardrail test passes."
+    },
+    {
+      "id": "M7",
+      "title": "Producer agent",
+      "status": "pending",
+      "done_when": "In demo mode an idea reaches the review gate on autopilot, and the producer cannot pass the final review or a rights flag."
+    },
+    {
+      "id": "M8",
+      "title": "Showcase",
+      "status": "pending",
+      "done_when": "A stranger can run the demo from the README in under 10 minutes."
+    },
+    {
+      "id": "HOST",
+      "title": "Tracker published",
+      "status": "pending",
+      "done_when": "This page is published on the owner's hosting. Until then it is served locally only."
+    }
+  ],
+  "phases": [
+    {
+      "id": "VFS-61",
+      "order": 5,
+      "title": "Create the GitHub repository and open the stacked pull requests",
+      "status": "blocked",
+      "note": "Needs owner: the repository nermo-m/video-factory, or permission to create it."
+    },
+    {
+      "id": "VFS-1",
+      "order": 10,
+      "title": "Repository skeleton and tooling",
+      "status": "review",
+      "note": "Verified on a fresh clone. Waits for a pull request."
+    },
+    {
+      "id": "VFS-62",
+      "order": 15,
+      "title": "Progress tracker: page, JSON twin and local server",
+      "status": "review",
+      "note": "Tests pass, page checked at desktop and phone width. Waits for a pull request."
+    },
+    {
+      "id": "VFS-2",
+      "order": 20,
+      "title": "Docker Compose with web, api, worker and db",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-3",
+      "order": 30,
+      "title": "Database models and Alembic baseline",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-4",
+      "order": 40,
+      "title": "Job queue and worker loops",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-5",
+      "order": 50,
+      "title": "API skeleton, health endpoint and generated client",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-6",
+      "order": 60,
+      "title": "Web app shell with responsive navigation",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-7",
+      "order": 70,
+      "title": "CI workflow with all required jobs",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-8",
+      "order": 80,
+      "title": "CD workflows, Dependabot and branch protection",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-9",
+      "order": 90,
+      "title": "Architecture document and ADRs 1 to 5",
+      "status": "ready"
+    }
+  ],
+  "now_building": {
+    "status": "idle",
+    "next": "VFS-2 Docker Compose with web, api, worker and db. Branch vfs-2-docker-compose, stacked on vfs-62-progress-tracker."
+  },
+  "checklist": [
+    {
+      "item": "CI is green on main",
+      "status": "open"
+    },
+    {
+      "item": "Branch protection is on",
+      "status": "open"
+    },
+    {
+      "item": "docker compose up shows the board",
+      "status": "open"
+    },
+    {
+      "item": "A no-op job completes in the worker",
+      "status": "open"
+    },
+    {
+      "item": "pre-commit passes on a clean clone",
+      "status": "done"
+    },
+    {
+      "item": "The asset check fails when a sample file has no ASSETS.md row",
+      "status": "done"
+    },
+    {
+      "item": "Progress tracker exists: page, JSON twin and local server",
+      "status": "done"
+    }
+  ],
+  "quality": [
+    {
+      "label": "Automated tests",
+      "value": "26 Python, 19 Node"
+    },
+    {
+      "label": "Pre-commit hooks",
+      "value": "Ruff, mypy strict, ESLint, gitleaks, asset registry, tracker sync"
+    },
+    {
+      "label": "Secrets in the repository",
+      "value": "None (gitleaks on every commit)"
+    },
+    {
+      "label": "Third-party media in the repository",
+      "value": "None (0 registered asset files)"
+    },
+    {
+      "label": "Continuous integration",
+      "value": "Not running yet: no remote repository (VFS-61)"
+    }
+  ],
+  "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "Progress tracker in place: this page, its JSON twin and a local server with live git state, kept in sync by a test and a pre-commit hook."
+    },
+    {
+      "date": "2026-11-11",
+      "text": "Repository skeleton verified on a fresh clone: setup, every pre-commit hook and all checks pass."
+    },
+    {
+      "date": "2026-11-11",
+      "text": "Asset licence check written test-first: a sample file without a registry row fails the build."
+    }
+  ]
+}

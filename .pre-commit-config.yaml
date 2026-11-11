@@ -59,3 +59,11 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+      # PROGRESS.html must carry exactly the facts in PROGRESS.json.
+      - id: progress-sync
+        name: progress tracker in sync
+        entry: node tools/sync-progress.mjs --check
+        language: system
+        pass_filenames: false
+        files: ^PROGRESS\.(json|html)$

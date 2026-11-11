@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video Factory Studio: build status</title>
+<style>
+  :root {
+    --bg: #0B0F1A; --surface: #141A2A; --raised: #1B2336; --border: #243049;
+    --text: #E8ECF4; --muted: #93A0B8; --accent: #FF9610; --on-accent: #1A1200;
+    --info: #5B9DFF; --success: #3CCB7F; --warning: #F5B83D; --danger: #FF6B6B;
+    --chip-needs: #2B2110; --chip-working: #13233F; --chip-finished: #10291E; --chip-failed: #2E1518;
+    --radius: 10px;
+    --title: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --body: "Inter", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 var(--body); }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1, h2 { font-family: var(--title); letter-spacing: -0.01em; margin: 0; }
+  h1 { font-size: clamp(26px, 5vw, 36px); line-height: 1.15; }
+  h2 { font-size: 18px; display: flex; align-items: baseline; gap: 12px; }
+  h2 .num { font: 500 12px var(--mono); color: var(--muted); }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .mono { font-family: var(--mono); font-size: 13px; }
+  header { display: grid; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .eyebrow { font: 500 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .strip { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border: 1px solid var(--border);
+    border-radius: 999px; background: var(--surface); font: 13px var(--mono); color: var(--muted); }
+  .pill b { color: var(--text); font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .live .dot { background: var(--success); animation: pulse 2.4s ease-in-out infinite; }
+  section { margin-top: 40px; display: grid; gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--raised); color: var(--muted); }
+  .chip[data-tone="finished"] { background: var(--chip-finished); color: var(--success); }
+  .chip[data-tone="working"] { background: var(--chip-working); color: var(--info); }
+  .chip[data-tone="needs"] { background: var(--chip-needs); color: var(--warning); }
+  .chip[data-tone="failed"] { background: var(--chip-failed); color: var(--danger); }
+
+  .timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .gate { display: grid; gap: 8px; align-content: start; animation: rise 0.5s ease both; }
+  .gate[data-status="active"] { border-color: var(--info); }
+  .gate[data-status="pending"] { background: transparent; }
+  .gate-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .gate-id { font: 500 12px var(--mono); color: var(--muted); }
+  .gate-title { font: 600 16px var(--title); }
+  .gate p { font-size: 13px; color: var(--muted); }
+
+  .board { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .phase { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: start; }
+  .phase[data-status="active"] { border-color: var(--info); }
+  .phase .note { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  @media (max-width: 560px) { .phase { grid-template-columns: 1fr auto; } .phase .mono { grid-column: 1 / -1; } }
+
+  .now { border-color: var(--accent); display: grid; gap: 12px; }
+  .now .label { display: inline-block; justify-self: start; padding: 2px 10px; border-radius: 999px;
+    background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; }
+  .now[data-status="active"] .label { animation: pulse 2.4s ease-in-out infinite; }
+  .now h3 { margin: 0; font: 600 20px/1.3 var(--title); }
+  .now dl { margin: 0; display: grid; gap: 8px; grid-template-columns: 96px 1fr; font-size: 14px; }
+  .now dt { color: var(--muted); }
+  .now dd { margin: 0; }
+
+  .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .checks li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .tiles { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .tile .label-text { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .tile .value { font-size: 15px; margin-top: 4px; }
+  .wins { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .wins li { display: grid; grid-template-columns: 104px 1fr; gap: 12px; }
+  .wins .when { font: 13px var(--mono); color: var(--muted); }
+  .checks.card, .wins.card { padding: 16px; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+
+  @keyframes pulse { 50% { opacity: 0.55; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Build status</p>
+    <h1 id="project">Video Factory Studio</h1>
+    <p class="muted">One idea in, one finished short vertical video out. This page shows where the build stands.
+      Its facts come from <span class="mono">PROGRESS.json</span>.</p>
+    <div class="strip" aria-live="polite">
+      <span class="pill" id="mode"><span class="dot" aria-hidden="true"></span><b id="mode-text">Snapshot</b></span>
+      <span class="pill">Updated <b id="updated"></b></span>
+      <span class="pill" id="git-branch" hidden>Branch <b></b></span>
+      <span class="pill" id="git-head" hidden>HEAD <b></b></span>
+      <span class="pill" id="git-dirty" hidden>Uncommitted files <b></b></span>
+    </div>
+  </header>
+
+  <section id="timeline" aria-labelledby="h-timeline">
+    <h2 id="h-timeline"><span class="num">01</span>Milestones</h2>
+    <ol class="timeline" id="gates"></ol>
+  </section>
+
+  <section id="board" aria-labelledby="h-board">
+    <h2 id="h-board"><span class="num">02</span>Current milestone cards</h2>
+    <ol class="board" id="phases"></ol>
+  </section>
+
+  <section id="now" aria-labelledby="h-now">
+    <h2 id="h-now"><span class="num">03</span>Now building</h2>
+    <div class="card now" id="now-card"></div>
+  </section>
+
+  <section id="acceptance" aria-labelledby="h-acceptance">
+    <h2 id="h-acceptance"><span class="num">04</span>Acceptance checklist</h2>
+    <ul class="checks card" id="checklist"></ul>
+  </section>
+
+  <section id="quality" aria-labelledby="h-quality">
+    <h2 id="h-quality"><span class="num">05</span>Quality</h2>
+    <div class="tiles" id="quality-tiles"></div>
+  </section>
+
+  <section id="wins" aria-labelledby="h-wins">
+    <h2 id="h-wins"><span class="num">06</span>Recent wins</h2>
+    <ul class="wins card" id="wins-list"></ul>
+    <ul class="wins card" id="commits" hidden></ul>
+  </section>
+
+  <footer>
+    Served locally by <span class="mono">node tools/progress-server.js</span> at
+    <span class="mono">http://127.0.0.1:8094/PROGRESS.html</span>. Opened as a plain file it is a static snapshot
+    without the live git state.
+  </footer>
+</main>
+
+<script type="application/json" id="progress-data">
+{
+  "contract": "progress/1",
+  "project": "Video Factory Studio",
+  "repo": "video-factory",
+  "updated": "2026-11-11",
+  "theme": {
+    "bg": "#0B0F1A",
+    "primary": "#FF9610",
+    "fg": "#E8ECF4"
+  },
+  "server": {
+    "tool": "tools/progress-server.js",
+    "port": 8094
+  },
+  "gates": [
+    {
+      "id": "M0",
+      "title": "Foundation",
+      "status": "active",
+      "done_when": "CI is green, branch protection is on, docker compose up shows the board and a no-op job completes."
+    },
+    {
+      "id": "M1",
+      "title": "Spec and render",
+      "status": "pending",
+      "done_when": "make demo-render turns the sample spec into a correct 45 second video inside the worker image."
+    },
+    {
+      "id": "M2",
+      "title": "Pipeline and planning",
+      "status": "pending",
+      "done_when": "In demo mode an idea reaches the plan gate, is edited, approved and rendered through the interface."
+    },
+    {
+      "id": "M3",
+      "title": "Assets and clips",
+      "status": "pending",
+      "done_when": "A live episode on the owner's PC passes the asset gate with generated images and at least three Wan 2.2 clips."
+    },
+    {
+      "id": "M4",
+      "title": "QC and export",
+      "status": "pending",
+      "done_when": "The Render tab shows a QC report and the export zip opens with all five items."
+    },
+    {
+      "id": "M5",
+      "title": "Videos and revision loop",
+      "status": "pending",
+      "done_when": "A video is adjusted once and remade once from the Videos screen, all three versions are playable, and Finish writes the export folder."
+    },
+    {
+      "id": "M6",
+      "title": "Critic agent",
+      "status": "pending",
+      "done_when": "In demo mode a video with planted defects is auto-fixed, both versions are visible, and every guardrail test passes."
+    },
+    {
+      "id": "M7",
+      "title": "Producer agent",
+      "status": "pending",
+      "done_when": "In demo mode an idea reaches the review gate on autopilot, and the producer cannot pass the final review or a rights flag."
+    },
+    {
+      "id": "M8",
+      "title": "Showcase",
+      "status": "pending",
+      "done_when": "A stranger can run the demo from the README in under 10 minutes."
+    },
+    {
+      "id": "HOST",
+      "title": "Tracker published",
+      "status": "pending",
+      "done_when": "This page is published on the owner's hosting. Until then it is served locally only."
+    }
+  ],
+  "phases": [
+    {
+      "id": "VFS-61",
+      "order": 5,
+      "title": "Create the GitHub repository and open the stacked pull requests",
+      "status": "blocked",
+      "note": "Needs owner: the repository nermo-m/video-factory, or permission to create it."
+    },
+    {
+      "id": "VFS-1",
+      "order": 10,
+      "title": "Repository skeleton and tooling",
+      "status": "review",
+      "note": "Verified on a fresh clone. Waits for a pull request."
+    },
+    {
+      "id": "VFS-62",
+      "order": 15,
+      "title": "Progress tracker: page, JSON twin and local server",
+      "status": "review",
+      "note": "Tests pass, page checked at desktop and phone width. Waits for a pull request."
+    },
+    {
+      "id": "VFS-2",
+      "order": 20,
+      "title": "Docker Compose with web, api, worker and db",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-3",
+      "order": 30,
+      "title": "Database models and Alembic baseline",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-4",
+      "order": 40,
+      "title": "Job queue and worker loops",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-5",
+      "order": 50,
+      "title": "API skeleton, health endpoint and generated client",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-6",
+      "order": 60,
+      "title": "Web app shell with responsive navigation",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-7",
+      "order": 70,
+      "title": "CI workflow with all required jobs",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-8",
+      "order": 80,
+      "title": "CD workflows, Dependabot and branch protection",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-9",
+      "order": 90,
+      "title": "Architecture document and ADRs 1 to 5",
+      "status": "ready"
+    }
+  ],
+  "now_building": {
+    "status": "idle",
+    "next": "VFS-2 Docker Compose with web, api, worker and db. Branch vfs-2-docker-compose, stacked on vfs-62-progress-tracker."
+  },
+  "checklist": [
+    {
+      "item": "CI is green on main",
+      "status": "open"
+    },
+    {
+      "item": "Branch protection is on",
+      "status": "open"
+    },
+    {
+      "item": "docker compose up shows the board",
+      "status": "open"
+    },
+    {
+      "item": "A no-op job completes in the worker",
+      "status": "open"
+    },
+    {
+      "item": "pre-commit passes on a clean clone",
+      "status": "done"
+    },
+    {
+      "item": "The asset check fails when a sample file has no ASSETS.md row",
+      "status": "done"
+    },
+    {
+      "item": "Progress tracker exists: page, JSON twin and local server",
+      "status": "done"
+    }
+  ],
+  "quality": [
+    {
+      "label": "Automated tests",
+      "value": "26 Python, 19 Node"
+    },
+    {
+      "label": "Pre-commit hooks",
+      "value": "Ruff, mypy strict, ESLint, gitleaks, asset registry, tracker sync"
+    },
+    {
+      "label": "Secrets in the repository",
+      "value": "None (gitleaks on every commit)"
+    },
+    {
+      "label": "Third-party media in the repository",
+      "value": "None (0 registered asset files)"
+    },
+    {
+      "label": "Continuous integration",
+      "value": "Not running yet: no remote repository (VFS-61)"
+    }
+  ],
+  "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "Progress tracker in place: this page, its JSON twin and a local server with live git state, kept in sync by a test and a pre-commit hook."
+    },
+    {
+      "date": "2026-11-11",
+      "text": "Repository skeleton verified on a fresh clone: setup, every pre-commit hook and all checks pass."
+    },
+    {
+      "date": "2026-11-11",
+      "text": "Asset licence check written test-first: a sample file without a registry row fails the build."
+    }
+  ]
+}
+</script>
+<script>
+(function () {
+  "use strict";
+  var TONES = {
+    passed: ["finished", "✓", "Passed"], done: ["finished", "✓", "Done"],
+    active: ["working", "▶", "In progress"], review: ["needs", "◐", "In review"],
+    blocked: ["failed", "⏸", "Parked for owner"], ready: ["", "○", "Ready"],
+    backlog: ["", "○", "Backlog"], pending: ["", "○", "Pending"], open: ["", "○", "Open"]
+  };
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) { node.className = className; }
+    if (text !== undefined) { node.textContent = text; }
+    return node;
+  }
+  function chip(status) {
+    var tone = TONES[status] || ["", "○", status];
+    var node = el("span", "chip");
+    if (tone[0]) { node.dataset.tone = tone[0]; }
+    var icon = el("span", "", tone[1]);
+    icon.setAttribute("aria-hidden", "true");
+    node.append(icon, el("span", "", tone[2]));
+    return node;
+  }
+  function fill(id, nodes) {
+    var parent = document.getElementById(id);
+    parent.replaceChildren.apply(parent, nodes);
+  }
+  function show(id, value) {
+    var node = document.getElementById(id);
+    node.hidden = false;
+    node.querySelector("b").textContent = value;
+  }
+
+  function render(data) {
+    document.getElementById("project").textContent = data.project;
+    document.getElementById("updated").textContent = data.updated;
+
+    fill("gates", data.gates.map(function (gate) {
+      var item = el("li", "card gate");
+      item.dataset.status = gate.status;
+      var head = el("div", "gate-head");
+      head.append(el("span", "gate-id", gate.id), chip(gate.status));
+      item.append(head, el("div", "gate-title", gate.title), el("p", "", gate.done_when));
+      return item;
+    }));
+
+    fill("phases", data.phases.map(function (phase) {
+      var item = el("li", "card phase");
+      item.dataset.status = phase.status;
+      var body = el("div");
+      body.append(el("div", "", phase.title));
+      if (phase.note) { body.append(el("div", "note", phase.note)); }
+      item.append(el("span", "mono muted", phase.id), body, chip(phase.status));
+      return item;
+    }));
+
+    var now = data.now_building;
+    var card = document.getElementById("now-card");
+    card.dataset.status = now.status;
+    var facts = el("dl");
+    function fact(term, value) {
+      if (value) { facts.append(el("dt", "", term), el("dd", "", value)); }
+    }
+    if (now.status === "active") {
+      fact("Card", now.id);
+      fact("Started", now.started.replace("T", " ").replace("Z", " UTC"));
+      fact("Resume", now.resume);
+    }
+    fact("Next", now.next);
+    card.replaceChildren(
+      el("span", "label", now.status === "active" ? "Working now" : "Idle"),
+      el("h3", "", now.status === "active" ? now.title : "Nothing is being built right now"),
+      facts
+    );
+
+    fill("checklist", data.checklist.map(function (entry) {
+      var item = el("li");
+      item.append(el("span", "", entry.item), chip(entry.status));
+      return item;
+    }));
+
+    fill("quality-tiles", data.quality.map(function (entry) {
+      var tile = el("div", "card tile");
+      tile.append(el("div", "label-text", entry.label), el("div", "value", entry.value));
+      return tile;
+    }));
+
+    fill("wins-list", data.wins.map(function (win) {
+      var item = el("li");
+      item.append(el("span", "when", win.date), el("span", "", win.text));
+      return item;
+    }));
+  }
+
+  function renderGit(status) {
+    document.getElementById("mode").classList.add("live");
+    document.getElementById("mode-text").textContent = "Live";
+    show("git-branch", status.branch);
+    show("git-head", status.head);
+    show("git-dirty", String(status.dirty));
+    var commits = document.getElementById("commits");
+    commits.hidden = false;
+    commits.replaceChildren.apply(commits, status.commits.map(function (commit) {
+      var item = el("li");
+      item.append(el("span", "when", commit.d + " " + commit.h), el("span", "", commit.s));
+      return item;
+    }));
+  }
+
+  var embedded = JSON.parse(document.getElementById("progress-data").textContent);
+  var shown = JSON.stringify(embedded);
+  render(embedded);
+
+  // Live mode: only when served by tools/progress-server.js.
+  if (location.protocol === "http:" || location.protocol === "https:") {
+    var poll = function () {
+      fetch("/PROGRESS.json").then(function (r) { return r.json(); }).then(function (data) {
+        // Re-draw only when the facts changed, so the entrance animation does not replay.
+        var serialised = JSON.stringify(data);
+        if (serialised !== shown) { shown = serialised; render(data); }
+      }).catch(function () {});
+      fetch("/__status").then(function (r) { return r.json(); }).then(renderGit).catch(function () {});
+    };
+    poll();
+    setInterval(poll, 5000);
+  }
+})();
+</script>
+</body>
+</html>

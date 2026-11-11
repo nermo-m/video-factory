@@ -100,3 +100,20 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   ESLint 10.14.0, gitleaks 8.30.1, pnpm 10.20.0, Python 3.12. Dependabot keeps them current
   from VFS-8 on.
 - **Reverse:** Not applicable.
+
+## D-009: Progress tracker shape and port
+
+- **Date:** 2026-11-11. **Card:** VFS-62.
+- **Problem:** The owner's project standard asks for a tracker (page, JSON twin, local
+  server) but leaves the details to each project. The owner's other projects already use
+  ports 8090 to 8093 for theirs.
+- **Choice:** Port 8094. `PROGRESS.json` is the authority and `tools/sync-progress.mjs`
+  writes it into `PROGRESS.html`, with a test and a pre-commit hook that fail on drift. The
+  server serves only the two tracker files and two small endpoints (`/__status` for git
+  state, `/__mtime` for reload), the same endpoint names the owner's other trackers use. The
+  contract identifier is the neutral `progress/1`, because the owner's standard says the
+  company name must not appear in a public product without a brief that says so. The page
+  uses the design's font names with system fallbacks until the fonts are bundled with the
+  web app (VFS-6).
+- **Reverse:** Change the `contract` string in `PROGRESS.json` and its test if an aggregator
+  needs another identifier. The port is one constant in `tools/progress-server.js`.

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check
+.PHONY: help setup lint format types test check-assets precommit check progress
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -23,6 +23,7 @@ types: ## Type-check Python
 
 test: ## Run the unit tests
 	uv run pytest
+	pnpm test
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py
@@ -31,3 +32,6 @@ precommit: ## Run every pre-commit hook on every file
 	uv run pre-commit run --all-files
 
 check: lint types test check-assets ## Run all local checks
+
+progress: ## Serve the build-status page at http://127.0.0.1:8094
+	node tools/progress-server.js
