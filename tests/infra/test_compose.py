@@ -76,6 +76,8 @@ def test_services_start_in_dependency_order(compose: dict[str, Any]) -> None:
 
     assert services["api"]["depends_on"]["db"]["condition"] == "service_healthy"
     assert services["worker"]["depends_on"]["db"]["condition"] == "service_healthy"
+    # The api applies migrations before it reports healthy, so the worker waits for it.
+    assert services["worker"]["depends_on"]["api"]["condition"] == "service_healthy"
     assert services["web"]["depends_on"]["api"]["condition"] == "service_healthy"
 
 

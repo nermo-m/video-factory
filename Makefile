@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -25,6 +25,13 @@ types: ## Type-check Python and TypeScript
 test: ## Run the unit tests
 	uv run pytest
 	pnpm test
+
+test-integration: env ## Run the integration tests against the Compose database
+	docker compose up --detach --wait db
+	uv run --env-file .env pytest -m integration
+
+migrate: ## Apply database migrations inside the api container
+	docker compose exec api alembic upgrade head
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py

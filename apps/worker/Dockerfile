@@ -24,5 +24,6 @@ RUN useradd --system --uid 10001 --create-home app \
 COPY --from=deps /opt/venv /opt/venv
 COPY apps/__init__.py apps/__init__.py
 COPY apps/worker apps/worker
+COPY packages packages
 USER app
 CMD ["python", "-m", "apps.worker"]

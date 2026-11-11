@@ -250,7 +250,8 @@
       "id": "VFS-3",
       "order": 30,
       "title": "Database models and Alembic baseline",
-      "status": "ready"
+      "status": "review",
+      "note": "15 tables, baseline migration, 16 integration tests on real Postgres. Waits for a pull request."
     },
     {
       "id": "VFS-4",
@@ -291,7 +292,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-3 Database models and Alembic baseline. Branch vfs-3-db-models, stacked on vfs-2-docker-compose."
+    "next": "VFS-4 Job queue and worker loops. Branch vfs-4-job-queue, stacked on vfs-3-db-models."
   },
   "checklist": [
     {
@@ -326,7 +327,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "45 Python, 19 Node"
+      "value": "66 unit and 16 integration (Python), 19 Node"
     },
     {
       "label": "Pre-commit hooks",
@@ -346,6 +347,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "Database baseline: 15 tables migrate up and down cleanly on real Postgres, and models and migration agree."
+    },
     {
       "date": "2026-11-11",
       "text": "docker compose up brings web, api, worker and db to healthy, with every port bound to 127.0.0.1 and containers reaching the host."

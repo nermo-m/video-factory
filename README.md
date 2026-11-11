@@ -42,7 +42,8 @@ Prerequisites: [uv](https://docs.astral.sh/uv/), Node.js 22 or newer with
 
 ```bash
 make setup        # install Python and Node tooling and the git hooks
-make check        # lint, types, tests and the asset registry check
+make check        # lint, types, unit tests and the asset registry check
+make test-integration   # integration tests on a real Postgres (needs Docker)
 make precommit    # run every pre-commit hook on every file
 make progress     # serve the build-status page at http://127.0.0.1:8094
 ```

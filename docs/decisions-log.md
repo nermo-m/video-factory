@@ -143,3 +143,29 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   API and the web app. It is a separate Backlog card (VFS-63).
 - **Reverse:** Each item is one line in `docker-compose.yml`, `.env.example` or a
   `package.json`.
+
+## D-011: Database conventions in the baseline migration
+
+- **Date:** 2026-11-11. **Card:** VFS-3.
+- **Problem:** Section 9 names tables and columns but not types, constraints or delete
+  behaviour.
+- **Choice:**
+  - Fixed value sets (states, statuses, kinds) are text columns with CHECK constraints, not
+    native Postgres enums. Later milestones add values with an ordinary migration.
+  - Money is `NUMERIC(12, 6)`, never a float. Timestamps are `timestamptz`.
+  - `id`, `created_at` and `updated_at` have database defaults, so raw SQL inserts work.
+    `updated_at` is moved by the ORM on update.
+  - Every foreign key is `ON DELETE RESTRICT`: nothing is deleted in v1.
+  - Invariants live in the database: one active version per asset (partial unique index),
+    a claim's passage cannot be empty (FR-02), costs and counters cannot be negative, a new
+    asset starts as `needs_review` so it blocks export until cleared (FR-08).
+  - Additions beyond section 9: provider value `demo`, `model_call.billing`, indexes on
+    foreign keys, `provider_usage(provider, created_at)` for the rolling windows, unique
+    `agent_step(agent_run_id, index)`, `provider_status.provider` and `setting.key`.
+  - The api container runs `alembic upgrade head` before it starts, and the worker waits
+    for the api to be healthy. The stack stays at four services (D2).
+  - Integration tests create one throwaway database per test on the Compose Postgres.
+- **Found by the tests:** Alembic's generated `create_table` silently left out the circular
+  foreign key `episode.current_spec_id`. The "autogenerate shows no diff" test caught it and
+  the migration now adds and drops that key explicitly.
+- **Reverse:** Each convention is a follow-up migration. Section 9 remains the reference.

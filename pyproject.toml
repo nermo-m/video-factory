@@ -9,11 +9,19 @@ dependencies = []
 
 [dependency-groups]
 # One group per container image. Each image installs only its own group.
+core = [
+    "alembic==1.20.1",
+    "psycopg[binary]==3.3.8",
+    "sqlalchemy==2.1.8",
+]
 api = [
+    { include-group = "core" },
     "fastapi==0.162.4",
     "uvicorn==0.54.0",
 ]
-worker = []
+worker = [
+    { include-group = "core" },
+]
 dev = [
     { include-group = "api" },
     { include-group = "worker" },
@@ -58,6 +66,9 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 # Tests use plain assert statements: that is how pytest works.
 "**/tests/**" = ["S101"]
+# Migrations spell out constraint SQL in full. Wrapping those strings would make them
+# harder to compare with the database, so the line length rule is off for them.
+"packages/core/db/migrations/versions/*" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -65,11 +76,14 @@ strict = true
 warn_unreachable = true
 explicit_package_bases = true
 mypy_path = "."
-files = ["apps/api", "apps/worker", "scripts", "tests"]
+files = ["apps/api", "apps/worker", "packages", "scripts", "tests", "conftest.py"]
 
 [tool.pytest.ini_options]
 minversion = "9.0"
-addopts = "-ra --strict-markers --strict-config"
+addopts = "-ra --strict-markers --strict-config -m \"not integration\""
+markers = [
+    "integration: needs a real Postgres. Run with make test-integration",
+]
 pythonpath = ["."]
-testpaths = ["apps/api/tests", "apps/worker/tests", "scripts/tests", "tests"]
+testpaths = ["apps", "packages", "scripts", "tests"]
 xfail_strict = true

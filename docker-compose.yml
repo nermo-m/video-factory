@@ -51,7 +51,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 20s
 
   worker:
     build:
@@ -60,6 +60,9 @@ services:
     restart: unless-stopped
     depends_on:
       db:
+        condition: service_healthy
+      # The api applies database migrations before it reports healthy.
+      api:
         condition: service_healthy
     environment:
       PROVIDER_MODE: ${PROVIDER_MODE:-demo}
