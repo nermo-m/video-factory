@@ -303,3 +303,27 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   VFS-61. The first real run will probably need small fixes, which is normal for a
   workflow that has only been linted.
 - **Reverse:** Not applicable. The gate threshold is `fail_under` in `pyproject.toml`.
+
+## D-016: Delivery workflows written, publishing and protection parked
+
+- **Date:** 2026-11-11. **Card:** VFS-8.
+- **Problem:** Both done-when lines need GitHub: publishing `edge` images on a merge to
+  main, and branch protection confirmed by the owner. There is no repository yet (D-001).
+- **Choice:**
+  - `release.yml` pushes web, api and worker images to the GitHub Container Registry as
+    `ghcr.io/<owner>/video-factory-<service>`: commit SHA and `edge` on a merge to main,
+    version and `latest` on a `vX.Y.Z` tag, plus a GitHub release with generated notes
+    and `docker-compose.release.yml`. The demo video is attached from M8.
+  - `nightly.yml` runs the whole CI workflow on a schedule (end-to-end demo run and
+    dependency audit are jobs of it) and CodeQL for Python, TypeScript and the workflows.
+  - `dependabot.yml` updates uv, npm, Docker, Compose and Actions weekly, with `build(deps)`
+    and `ci(deps)` titles that pass commit-lint, and groups minor and patch updates.
+  - `docker-compose.release.yml` is the development file with published images in place
+    of builds. A test keeps the two files in step.
+  - `scripts/protect_main.sh` holds the `gh` commands for the settings in sections 13 and
+    14.3: pull requests only, the ten CI jobs required, linear history, squash merges,
+    secret scanning and push protection. It has not been run. The agent or the owner runs
+    it once the repository exists and CI has run once.
+- **Checked:** actionlint on all three workflows, shellcheck on the script,
+  `docker compose config` on the release file.
+- **Reverse:** Not applicable until the first run.

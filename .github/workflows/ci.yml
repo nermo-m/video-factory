@@ -8,6 +8,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The nightly workflow runs all of these jobs on a schedule.
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
