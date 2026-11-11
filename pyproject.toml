@@ -25,6 +25,9 @@ api = [
 ]
 worker = [
     { include-group = "core" },
+    # The render engine: frames are drawn with Pillow and NumPy.
+    "numpy==2.5.4",
+    "pillow==13.0.0",
 ]
 dev = [
     { include-group = "api" },

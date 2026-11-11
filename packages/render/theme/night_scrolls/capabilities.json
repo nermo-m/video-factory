@@ -1,0 +1,13 @@
+{
+  "theme": "night_scrolls",
+  "scene_kinds": ["title", "scroll", "stat", "steps", "outro"],
+  "text_styles": ["slam", "slam_accent"],
+  "overlay_types": ["tag", "stamp", "sprite"],
+  "stamp_colors": ["ink", "red"],
+  "sprites": {
+    "lantern": ["sway", "rise"],
+    "moon": ["rise", "glow"]
+  },
+  "sound_cues": ["paper_unroll", "stamp", "pin_hit", "smoke", "slam"],
+  "transitions": ["smoke", "cut"]
+}

@@ -170,7 +170,8 @@
       "id": "VFS-12",
       "order": 120,
       "title": "Theme night_scrolls with original assets",
-      "status": "ready"
+      "status": "review",
+      "note": "Original artwork and sounds made by a script, three OFL fonts, capabilities and layout, 18 tests. Waits for a pull request."
     },
     {
       "id": "VFS-13",
@@ -205,7 +206,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-12 Theme night_scrolls with original assets. Branch vfs-12-theme, stacked on vfs-11-resolver. Every theme asset must be original or permissively licensed and listed in ASSETS.md."
+    "next": "VFS-13 Compositor and animation primitives. Branch vfs-13-compositor, stacked on vfs-12-theme. Golden-frame tests are marked render and must be wired into the CI render job in the same change."
   },
   "checklist": [
     {
@@ -240,7 +241,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "314 unit and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "332 unit and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -252,7 +253,7 @@
     },
     {
       "label": "Third-party media in the repository",
-      "value": "None (0 registered asset files)"
+      "value": "Three OFL-1.1 fonts. All artwork and sounds are original (18 registered asset files)"
     },
     {
       "label": "Continuous integration",
@@ -268,6 +269,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "The night_scrolls theme exists: original artwork and sounds drawn by code, bundled OFL fonts, and a capabilities list the planner cannot step outside."
+    },
     {
       "date": "2026-11-11",
       "text": "Resolver done: an authored spec plus voice timings becomes a resolved spec with absolute times, and a video more than 2 seconds off target says which scenes to change."

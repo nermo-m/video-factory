@@ -1,0 +1,49 @@
+{
+  "name": "night_scrolls",
+  "description": "A night village under stars. Stories unroll on paper scrolls, with pinned tags, ink stamps and smoke between scenes.",
+  "frame": { "width": 1080, "height": 1920 },
+  "palette": {
+    "night": "#0A1026",
+    "paper": "#E6D3A3",
+    "ink": "#1B1A22",
+    "accent": "#FFC857",
+    "text": "#F4EEDC",
+    "shadow": "#05070F"
+  },
+  "fonts": {
+    "display": "assets/fonts/Anton-Regular.ttf",
+    "body": "assets/fonts/Inter-Variable.ttf",
+    "hand": "assets/fonts/Kalam-Bold.ttf"
+  },
+  "backgrounds": ["assets/backgrounds/sky.png", "assets/backgrounds/village.png"],
+  "scroll": {
+    "paper": "assets/scroll/paper.png",
+    "roller": "assets/scroll/roller.png"
+  },
+  "sprites": {
+    "lantern": "assets/sprites/lantern.png",
+    "moon": "assets/sprites/moon.png"
+  },
+  "pin": "assets/sprites/pin.png",
+  "sounds": {
+    "paper_unroll": "assets/sounds/paper_unroll.wav",
+    "stamp": "assets/sounds/stamp.wav",
+    "pin_hit": "assets/sounds/pin_hit.wav",
+    "smoke": "assets/sounds/smoke.wav",
+    "slam": "assets/sounds/slam.wav"
+  },
+  "text_styles": {
+    "slam": { "font": "display", "color": "text", "size": 150 },
+    "slam_accent": { "font": "display", "color": "accent", "size": 150 }
+  },
+  "stamp_colors": {
+    "ink": "#1B1A22",
+    "red": "#B3261E"
+  },
+  "layout": {
+    "safe_area": { "left": 0.06, "top": 0.05, "right": 0.12, "bottom": 0.15 },
+    "scroll": { "x": 90, "y": 300, "w": 800, "h": 1090 },
+    "captions": { "x": 90, "y": 1430, "w": 800, "h": 180 },
+    "slam": { "x": 70, "y": 520, "w": 860, "h": 620 }
+  }
+}
