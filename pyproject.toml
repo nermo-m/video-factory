@@ -107,6 +107,7 @@ minversion = "9.0"
 addopts = "-ra --strict-markers --strict-config -m \"not integration\""
 markers = [
     "integration: needs a real Postgres. Run with make test-integration",
+    "render: golden-frame and audio tests that run inside the worker image",
 ]
 pythonpath = ["."]
 testpaths = ["apps", "packages", "scripts", "tests"]

@@ -352,3 +352,31 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   ids and word indexes within the narration are checked by the resolver (VFS-11). What the
   theme can draw is checked against `capabilities.json` (VFS-12).
 - **Reverse:** A schema change is a new `spec_version` and a fixture update.
+
+## D-018: Resolver rules
+
+- **Date:** 2026-11-11. **Card:** VFS-11.
+- **Problem:** Section 5.2 gives the resolver's main rules. Edge cases needed deciding.
+- **Choice:**
+  - `resolve(authored, voice, files)` is a pure function in `packages/render/resolver.py`.
+    It validates the authored spec first and the resolved spec before returning it.
+  - An event without a cue happens when its scene starts.
+  - An outro lasts pad before, narration, pad after, then `hold_s`, which defaults to
+    2 seconds (the design asks for the closing line to be held for 2 seconds).
+  - A silent scene (empty narration) has no pads and no audio. Its length is `duration_s`.
+  - With `duration_s` set, the narration must still fit (pad before plus speech), or it is
+    a problem, because cut-off speech is never what the author meant.
+  - Every event must fall inside its own scene. An event after the scene ends is reported
+    with the scene's time range, so the author can raise `pad_after_s`.
+  - The tolerance is inclusive: exactly 2 seconds off is accepted. The error lists every
+    scene with its length, longest first when the video is too long and shortest first
+    when it is too short.
+  - Problems are collected and reported together, each with a JSON pointer: duplicate
+    scene id, unknown `asset_id` or `claim_id`, a word cue past the end of the narration,
+    missing voice timings, voice timings that do not match the narration, an asset without
+    a file (FR-05) or without any licence.
+  - Times are rounded to milliseconds.
+- **Also changed:** the CI `render` job now looks for tests marked `render` (the
+  golden-frame and audio tests that must run in the worker image) instead of any test file
+  under `packages/render`. The resolver tests are ordinary unit tests.
+- **Reverse:** The defaults are constants at the top of the module.

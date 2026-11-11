@@ -163,7 +163,8 @@
       "id": "VFS-11",
       "order": 110,
       "title": "Resolver: cues to absolute times",
-      "status": "ready"
+      "status": "review",
+      "note": "All four cue types, pads, outro hold, the 2 second tolerance and reference checks, 29 tests. Waits for a pull request."
     },
     {
       "id": "VFS-12",
@@ -204,7 +205,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-11 Resolver: cues to absolute times. Branch vfs-11-resolver, stacked on vfs-10-json-schemas. It also checks references the schemas cannot (claim_id, asset_id, unique scene ids, word indexes)."
+    "next": "VFS-12 Theme night_scrolls with original assets. Branch vfs-12-theme, stacked on vfs-11-resolver. Every theme asset must be original or permissively licensed and listed in ASSETS.md."
   },
   "checklist": [
     {
@@ -239,7 +240,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "285 unit and 44 integration (Python, 88 percent line coverage at the last measurement), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "314 unit and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -267,6 +268,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "Resolver done: an authored spec plus voice timings becomes a resolved spec with absolute times, and a video more than 2 seconds off target says which scenes to change."
+    },
     {
       "date": "2026-11-11",
       "text": "M1 started: JSON Schemas for all six pipeline documents, with 88 fixtures that validate or fail exactly where they say."
