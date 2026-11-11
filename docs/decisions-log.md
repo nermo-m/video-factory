@@ -169,3 +169,28 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   foreign key `episode.current_spec_id`. The "autogenerate shows no diff" test caught it and
   the migration now adds and drops that key explicitly.
 - **Reverse:** Each convention is a follow-up migration. Section 9 remains the reference.
+
+## D-012: Job queue semantics
+
+- **Date:** 2026-11-11. **Card:** VFS-4.
+- **Problem:** Sections 4.3 and 4.4 describe the queue in a paragraph. Several details had
+  to be fixed to make it safe under concurrency and restarts.
+- **Choice:**
+  - Claims use `SELECT ... FOR UPDATE SKIP LOCKED` by tag. Gpu claims also take a
+    transaction-scoped advisory lock and are refused while any gpu job is running, so the
+    one-at-a-time rule holds across processes, not only inside one worker.
+  - A claim is identified by the job's `started_at` (taken from `clock_timestamp()`).
+    Heartbeat, complete and fail only act while that claim still owns the job. A worker that
+    was presumed dead and replaced cannot overwrite the new result. No new column needed.
+  - All time comparisons use the database clock.
+  - `plan_limit` returns the job to the queue for the reset time (or 10 minutes when the
+    tool gave none) and does not count as an attempt.
+  - Attempts and backoff: see Q-014. `invalid_output`: see Q-015.
+  - The worker is one process with threads: `CPU_WORKERS` cpu loops, one gpu loop and one
+    maintenance loop (heartbeats every 10 s, abandoned jobs returned after 60 s). Database
+    errors are logged and retried, so the worker survives a database restart.
+  - Logs are JSON lines with `job_id` and `episode_id` (NFR-03). Fields whose names look
+    like secrets are replaced with `[redacted]` (NFR-01).
+  - Settings are read once from the environment into a frozen dataclass and all problems
+    are reported together. No new dependency.
+- **Reverse:** The constants are at the top of `packages/core/queue.py`.

@@ -20,21 +20,9 @@ from sqlalchemy.orm import Session
 
 from packages.core import enums
 from packages.core.db import Base, models
-from packages.core.db.migrate import alembic_config
 from packages.core.tests.test_models import SECTION_9_TABLES
 
 pytestmark = pytest.mark.integration
-
-
-@pytest.fixture
-def config(database_url: str) -> Config:
-    return alembic_config(database_url)
-
-
-@pytest.fixture
-def migrated(config: Config, engine: Engine) -> Engine:
-    command.upgrade(config, "head")
-    return engine
 
 
 def table_names(engine: Engine) -> set[str]:

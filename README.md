@@ -58,6 +58,7 @@ Prerequisite: Docker with Compose.
 ```bash
 make up           # create .env if missing, build, start, wait until all four services are healthy
 make ps           # web on 127.0.0.1:3000, api on 127.0.0.1:8000, db on 127.0.0.1:5433
+make noop-job     # send one no-op job through the queue and wait for the worker
 make down         # stop (data volumes are kept)
 ```
 

@@ -11,8 +11,12 @@ import uuid
 from collections.abc import Iterator
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.engine import URL, make_url
+
+from packages.core.db.migrate import alembic_config
 
 
 def _server_url() -> URL:
@@ -64,3 +68,16 @@ def engine(database_url: str) -> Iterator[Engine]:
         yield engine
     finally:
         engine.dispose()
+
+
+@pytest.fixture
+def config(database_url: str) -> Config:
+    """Alembic configuration aimed at the test database."""
+    return alembic_config(database_url)
+
+
+@pytest.fixture
+def migrated(config: Config, engine: Engine) -> Engine:
+    """An engine on a test database with every migration applied."""
+    command.upgrade(config, "head")
+    return engine

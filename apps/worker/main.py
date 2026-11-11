@@ -1,55 +1,66 @@
-"""Worker process for Video Factory Studio.
-
-For now the process only proves it is alive by touching a heartbeat file, which the
-container health check reads. The cpu and gpu job loops arrive with the job queue card.
-"""
+"""Worker process entry point: python -m apps.worker"""
 
 from __future__ import annotations
 
 import logging
 import os
 import signal
+import sys
 import tempfile
 import threading
 from pathlib import Path
 from types import FrameType
 
-HEARTBEAT_INTERVAL_S = 5.0
+from apps.worker.handlers import HANDLERS
+from apps.worker.runner import Worker
+from packages.core.db.session import make_engine, make_session_factory
+from packages.core.logs import configure_logging
+from packages.core.settings import SettingsError, load_settings
 
 logger = logging.getLogger("apps.worker")
 
 
 def heartbeat_path() -> Path:
-    """Where the heartbeat lives: WORKER_HEARTBEAT_FILE, or the system temp folder."""
+    """Where the process heartbeat lives: WORKER_HEARTBEAT_FILE, or the system temp folder."""
     configured = os.environ.get("WORKER_HEARTBEAT_FILE")
     if configured:
         return Path(configured)
     return Path(tempfile.gettempdir()) / "vfs-worker-heartbeat"
 
 
-def run(
-    stop: threading.Event, heartbeat: Path, *, interval_s: float = HEARTBEAT_INTERVAL_S
-) -> None:
-    """Touch the heartbeat file until asked to stop."""
-    heartbeat.parent.mkdir(parents=True, exist_ok=True)
-    while not stop.is_set():
-        heartbeat.touch()
-        stop.wait(interval_s)
-
-
 def main() -> int:
-    logging.basicConfig(level=os.environ.get("LOG_LEVEL", "info").upper())
+    try:
+        settings = load_settings()
+    except SettingsError as error:
+        sys.stderr.write(f"{error}\n")
+        return 2
+    configure_logging(settings.log_level)
+
     stop = threading.Event()
 
     def request_stop(signum: int, _frame: FrameType | None) -> None:
-        logger.info("signal %s received, stopping", signum)
+        logger.info("signal received, stopping after the running jobs", extra={"signal": signum})
         stop.set()
 
     signal.signal(signal.SIGTERM, request_stop)
     signal.signal(signal.SIGINT, request_stop)
 
-    heartbeat = heartbeat_path()
-    logger.info("worker started, heartbeat at %s", heartbeat)
-    run(stop, heartbeat)
+    engine = make_engine(settings.database_url)
+    worker = Worker(
+        make_session_factory(engine),
+        HANDLERS,
+        cpu_workers=settings.cpu_workers,
+        heartbeat_file=heartbeat_path(),
+    )
+    logger.info(
+        "worker started",
+        extra={
+            "cpu_workers": settings.cpu_workers,
+            "provider_mode": settings.provider_mode,
+            "job_types": sorted(HANDLERS),
+        },
+    )
+    worker.run(stop)
+    engine.dispose()
     logger.info("worker stopped")
     return 0

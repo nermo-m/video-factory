@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -32,6 +32,9 @@ test-integration: env ## Run the integration tests against the Compose database
 
 migrate: ## Apply database migrations inside the api container
 	docker compose exec api alembic upgrade head
+
+noop-job: ## Send one no-op job through the queue and wait for the worker to finish it
+	docker compose exec worker python -m apps.worker.noop_check
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py
