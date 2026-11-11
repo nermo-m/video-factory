@@ -1,0 +1,36 @@
+{
+  "spec_version": "2.0",
+  "episode_id": "ep_fixture",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "target_duration_s": 30
+  },
+  "theme": "night_scrolls",
+  "voice": {
+    "voice_id": "bm_george",
+    "speed": 1
+  },
+  "seed": 11,
+  "scenes": [
+    {
+      "id": "s01_hook",
+      "kind": "title",
+      "narration": "One small thing, done every day.",
+      "text": [
+        {
+          "content": "ONE SMALL THING",
+          "style": "slam",
+          "cue": {
+            "word": 0
+          }
+        }
+      ],
+      "retention_device": "What happens if you never skip it?",
+      "transition_out": "smoke"
+    }
+  ],
+  "claims": [],
+  "assets": []
+}

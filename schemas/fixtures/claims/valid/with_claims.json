@@ -1,0 +1,14 @@
+{
+  "claims": [
+    {
+      "id": "c_example_habit",
+      "text": "In this made-up survey, 7 in 10 people kept a new habit for 30 days.",
+      "source_url": "https://example.org/fixture/habit-survey",
+      "source_name": "Example Habit Survey (test fixture, not a real source)",
+      "source_date": "2026-01-15",
+      "passage": "Seven in ten respondents reported keeping their new habit for at least thirty days.",
+      "retrieved_at": "2026-11-11T09:30:00Z"
+    }
+  ],
+  "note": "One source found. It is a test fixture, not a real study."
+}

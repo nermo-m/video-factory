@@ -1,0 +1,15 @@
+{
+  "why": "The app never posts: a package holds no upload or schedule field.",
+  "error_at": "",
+  "document": {
+    "title": "The Lighthouse Keeper: small steps still count",
+    "description": "A keeper climbs the same hill every morning. Nobody asked him to. A short story about habits nobody sees.",
+    "hashtags": [
+      "#smallsteps",
+      "#habits",
+      "#shortstory"
+    ],
+    "cover_frame_s": 3.2,
+    "publish_at": "2026-12-01T10:00:00Z"
+  }
+}

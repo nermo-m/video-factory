@@ -1,0 +1,347 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "episode_spec.schema.json",
+  "title": "Episode Spec (authored)",
+  "description": "What the planner and the owner write: every creative decision for one episode. Timings may be left out. The resolver turns this into the resolved spec (design doc section 5).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["spec_version", "episode_id", "format", "theme", "voice", "seed", "scenes", "claims", "assets"],
+  "properties": {
+    "spec_version": { "const": "2.0" },
+    "episode_id": { "$ref": "#/$defs/episode_id" },
+    "format": { "$ref": "#/$defs/format" },
+    "theme": { "$ref": "#/$defs/name" },
+    "voice": { "$ref": "#/$defs/voice" },
+    "seed": {
+      "description": "Drives every random effect, so the same resolved spec always renders the same frames.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": { "$ref": "#/$defs/scene" }
+    },
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "claims.schema.json#/$defs/claim" }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    }
+  },
+  "$defs": {
+    "not_allowed": {
+      "description": "Marks a property that this kind of object may not have.",
+      "not": {}
+    },
+    "episode_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+    },
+    "name": {
+      "description": "A lower-case identifier that the theme declares: a theme, text style, transition, sprite or sound cue.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,39}$"
+    },
+    "seconds": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 600
+    },
+    "format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "fps", "target_duration_s"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 16, "maximum": 4096, "multipleOf": 2 },
+        "height": { "type": "integer", "minimum": 16, "maximum": 4096, "multipleOf": 2 },
+        "fps": { "type": "integer", "minimum": 1, "maximum": 60 },
+        "target_duration_s": {
+          "description": "The total may differ from this by at most 2 seconds.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 180
+        }
+      }
+    },
+    "voice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["voice_id", "speed"],
+      "properties": {
+        "voice_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" },
+        "speed": { "type": "number", "minimum": 0.5, "maximum": 2 }
+      }
+    },
+    "cue": {
+      "title": "Cue",
+      "description": "Anchors an event to exactly one of: a narration word, seconds from the scene start, seconds after the narration ends, or an absolute time in the video.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "word": {
+          "description": "Index of a narration word in this scene, counted from zero: the event happens when that word starts.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 400
+        },
+        "scene_start_s": { "$ref": "#/$defs/seconds" },
+        "after_narration_s": { "$ref": "#/$defs/seconds" },
+        "at_s": {
+          "description": "Seconds from the start of the video.",
+          "$ref": "#/$defs/seconds"
+        }
+      }
+    },
+    "text_item": {
+      "title": "On-screen text",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content", "style"],
+      "properties": {
+        "content": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "style": { "$ref": "#/$defs/name" },
+        "cue": { "$ref": "#/$defs/cue" }
+      }
+    },
+    "visual": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_id"],
+      "properties": {
+        "asset_id": { "$ref": "#/$defs/asset_id" },
+        "clip": {
+          "description": "True when this image should become a generated clip. Stills get a slow pan and zoom.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "overlay": {
+      "title": "Overlay",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["tag", "stamp", "sprite"] }
+      },
+      "oneOf": [
+        {
+          "title": "Pinned tag",
+          "additionalProperties": false,
+          "required": ["type", "lines"],
+          "properties": {
+            "type": { "const": "tag" },
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": { "type": "string", "minLength": 1, "maxLength": 24 }
+            },
+            "side": { "enum": ["left", "right"], "default": "left" },
+            "cue": { "$ref": "#/$defs/cue" }
+          }
+        },
+        {
+          "title": "Ink stamp",
+          "additionalProperties": false,
+          "required": ["type", "content"],
+          "properties": {
+            "type": { "const": "stamp" },
+            "content": { "type": "string", "minLength": 1, "maxLength": 24 },
+            "color": { "$ref": "#/$defs/name" },
+            "cue": { "$ref": "#/$defs/cue" }
+          }
+        },
+        {
+          "title": "Sprite action",
+          "additionalProperties": false,
+          "required": ["type", "name"],
+          "properties": {
+            "type": { "const": "sprite" },
+            "name": { "$ref": "#/$defs/name" },
+            "action": { "$ref": "#/$defs/name" },
+            "cue": { "$ref": "#/$defs/cue" }
+          }
+        }
+      ]
+    },
+    "sound_cue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cue_id"],
+      "properties": {
+        "cue_id": { "$ref": "#/$defs/name" },
+        "cue": { "$ref": "#/$defs/cue" },
+        "gain_db": {
+          "description": "Level change for this cue in decibels.",
+          "type": "number",
+          "minimum": -24,
+          "maximum": 6
+        }
+      }
+    },
+    "stat": {
+      "title": "Statistic",
+      "description": "A number shown on screen. It must point at the claim that supports it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "label", "claim_id"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "claim_id": { "type": "string", "pattern": "^c_[a-z0-9_]{1,40}$" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "cue": { "$ref": "#/$defs/cue" }
+      }
+    },
+    "scene_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,39}$"
+    },
+    "scene": {
+      "title": "Scene",
+      "description": "One scene. Each kind has its own required fields.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "narration"],
+      "properties": {
+        "id": { "$ref": "#/$defs/scene_id" },
+        "kind": { "enum": ["title", "scroll", "stat", "steps", "outro"] },
+        "narration": {
+          "description": "What the voice says in this scene. Empty for a silent scene, which then needs duration_s.",
+          "type": "string",
+          "maxLength": 600
+        },
+        "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "sublabel": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "text": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/text_item" }
+        },
+        "visual": { "$ref": "#/$defs/visual" },
+        "stat": { "$ref": "#/$defs/stat" },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/step" }
+        },
+        "overlays": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/overlay" }
+        },
+        "sound": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/sound_cue" }
+        },
+        "retention_device": {
+          "description": "The open question this scene leaves the viewer with.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "transition_out": { "$ref": "#/$defs/name" },
+        "pad_before_s": { "type": "number", "minimum": 0, "maximum": 5, "default": 0.3 },
+        "pad_after_s": { "type": "number", "minimum": 0, "maximum": 5, "default": 0.4 },
+        "hold_s": {
+          "description": "How long an outro holds its closing line after the narration.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "duration_s": {
+          "description": "Fixes the scene length. Without it the length is narration plus the two pads.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 120
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "narration": { "const": "" } }, "required": ["narration"] },
+          "then": { "required": ["duration_s"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "title" } }, "required": ["kind"] },
+          "then": {
+            "required": ["text"],
+            "properties": { "text": { "minItems": 1 }, "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "scroll" } }, "required": ["kind"] },
+          "then": {
+            "required": ["title", "visual"],
+            "properties": { "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "stat" } }, "required": ["kind"] },
+          "then": {
+            "required": ["stat"],
+            "properties": { "steps": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "steps" } }, "required": ["kind"] },
+          "then": {
+            "required": ["steps"],
+            "properties": { "stat": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "outro" } }, "required": ["kind"] },
+          "then": {
+            "required": ["text"],
+            "properties": { "text": { "minItems": 1 }, "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" } }
+          }
+        }
+      ]
+    },
+    "asset_id": {
+      "type": "string",
+      "pattern": "^a_[a-z0-9_]{1,60}$"
+    },
+    "asset_kind": { "enum": ["image", "clip", "audio", "sprite"] },
+    "asset_origin": { "enum": ["generated", "uploaded", "library"] },
+    "rights_status": { "enum": ["cleared", "needs_review", "blocked"] },
+    "asset": {
+      "title": "Asset",
+      "description": "An image, clip, sound or sprite the episode uses. The licence may be unknown while the plan is being written.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "origin", "contains_third_party_ip", "rights_status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/asset_id" },
+        "kind": { "$ref": "#/$defs/asset_kind" },
+        "origin": { "$ref": "#/$defs/asset_origin" },
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "licence": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "contains_third_party_ip": { "type": "boolean" },
+        "rights_status": { "$ref": "#/$defs/rights_status" },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/name" }
+        }
+      }
+    }
+  }
+}

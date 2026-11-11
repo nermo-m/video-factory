@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "claims.schema.json",
+  "title": "Claims",
+  "description": "Output of the research skill: factual claims, each with the source passage that supports it (design doc sections 5.2 and 6, FR-02).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["claims"],
+  "properties": {
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "note": {
+      "description": "What the research found or did not find. Required when no claim is returned.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  },
+  "if": {
+    "properties": { "claims": { "maxItems": 0 } }
+  },
+  "then": {
+    "required": ["note"]
+  },
+  "$defs": {
+    "claim": {
+      "title": "Claim",
+      "description": "A claim is kept only if the passage supporting it was actually retrieved.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "source_url", "source_name", "source_date", "passage", "retrieved_at"],
+      "properties": {
+        "id": {
+          "description": "How scenes refer to this claim, for example c_habit_66_days.",
+          "type": "string",
+          "pattern": "^c_[a-z0-9_]{1,40}$"
+        },
+        "text": {
+          "description": "The claim as it may be said or shown.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "source_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "source_date": {
+          "description": "When the source was published.",
+          "type": "string",
+          "format": "date"
+        },
+        "passage": {
+          "description": "The text from the source that supports the claim, as retrieved.",
+          "type": "string",
+          "pattern": "\\S",
+          "maxLength": 4000
+        },
+        "retrieved_at": {
+          "description": "When the passage was retrieved.",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

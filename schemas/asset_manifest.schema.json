@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "asset_manifest.schema.json",
+  "title": "Asset manifest",
+  "description": "Output of the assets skill: every visual and sound the spec needs, resolved to generated, uploaded or library (design doc section 6, FR-05).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["episode_id", "assets"],
+  "properties": {
+    "episode_id": { "$ref": "episode_spec.schema.json#/$defs/episode_id" },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "not_allowed": {
+      "description": "Marks a property that this kind of object may not have.",
+      "not": {}
+    },
+    "entry": {
+      "title": "Manifest entry",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "origin", "used_in", "becomes_clip", "contains_third_party_ip", "rights_status"],
+      "properties": {
+        "id": { "$ref": "episode_spec.schema.json#/$defs/asset_id" },
+        "kind": { "$ref": "episode_spec.schema.json#/$defs/asset_kind" },
+        "origin": { "$ref": "episode_spec.schema.json#/$defs/asset_origin" },
+        "used_in": {
+          "description": "The scenes that use this asset.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "episode_spec.schema.json#/$defs/scene_id" }
+        },
+        "becomes_clip": {
+          "description": "True when this image is turned into a generated clip.",
+          "type": "boolean"
+        },
+        "prompt": {
+          "description": "The image prompt, written with the channel style block. Required for a generated asset.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "clip_prompt": {
+          "description": "What should move in the clip.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "library_key": {
+          "description": "The library asset that is reused. Required for a library asset.",
+          "$ref": "episode_spec.schema.json#/$defs/asset_id"
+        },
+        "filename": {
+          "description": "The file name the owner is asked to upload, matched by name later (FR-07).",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"
+        },
+        "licence": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "contains_third_party_ip": { "type": "boolean" },
+        "rights_status": { "$ref": "episode_spec.schema.json#/$defs/rights_status" },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "episode_spec.schema.json#/$defs/name" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "origin": { "const": "generated" } }, "required": ["origin"] },
+          "then": { "required": ["prompt"], "properties": { "library_key": { "$ref": "#/$defs/not_allowed" }, "filename": { "$ref": "#/$defs/not_allowed" } } }
+        },
+        {
+          "if": { "properties": { "origin": { "const": "library" } }, "required": ["origin"] },
+          "then": { "required": ["library_key", "licence"], "properties": { "prompt": { "$ref": "#/$defs/not_allowed" }, "filename": { "$ref": "#/$defs/not_allowed" } } }
+        },
+        {
+          "if": { "properties": { "origin": { "const": "uploaded" } }, "required": ["origin"] },
+          "then": { "required": ["filename"], "properties": { "library_key": { "$ref": "#/$defs/not_allowed" } } }
+        },
+        {
+          "if": { "properties": { "becomes_clip": { "const": true } }, "required": ["becomes_clip"] },
+          "then": { "properties": { "kind": { "const": "image" } } }
+        },
+        {
+          "if": { "properties": { "contains_third_party_ip": { "const": true } }, "required": ["contains_third_party_ip"] },
+          "then": { "properties": { "rights_status": { "enum": ["needs_review", "blocked"] } } }
+        }
+      ]
+    }
+  }
+}

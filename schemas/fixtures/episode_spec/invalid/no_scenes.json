@@ -1,0 +1,46 @@
+{
+  "why": "An episode has at least one scene.",
+  "error_at": "/scenes",
+  "document": {
+    "spec_version": "2.0",
+    "episode_id": "ep_fixture",
+    "format": {
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "target_duration_s": 30
+    },
+    "theme": "night_scrolls",
+    "voice": {
+      "voice_id": "bm_george",
+      "speed": 1
+    },
+    "seed": 11,
+    "scenes": [],
+    "claims": [
+      {
+        "id": "c_example_habit",
+        "text": "In this made-up survey, 7 in 10 people kept a new habit for 30 days.",
+        "source_url": "https://example.org/fixture/habit-survey",
+        "source_name": "Example Habit Survey (test fixture, not a real source)",
+        "source_date": "2026-01-15",
+        "passage": "Seven in ten respondents reported keeping their new habit for at least thirty days.",
+        "retrieved_at": "2026-11-11T09:30:00Z"
+      }
+    ],
+    "assets": [
+      {
+        "id": "a_garden_dusk",
+        "kind": "image",
+        "origin": "library",
+        "licence": "MIT",
+        "contains_third_party_ip": false,
+        "rights_status": "cleared",
+        "tags": [
+          "garden",
+          "dusk"
+        ]
+      }
+    ]
+  }
+}

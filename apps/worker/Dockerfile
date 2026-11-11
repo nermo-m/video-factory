@@ -25,5 +25,6 @@ COPY --from=deps /opt/venv /opt/venv
 COPY apps/__init__.py apps/__init__.py
 COPY apps/worker apps/worker
 COPY packages packages
+COPY schemas schemas
 USER app
 CMD ["python", "-m", "apps.worker"]

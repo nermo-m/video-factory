@@ -1,0 +1,18 @@
+{
+  "why": "The source date must be a calendar date.",
+  "error_at": "/claims/0/source_date",
+  "document": {
+    "claims": [
+      {
+        "id": "c_example_habit",
+        "text": "In this made-up survey, 7 in 10 people kept a new habit for 30 days.",
+        "source_url": "https://example.org/fixture/habit-survey",
+        "source_name": "Example Habit Survey (test fixture, not a real source)",
+        "source_date": "last spring",
+        "passage": "Seven in ten respondents reported keeping their new habit for at least thirty days.",
+        "retrieved_at": "2026-11-11T09:30:00Z"
+      }
+    ],
+    "note": "One source found. It is a test fixture, not a real study."
+  }
+}

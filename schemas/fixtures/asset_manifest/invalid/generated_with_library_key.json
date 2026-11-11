@@ -1,0 +1,53 @@
+{
+  "why": "A generated asset is not a library asset.",
+  "error_at": "/assets/0/library_key",
+  "document": {
+    "episode_id": "ep_fixture",
+    "assets": [
+      {
+        "id": "a_hill_dawn",
+        "kind": "image",
+        "origin": "generated",
+        "used_in": [
+          "s02_story"
+        ],
+        "becomes_clip": true,
+        "prompt": "A lone hill at dawn above a sleeping night village, paper scroll style, ink wash.",
+        "clip_prompt": "Mist drifts slowly across the hill.",
+        "contains_third_party_ip": false,
+        "rights_status": "needs_review",
+        "tags": [
+          "hill",
+          "dawn"
+        ],
+        "library_key": "a_garden_dusk"
+      },
+      {
+        "id": "a_garden_dusk",
+        "kind": "image",
+        "origin": "library",
+        "used_in": [
+          "s03_story",
+          "s04_story"
+        ],
+        "becomes_clip": false,
+        "library_key": "a_garden_dusk",
+        "licence": "MIT",
+        "contains_third_party_ip": false,
+        "rights_status": "cleared"
+      },
+      {
+        "id": "a_owner_photo",
+        "kind": "image",
+        "origin": "uploaded",
+        "used_in": [
+          "s05_story"
+        ],
+        "becomes_clip": false,
+        "filename": "a_owner_photo.png",
+        "contains_third_party_ip": false,
+        "rights_status": "needs_review"
+      }
+    ]
+  }
+}

@@ -151,11 +151,60 @@
       "title": "Architecture document and ADRs 1 to 5",
       "status": "review",
       "note": "Architecture document with three diagrams and ADRs 1 to 6, kept honest by tests. Waits for a pull request."
+    },
+    {
+      "id": "VFS-10",
+      "order": 100,
+      "title": "JSON Schemas for all pipeline documents",
+      "status": "review",
+      "note": "Six schemas with 11 valid and 77 invalid fixtures, each failing where it says. Waits for a pull request."
+    },
+    {
+      "id": "VFS-11",
+      "order": 110,
+      "title": "Resolver: cues to absolute times",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-12",
+      "order": 120,
+      "title": "Theme night_scrolls with original assets",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-13",
+      "order": 130,
+      "title": "Compositor and animation primitives",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-14",
+      "order": 140,
+      "title": "Kokoro voice adapter with pronunciation and word timings",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-15",
+      "order": 150,
+      "title": "Audio mix: cues, music bed, ducking, loudness",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-16",
+      "order": 160,
+      "title": "Scene encode, join, contact sheet and preview mode",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-17",
+      "order": 170,
+      "title": "Original sample episode and make demo-render",
+      "status": "ready"
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "Every M0 card is built. Two are parked with VFS-61 (the GitHub repository): the first green CI run (VFS-7) and branch protection (VFS-8). Parked cards do not hold up M1, which starts with VFS-10, JSON Schemas for all pipeline documents."
+    "next": "VFS-11 Resolver: cues to absolute times. Branch vfs-11-resolver, stacked on vfs-10-json-schemas. It also checks references the schemas cannot (claim_id, asset_id, unique scene ids, word indexes)."
   },
   "checklist": [
     {
@@ -190,7 +239,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "163 unit and 44 integration (Python, 88 percent line coverage), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "285 unit and 44 integration (Python, 88 percent line coverage at the last measurement), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -218,6 +267,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "M1 started: JSON Schemas for all six pipeline documents, with 88 fixtures that validate or fail exactly where they say."
+    },
     {
       "date": "2026-11-11",
       "text": "Architecture document and six decision records written, with a test that fails when the pipeline diagram and the code disagree, and a test that enforces the package boundaries."

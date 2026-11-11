@@ -327,3 +327,28 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **Checked:** actionlint on all three workflows, shellcheck on the script,
   `docker compose config` on the release file.
 - **Reverse:** Not applicable until the first run.
+
+## D-017: Shape of the JSON Schemas
+
+- **Date:** 2026-11-11. **Card:** VFS-10.
+- **Problem:** Section 5 gives one example and a list of rules. The schemas need every
+  field, limit and required list spelled out.
+- **Choice:**
+  - Six files, as the design lists them, in JSON Schema draft 2020-12. Shared definitions
+    are referenced across files (`claim` lives in the claims schema, `format`, `voice`,
+    `stat` and the asset enums in the authored spec), not copied.
+  - Every object rejects unknown properties. A model that invents or misspells a field
+    fails validation instead of being silently ignored (risk R7).
+  - Text lengths and counts have upper limits taken from what fits on a 1080 by 1920 frame
+    and a 60 second video. They are first guesses and will move when the renderer exists.
+  - The resolved spec keeps the authored structure, with every `cue` replaced by `at_s`
+    (seconds from the start of the video), a `narration` object with its audio file and
+    word timings, and a `file` on every asset. Files must be relative storage paths.
+  - Invalid fixtures say where their problem must be reported, and a test checks it, so
+    error locations are part of the contract. A field that belongs to another scene kind
+    is reported at that field as "'stat' is not allowed here".
+  - Open points decided: Q-016 to Q-019.
+- **Not in the schemas:** references that must exist (`claim_id`, `asset_id`), unique scene
+  ids and word indexes within the narration are checked by the resolver (VFS-11). What the
+  theme can draw is checked against `capabilities.json` (VFS-12).
+- **Reverse:** A schema change is a new `spec_version` and a fixture update.

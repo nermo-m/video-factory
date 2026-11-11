@@ -1,0 +1,163 @@
+{
+  "why": "The overlay type must be one the renderer can draw.",
+  "error_at": "/scenes/1/overlays/0",
+  "document": {
+    "spec_version": "2.0",
+    "episode_id": "ep_fixture",
+    "format": {
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "target_duration_s": 30
+    },
+    "theme": "night_scrolls",
+    "voice": {
+      "voice_id": "bm_george",
+      "speed": 1
+    },
+    "seed": 11,
+    "scenes": [
+      {
+        "id": "s01_hook",
+        "kind": "title",
+        "narration": "One small thing, done every day.",
+        "text": [
+          {
+            "content": "ONE SMALL THING",
+            "style": "slam",
+            "cue": {
+              "word": 0
+            }
+          }
+        ],
+        "retention_device": "What happens if you never skip it?",
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s02_story",
+        "kind": "scroll",
+        "title": "THE GARDEN",
+        "label": "DAY ONE",
+        "visual": {
+          "asset_id": "a_garden_dusk"
+        },
+        "narration": "She watered one row before work. Only one.",
+        "overlays": [
+          {
+            "type": "hologram",
+            "content": "HI"
+          },
+          {
+            "type": "sprite",
+            "name": "lantern",
+            "action": "sway",
+            "cue": {
+              "scene_start_s": 0.5
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "paper_unroll",
+            "cue": {
+              "scene_start_s": 0.1
+            },
+            "gain_db": -3
+          }
+        ],
+        "pad_after_s": 0.6,
+        "retention_device": "Was one row ever going to be enough?",
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s03_fact",
+        "kind": "stat",
+        "narration": "In one made-up survey, seven in ten kept going.",
+        "stat": {
+          "value": "7 in 10",
+          "label": "kept the habit for 30 days",
+          "claim_id": "c_example_habit"
+        },
+        "retention_device": "So what did the seven do differently?"
+      },
+      {
+        "id": "s04_steps",
+        "kind": "steps",
+        "title": "TRY THIS",
+        "narration": "Pick it. Shrink it. Repeat it.",
+        "steps": [
+          {
+            "text": "Pick one thing",
+            "cue": {
+              "word": 0
+            }
+          },
+          {
+            "text": "Make it tiny",
+            "cue": {
+              "word": 2
+            }
+          },
+          {
+            "text": "Do it daily",
+            "cue": {
+              "word": 4
+            }
+          }
+        ]
+      },
+      {
+        "id": "s05_pause",
+        "kind": "title",
+        "narration": "",
+        "duration_s": 0.6,
+        "text": [
+          {
+            "content": "...",
+            "style": "slam"
+          }
+        ]
+      },
+      {
+        "id": "s06_outro",
+        "kind": "outro",
+        "narration": "Small steps still count.",
+        "text": [
+          {
+            "content": "SMALL STEPS STILL COUNT.",
+            "style": "slam_accent",
+            "cue": {
+              "after_narration_s": 0
+            }
+          }
+        ],
+        "hold_s": 2
+      }
+    ],
+    "claims": [
+      {
+        "id": "c_example_habit",
+        "text": "In this made-up survey, 7 in 10 people kept a new habit for 30 days.",
+        "source_url": "https://example.org/fixture/habit-survey",
+        "source_name": "Example Habit Survey (test fixture, not a real source)",
+        "source_date": "2026-01-15",
+        "passage": "Seven in ten respondents reported keeping their new habit for at least thirty days.",
+        "retrieved_at": "2026-11-11T09:30:00Z"
+      }
+    ],
+    "assets": [
+      {
+        "id": "a_garden_dusk",
+        "kind": "image",
+        "origin": "library",
+        "licence": "MIT",
+        "contains_third_party_ip": false,
+        "rights_status": "cleared",
+        "tags": [
+          "garden",
+          "dusk"
+        ]
+      }
+    ]
+  }
+}

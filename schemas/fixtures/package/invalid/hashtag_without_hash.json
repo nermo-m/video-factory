@@ -1,0 +1,14 @@
+{
+  "why": "A hashtag starts with #.",
+  "error_at": "/hashtags/0",
+  "document": {
+    "title": "The Lighthouse Keeper: small steps still count",
+    "description": "A keeper climbs the same hill every morning. Nobody asked him to. A short story about habits nobody sees.",
+    "hashtags": [
+      "smallsteps",
+      "#habits",
+      "#shortstory"
+    ],
+    "cover_frame_s": 3.2
+  }
+}

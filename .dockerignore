@@ -16,6 +16,7 @@ export
 backups
 docs
 **/tests
+schemas/fixtures
 apps/web/e2e/.results
 apps/web/e2e/__screenshots__
 *.md

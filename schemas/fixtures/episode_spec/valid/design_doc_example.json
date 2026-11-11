@@ -1,0 +1,94 @@
+{
+  "spec_version": "2.0",
+  "episode_id": "ep_0001",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "target_duration_s": 45
+  },
+  "theme": "night_scrolls",
+  "voice": {
+    "voice_id": "bm_george",
+    "speed": 1
+  },
+  "seed": 7,
+  "scenes": [
+    {
+      "id": "s01_hook",
+      "kind": "title",
+      "narration": "To everyone who keeps putting it off. Small steps still count.",
+      "text": [
+        {
+          "content": "SMALL STEPS",
+          "style": "slam",
+          "cue": {
+            "word": 7
+          }
+        },
+        {
+          "content": "STILL COUNT.",
+          "style": "slam_accent",
+          "cue": {
+            "word": 9
+          }
+        }
+      ],
+      "transition_out": "smoke"
+    },
+    {
+      "id": "s02_story",
+      "kind": "scroll",
+      "title": "THE CLIMB",
+      "label": "DAY ONE",
+      "sublabel": "nobody was watching",
+      "visual": {
+        "asset_id": "a_hill_dawn",
+        "clip": true
+      },
+      "narration": "The keeper climbed the same hill every morning. Nobody asked him to.",
+      "overlays": [
+        {
+          "type": "tag",
+          "lines": [
+            "EVERY",
+            "MORNING"
+          ],
+          "side": "left",
+          "cue": {
+            "word": 5
+          }
+        },
+        {
+          "type": "stamp",
+          "content": "UNSEEN",
+          "color": "ink",
+          "cue": {
+            "after_narration_s": 0.2
+          }
+        }
+      ],
+      "sound": [
+        {
+          "cue_id": "paper_unroll",
+          "cue": {
+            "scene_start_s": 0.1
+          }
+        }
+      ],
+      "retention_device": "Why would anyone do this unseen?",
+      "transition_out": "smoke"
+    }
+  ],
+  "claims": [],
+  "assets": [
+    {
+      "id": "a_hill_dawn",
+      "kind": "image",
+      "origin": "generated",
+      "prompt": "...",
+      "rights_status": "cleared",
+      "contains_third_party_ip": false
+    }
+  ]
+}

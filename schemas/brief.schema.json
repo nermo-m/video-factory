@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brief.schema.json",
+  "title": "Brief",
+  "description": "Output of the brief skill: the angle, one lesson, one audience line and three title options (design doc section 6).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["angle", "lesson", "audience", "titles"],
+  "properties": {
+    "angle": {
+      "description": "How this episode approaches the idea.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 600
+    },
+    "lesson": {
+      "description": "The one thing the viewer should take away.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "audience": {
+      "description": "One line on who this is for.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "titles": {
+      "description": "Exactly three title options.",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+    },
+    "changes": {
+      "description": "For a remake: what changed from the previous version and why (design doc section 11.4).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  }
+}

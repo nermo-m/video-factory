@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "resolved_spec.schema.json",
+  "title": "Episode Spec (resolved)",
+  "description": "Produced by the resolver after voice generation. Every scene, text item, overlay and sound cue has an absolute time in seconds from the start of the video, and every asset has its file. The render engine reads only this document (design doc section 5).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["spec_version", "episode_id", "format", "theme", "voice", "seed", "duration_s", "scenes", "claims", "assets"],
+  "properties": {
+    "spec_version": { "const": "2.0" },
+    "episode_id": { "$ref": "episode_spec.schema.json#/$defs/episode_id" },
+    "format": { "$ref": "episode_spec.schema.json#/$defs/format" },
+    "theme": { "$ref": "episode_spec.schema.json#/$defs/name" },
+    "voice": { "$ref": "episode_spec.schema.json#/$defs/voice" },
+    "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "duration_s": {
+      "description": "Length of the whole video.",
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 600
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": { "$ref": "#/$defs/scene" }
+    },
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "claims.schema.json#/$defs/claim" }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    }
+  },
+  "$defs": {
+    "not_allowed": {
+      "description": "Marks a property that this kind of object may not have.",
+      "not": {}
+    },
+    "at_s": {
+      "description": "Seconds from the start of the video.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 600
+    },
+    "storage_path": {
+      "description": "A file path relative to the storage root, with forward slashes.",
+      "type": "string",
+      "pattern": "^(?!/)(?!.*\\.\\./)[^\\\\:]+$",
+      "maxLength": 400
+    },
+    "word": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "start_s", "end_s"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "start_s": { "$ref": "#/$defs/at_s" },
+        "end_s": { "$ref": "#/$defs/at_s" }
+      }
+    },
+    "narration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "audio_file", "start_s", "duration_s", "words"],
+      "properties": {
+        "text": { "type": "string", "maxLength": 600 },
+        "audio_file": {
+          "description": "The narration audio for this scene. Null for a silent scene.",
+          "oneOf": [{ "$ref": "#/$defs/storage_path" }, { "type": "null" }]
+        },
+        "start_s": { "$ref": "#/$defs/at_s" },
+        "duration_s": { "type": "number", "minimum": 0, "maximum": 120 },
+        "words": {
+          "description": "One entry per narration word, in order. Captions are drawn from these.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/word" }
+        }
+      }
+    },
+    "text_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content", "style", "at_s"],
+      "properties": {
+        "content": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "style": { "$ref": "episode_spec.schema.json#/$defs/name" },
+        "at_s": { "$ref": "#/$defs/at_s" }
+      }
+    },
+    "overlay": {
+      "type": "object",
+      "required": ["type", "at_s"],
+      "properties": {
+        "type": { "enum": ["tag", "stamp", "sprite"] }
+      },
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "required": ["type", "lines", "side", "at_s"],
+          "properties": {
+            "type": { "const": "tag" },
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": { "type": "string", "minLength": 1, "maxLength": 24 }
+            },
+            "side": { "enum": ["left", "right"] },
+            "at_s": { "$ref": "#/$defs/at_s" }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["type", "content", "at_s"],
+          "properties": {
+            "type": { "const": "stamp" },
+            "content": { "type": "string", "minLength": 1, "maxLength": 24 },
+            "color": { "$ref": "episode_spec.schema.json#/$defs/name" },
+            "at_s": { "$ref": "#/$defs/at_s" }
+          }
+        },
+        {
+          "additionalProperties": false,
+          "required": ["type", "name", "at_s"],
+          "properties": {
+            "type": { "const": "sprite" },
+            "name": { "$ref": "episode_spec.schema.json#/$defs/name" },
+            "action": { "$ref": "episode_spec.schema.json#/$defs/name" },
+            "at_s": { "$ref": "#/$defs/at_s" }
+          }
+        }
+      ]
+    },
+    "sound_cue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cue_id", "at_s", "gain_db"],
+      "properties": {
+        "cue_id": { "$ref": "episode_spec.schema.json#/$defs/name" },
+        "at_s": { "$ref": "#/$defs/at_s" },
+        "gain_db": { "type": "number", "minimum": -24, "maximum": 6 }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "at_s"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "at_s": { "$ref": "#/$defs/at_s" }
+      }
+    },
+    "scene": {
+      "title": "Resolved scene",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "start_s", "duration_s", "narration", "text", "overlays", "sound"],
+      "properties": {
+        "id": { "$ref": "episode_spec.schema.json#/$defs/scene_id" },
+        "kind": { "enum": ["title", "scroll", "stat", "steps", "outro"] },
+        "start_s": { "$ref": "#/$defs/at_s" },
+        "duration_s": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 },
+        "narration": { "$ref": "#/$defs/narration" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "sublabel": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "text": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/text_item" }
+        },
+        "visual": { "$ref": "episode_spec.schema.json#/$defs/visual" },
+        "stat": { "$ref": "episode_spec.schema.json#/$defs/stat" },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/step" }
+        },
+        "overlays": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/overlay" }
+        },
+        "sound": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/sound_cue" }
+        },
+        "retention_device": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "transition_out": { "$ref": "episode_spec.schema.json#/$defs/name" },
+        "hold_s": { "type": "number", "minimum": 0, "maximum": 10 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "title" } }, "required": ["kind"] },
+          "then": {
+            "properties": { "text": { "minItems": 1 }, "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "scroll" } }, "required": ["kind"] },
+          "then": {
+            "required": ["title", "visual"],
+            "properties": { "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "stat" } }, "required": ["kind"] },
+          "then": {
+            "required": ["stat"],
+            "properties": { "steps": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "steps" } }, "required": ["kind"] },
+          "then": {
+            "required": ["steps"],
+            "properties": { "stat": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "outro" } }, "required": ["kind"] },
+          "then": {
+            "required": ["hold_s"],
+            "properties": { "text": { "minItems": 1 }, "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" } }
+          }
+        }
+      ]
+    },
+    "asset": {
+      "title": "Resolved asset",
+      "description": "An asset with the file the render engine reads. Its licence is known by now.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "origin", "licence", "contains_third_party_ip", "rights_status", "file"],
+      "properties": {
+        "id": { "$ref": "episode_spec.schema.json#/$defs/asset_id" },
+        "kind": { "$ref": "episode_spec.schema.json#/$defs/asset_kind" },
+        "origin": { "$ref": "episode_spec.schema.json#/$defs/asset_origin" },
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "licence": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "contains_third_party_ip": { "type": "boolean" },
+        "rights_status": { "$ref": "episode_spec.schema.json#/$defs/rights_status" },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "episode_spec.schema.json#/$defs/name" }
+        },
+        "file": { "$ref": "#/$defs/storage_path" },
+        "clip_file": {
+          "description": "The generated clip made from this image, when there is one.",
+          "$ref": "#/$defs/storage_path"
+        }
+      }
+    }
+  }
+}

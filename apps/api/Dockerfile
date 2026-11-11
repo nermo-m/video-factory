@@ -26,6 +26,7 @@ COPY alembic.ini alembic.ini
 COPY apps/__init__.py apps/__init__.py
 COPY apps/api apps/api
 COPY packages packages
+COPY schemas schemas
 USER app
 EXPOSE 8000
 ENV API_HOST=0.0.0.0
