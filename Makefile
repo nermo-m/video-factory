@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -39,6 +39,19 @@ noop-job: ## Send one no-op job through the queue and wait for the worker to fin
 generate-api: ## Rewrite apps/api/openapi.json and the typed web client from the API routes
 	uv run python -m apps.api.openapi
 	pnpm --filter web generate:api
+
+E2E_COMPOSE = docker compose -f docker-compose.yml -f docker-compose.e2e.yml
+
+e2e: env ## Run the browser tests (Playwright and axe) against the stack in the Linux test image
+	$(E2E_COMPOSE) up --build --detach --wait db api worker web
+	$(E2E_COMPOSE) run --rm --build e2e
+
+e2e-update: env ## Rewrite the approved screenshots after an intended visual change
+	$(E2E_COMPOSE) up --build --detach --wait db api worker web
+	$(E2E_COMPOSE) run --rm --build e2e --update-snapshots
+
+storybook: ## Browse the interface components at http://127.0.0.1:6006
+	pnpm --filter web storybook
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py

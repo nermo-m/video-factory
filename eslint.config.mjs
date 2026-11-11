@@ -9,6 +9,8 @@ export default tseslint.config(
       "**/.next/**",
       "**/out/**",
       "**/dist/**",
+      "**/storybook-static/**",
+      "apps/web/e2e/.results/**",
       "**/next-env.d.ts",
       // Generated from apps/api/openapi.json. It is checked for drift, not for style.
       "apps/web/src/api/generated/**",

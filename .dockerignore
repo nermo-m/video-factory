@@ -16,6 +16,8 @@ export
 backups
 docs
 **/tests
+apps/web/e2e/.results
+apps/web/e2e/__screenshots__
 *.md
 PROGRESS.html
 PROGRESS.json

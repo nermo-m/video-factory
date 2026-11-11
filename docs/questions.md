@@ -7,7 +7,7 @@ ADR in `docs/adr/`.
 
 | # | Date | Question | Resolution | Status |
 | --- | --- | --- | --- | --- |
-| Q-001 | 2026-11-11 | Section 11.1 says the mockups are in `docs/design/` and win over the written spec, but the folder did not exist when work started. | Build from the written spec and tokens until the images are there. The linked mockup page is read at the web shell card (VFS-6). When the owner exports the images, each needs an `ASSETS.md` row. | Open until VFS-6 |
+| Q-001 | 2026-11-11 | Section 11.1 says the mockups are in `docs/design/` and win over the written spec, but the folder did not exist when work started. | The mockups were read from the linked design canvas instead (D-014), and the shell follows them. If the owner exports images into `docs/design/` later, each needs an `ASSETS.md` row. | Resolved |
 | Q-002 | 2026-11-11 | Section 3.3 lists one real `LLMAdapter` (Anthropic API). Section 3.4, added later, adds the Claude Code and Codex command line tools. | Section 3.4 is newer and wins: `LLMAdapter` has three implementations (mock, CLI bridge, API), selected only by `PROVIDER_MODE`. Cards VFS-55 to VFS-57 cover it. | Resolved |
 | Q-003 | 2026-11-11 | `GET /health` reports a "demo mode flag", but section 3.4 replaces `DEMO_MODE` with `PROVIDER_MODE`. | The flag is derived: demo mode is `PROVIDER_MODE=demo`. The response carries the provider mode and a boolean. | Resolved |
 | Q-004 | 2026-11-11 | `DEV_MAX_SPEND_USD` (section 16) and `LIMIT_CHECK_MINUTES` (section 3.5) are used in the text but missing from the environment variable table. | Both are in `.env.example` with the documented defaults (0 and 10). `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` are added for the `db` container. | Resolved |

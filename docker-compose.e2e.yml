@@ -1,0 +1,24 @@
+# Browser tests against the running stack. Used on top of docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --build e2e
+#
+# `make e2e` does this, and `make e2e-update` rewrites the approved screenshots.
+services:
+  e2e:
+    build:
+      context: .
+      dockerfile: apps/web/e2e/Dockerfile
+    depends_on:
+      web:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://web:3000
+    # Chromium needs more shared memory than Docker's 64 MB default.
+    shm_size: 1gb
+    volumes:
+      # Approved screenshots are read from, and with --update-snapshots written to, the
+      # repository. Failure traces land in a folder that git ignores.
+      - ./apps/web/e2e/__screenshots__:/repo/apps/web/e2e/__screenshots__
+      - ./apps/web/e2e/.results:/repo/apps/web/e2e/.results

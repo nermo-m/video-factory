@@ -1,0 +1,135 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Design tokens from design doc section 11.1 and the design system board of the mockups.
+ * The interface is dark only: the video is always the brightest thing on screen.
+ * Colours are used through these tokens, never as literal values in components.
+ */
+:root {
+  /* Section 11.1 */
+  --ground: #0b0f1a;
+  --surface: #141a2a;
+  --raised: #1b2336;
+  --line: #243049;
+  --text: #e8ecf4;
+  --text-muted: #93a0b8;
+  --action: #ff9610;
+  --on-action: #1a1200;
+  --info: #5b9dff;
+  --success: #3ccb7f;
+  --warning: #f5b83d;
+  --danger: #ff6b6b;
+  --chip-needs-you: #2b2110;
+  --chip-working: #13233f;
+  --chip-finished: #10291e;
+  --chip-out-of-date: #2c2410;
+  --chip-failed: #2e1518;
+
+  /* shadcn/ui semantic names, mapped onto the tokens above */
+  --background: var(--ground);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--raised);
+  --popover-foreground: var(--text);
+  --primary: var(--action);
+  --primary-foreground: var(--on-action);
+  --secondary: var(--raised);
+  --secondary-foreground: var(--text);
+  --muted: var(--raised);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--raised);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--info);
+  --radius: 0.625rem; /* 10 px */
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-heading: "Space Grotesk Variable", "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, Consolas, monospace;
+
+  /* Section 11.5: sm 640, lg 1024 (Tailwind defaults) and 2xl moved to 1440 */
+  --breakpoint-2xl: 90rem;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-info: var(--info);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-chip-needs-you: var(--chip-needs-you);
+  --color-chip-working: var(--chip-working);
+  --color-chip-finished: var(--chip-finished);
+  --color-chip-out-of-date: var(--chip-out-of-date);
+  --color-chip-failed: var(--chip-failed);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.2);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  body {
+    @apply min-h-dvh text-sm leading-normal;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
+  }
+
+  /* UX-04: every interactive element shows a visible focus ring for keyboard users. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* UX-07: the reduced-motion setting turns off transitions and animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -61,10 +61,11 @@ make up           # create .env if missing, build, start, wait until all four se
 make ps           # web on 127.0.0.1:3000, api on 127.0.0.1:8000, db on 127.0.0.1:5433
 curl http://127.0.0.1:8000/api/v1/health   # database, storage, ComfyUI, demo mode
 make noop-job     # send one no-op job through the queue and wait for the worker
+make e2e          # browser tests (Playwright and axe) in the pinned Linux image
 make down         # stop (data volumes are kept)
 ```
 
-Every published port binds to `127.0.0.1` only. Without `make`: copy `.env.example` to
+Open http://localhost:3000 for the interface. Every published port binds to `127.0.0.1` only. Without `make`: copy `.env.example` to
 `.env`, then `docker compose up --build --detach --wait`.
 
 ## Build status

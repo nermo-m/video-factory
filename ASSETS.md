@@ -23,3 +23,4 @@ no file.
 
 | Path | Origin | Licence | Source |
 | --- | --- | --- | --- |
+| `apps/web/e2e/__screenshots__/*.png` | original | MIT | Playwright screenshots of this app, made by `make e2e-update` |

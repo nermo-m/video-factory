@@ -128,7 +128,8 @@
       "id": "VFS-6",
       "order": 60,
       "title": "Web app shell with responsive navigation",
-      "status": "ready"
+      "status": "review",
+      "note": "Shell, status strip and empty Board follow the mockups. 28 browser tests pass, axe clean, screenshots approved at 390, 820 and 1440 px. Waits for a pull request."
     },
     {
       "id": "VFS-7",
@@ -151,7 +152,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-6 Web app shell with responsive navigation. Branch vfs-6-web-shell, stacked on vfs-5-api-skeleton."
+    "next": "VFS-7 CI workflow with all required jobs. Branch vfs-7-ci, stacked on vfs-6-web-shell. It cannot be proven until the GitHub repository exists (VFS-61)."
   },
   "checklist": [
     {
@@ -163,8 +164,8 @@
       "status": "open"
     },
     {
-      "item": "docker compose up shows the board (services start healthy since VFS-2, the board itself arrives with VFS-6)",
-      "status": "open"
+      "item": "docker compose up shows the board",
+      "status": "done"
     },
     {
       "item": "A no-op job completes in the worker",
@@ -186,7 +187,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "113 unit and 44 integration (Python), 19 Node, plus the API client drift check"
+      "value": "113 unit and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -206,6 +207,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "The app shell is up: sidebar on desktop, icon rail on tablet, bottom bar on a phone, a status strip fed by /health and an empty Board, checked by 28 browser tests."
+    },
     {
       "date": "2026-11-11",
       "text": "API skeleton: /health reports database, storage, ComfyUI and demo mode, every error has one shape, and the typed web client is generated with drift checks."

@@ -229,3 +229,43 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   was down. They now stop within seconds and say how to start it.
 - **Reverse:** The generator is one dev dependency and one script. The status mapping is in
   `apps/api/health.py`.
+
+## D-014: Web app shell
+
+- **Date:** 2026-11-11. **Card:** VFS-6.
+- **Problem:** `docs/design/` had no mockup images, and the card leaves the front-end
+  toolchain and several details open.
+- **Choice:**
+  - Mockups were read from the linked design canvas (artboards for the design system, Board
+    on desktop and Board on a phone). Where they differ from the written spec they win: the
+    brand in the strip reads "Video Factory", Board columns are Needs you, Planning,
+    Producing and Finished (four, not five), the phone merges the middle two into
+    "In progress", and the strip says "GPU ready" for ComfyUI.
+  - Tailwind CSS 4 with the section 11.1 tokens as CSS variables. shadcn/ui (Radix base)
+    supplies button, tooltip and sheet, with its semantic colours mapped onto the tokens.
+    The interface is dark only.
+  - Fonts come from the `@fontsource-variable` packages (Inter, Space Grotesk, JetBrains
+    Mono, all OFL-1.1). Nothing is fetched from Google at build or run time, and no font
+    file is committed.
+  - The layout switches in CSS, not JavaScript: bottom bar under 640 px, 64 px rail up to
+    1023 px, 232 px sidebar from 1024 px, collapsible to the rail and remembered.
+  - One primary action per screen: New episode lives in the navigation (sidebar, rail or
+    floating button), so the empty Board does not repeat it.
+  - The status strip reads `/health` every 10 seconds and pauses while the tab is hidden.
+    Running jobs and items waiting for the owner show zero until the jobs and episodes
+    endpoints exist (M2). Videos, Library, Jobs, Settings and New episode are honest
+    placeholder pages that say what will be there.
+  - Browser tests run in the pinned Playwright Linux image against the Compose stack
+    (`make e2e`), and the approved screenshots are made there too (`make e2e-update`), so
+    they do not depend on the machine. Outside Linux the screenshot comparison is skipped.
+  - `@axe-core/playwright` is licensed MPL-2.0, which is weak copyleft, not permissive. It
+    is used because the design names axe for the accessibility checks (section 14.1,
+    UX-05). It is a test-only tool and no part of it is shipped. Flagged for the owner.
+  - Storybook 10 with the Next.js Vite framework, telemetry off, stories for the status
+    strip, the navigation and the empty state at phone, tablet and desktop size.
+- **Found by the tests:** rail tooltips never opened because the link did not pass the
+  tooltip's props on, and rail targets were 43 px wide, one short of the 44 px minimum.
+- **Not done:** Next.js lint rules (`eslint-config-next`) and component unit tests with
+  Vitest are left for the CI card to decide. Storybook is built locally, not yet in CI.
+- **Reverse:** tokens are in `apps/web/src/app/globals.css`, navigation items in
+  `apps/web/src/components/shell/nav-items.tsx`.

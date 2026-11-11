@@ -43,3 +43,6 @@ Thumbs.db
 
 # Next.js generated types
 next-env.d.ts
+
+# Browser test output
+apps/web/e2e/.results/
