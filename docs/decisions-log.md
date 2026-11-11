@@ -194,3 +194,38 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - Settings are read once from the environment into a frozen dataclass and all problems
     are reported together. No new dependency.
 - **Reverse:** The constants are at the top of `packages/core/queue.py`.
+
+## D-013: API skeleton, health semantics and the generated client
+
+- **Date:** 2026-11-11. **Card:** VFS-5.
+- **Problem:** Section 10 lists what `/health` reports and says the TypeScript client is
+  generated and committed, but not how health maps to HTTP status, which generator to use,
+  or how the browser reaches the API.
+- **Choice:**
+  - `/health` answers 200 when the database and the storage work and 503 when either does
+    not. ComfyUI is reported (`ok`, `offline`, or `not_needed` in demo mode) but never makes
+    the API unhealthy. In demo mode ComfyUI is not contacted at all. Outside demo mode the
+    probe result is reused for 10 seconds, because the interface polls every 2 seconds.
+  - Every error uses the section 10 shape, including 404, 405, validation errors and
+    unhandled exceptions. A 500 response is generic: the stack trace goes to the log only.
+  - The OpenAPI document is committed at `apps/api/openapi.json`. The client in
+    `apps/web/src/api/generated/` is produced by `@hey-api/openapi-ts`. openapi-typescript
+    was the first choice but supports only TypeScript 5. Operation ids are the route
+    function names, so client functions read `getHealth`.
+  - Drift is caught twice: a pytest contract test compares the committed OpenAPI file with
+    the app, and `pnpm --filter web check:api` regenerates the client into a temporary
+    folder and compares. Both also run as pre-commit hooks. `make generate-api` rewrites
+    both.
+  - A schemathesis test checks that the running app answers the way its OpenAPI document
+    says.
+  - The browser talks only to the web origin. Next.js forwards `/api/v1` to the API
+    (`API_INTERNAL_URL`), so there is no cross-origin setup.
+  - Storage is behind `StorageAdapter` (`packages/core/storage.py`), implemented by
+    `LocalStorage`. Paths that leave the root are refused and writes are atomic.
+  - The ComfyUI probe uses the endpoint named in the design (`/system_stats`). It has not
+    been confirmed against a real ComfyUI, which needs the owner's PC (risk R2, card VFS-29).
+- **Found by the tests:** a service on the probed port that does not speak HTTP made the
+  probe raise. It now reports "not reachable". Integration tests used to hang when Postgres
+  was down. They now stop within seconds and say how to start it.
+- **Reverse:** The generator is one dev dependency and one script. The status mapping is in
+  `apps/api/health.py`.

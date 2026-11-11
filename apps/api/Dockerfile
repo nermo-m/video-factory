@@ -28,7 +28,8 @@ COPY apps/api apps/api
 COPY packages packages
 USER app
 EXPOSE 8000
+ENV API_HOST=0.0.0.0
 # 0.0.0.0 is inside the container only. The host side binds 127.0.0.1 in docker-compose.yml.
 # Migrations run first. The worker waits for this container to be healthy, so the schema
 # is always in place before any job is claimed.
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn apps.api.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && exec python -m apps.api"]

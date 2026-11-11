@@ -101,6 +101,7 @@ def test_settings_have_the_documented_defaults() -> None:
         data_dir="/data",
         cpu_workers=2,
         log_level="info",
+        comfyui_url="http://host.docker.internal:8188",
     )
 
 
@@ -130,13 +131,21 @@ def test_settings_read_the_environment() -> None:
 
 def test_settings_report_every_problem_at_once() -> None:
     with pytest.raises(SettingsError) as raised:
-        load_settings({"PROVIDER_MODE": "paid", "CPU_WORKERS": "zero", "LOG_LEVEL": "loud"})
+        load_settings(
+            {
+                "PROVIDER_MODE": "paid",
+                "CPU_WORKERS": "zero",
+                "LOG_LEVEL": "loud",
+                "COMFYUI_URL": "file:///etc/passwd",
+            }
+        )
 
     message = str(raised.value)
     assert "DATABASE_URL is not set" in message
     assert "PROVIDER_MODE must be one of demo, subscription, api" in message
     assert "CPU_WORKERS must be a whole number, 1 or more" in message
     assert "LOG_LEVEL must be one of debug, info, warning, error" in message
+    assert "COMFYUI_URL must be an http or https address" in message
 
 
 def test_nfr01_settings_never_print_the_database_password() -> None:

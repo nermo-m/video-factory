@@ -121,7 +121,8 @@
       "id": "VFS-5",
       "order": 50,
       "title": "API skeleton, health endpoint and generated client",
-      "status": "ready"
+      "status": "review",
+      "note": "Health, common error shape, OpenAPI file and generated client with drift checks. Waits for a pull request."
     },
     {
       "id": "VFS-6",
@@ -150,7 +151,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-5 API skeleton, health endpoint and generated client. Branch vfs-5-api-skeleton, stacked on vfs-4-job-queue."
+    "next": "VFS-6 Web app shell with responsive navigation. Branch vfs-6-web-shell, stacked on vfs-5-api-skeleton."
   },
   "checklist": [
     {
@@ -185,11 +186,11 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "77 unit and 41 integration (Python), 19 Node"
+      "value": "113 unit and 44 integration (Python), 19 Node, plus the API client drift check"
     },
     {
       "label": "Pre-commit hooks",
-      "value": "Ruff, mypy strict, ESLint, tsc, gitleaks, asset registry, tracker sync"
+      "value": "Ruff, mypy strict, ESLint, tsc, gitleaks, asset registry, tracker sync, OpenAPI and client sync"
     },
     {
       "label": "Secrets in the repository",
@@ -205,6 +206,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "API skeleton: /health reports database, storage, ComfyUI and demo mode, every error has one shape, and the typed web client is generated with drift checks."
+    },
     {
       "date": "2026-11-11",
       "text": "Job queue and worker: a no-op job completes in the real stack, two workers never take the same job, one gpu job at a time, and jobs survive worker and database restarts."

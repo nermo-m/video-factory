@@ -15,6 +15,7 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.engine import URL, make_url
+from sqlalchemy.exc import OperationalError
 
 from packages.core.db.migrate import alembic_config
 
@@ -40,9 +41,26 @@ def _server_url() -> URL:
     )
 
 
+CONNECT_TIMEOUT_S = 5
+
+
 @pytest.fixture(scope="session")
 def postgres_server_url() -> URL:
-    return _server_url()
+    """The Postgres server for integration tests. Stops the run at once when it is down."""
+    url = _server_url()
+    probe = create_engine(url, connect_args={"connect_timeout": CONNECT_TIMEOUT_S})
+    try:
+        with probe.connect():
+            pass
+    except OperationalError:
+        pytest.exit(
+            f"Postgres does not answer at {url.host}:{url.port}. "
+            "Start it with `docker compose up --detach --wait db` or run `make test-integration`.",
+            returncode=1,
+        )
+    finally:
+        probe.dispose()
+    return url
 
 
 @pytest.fixture

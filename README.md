@@ -44,6 +44,7 @@ Prerequisites: [uv](https://docs.astral.sh/uv/), Node.js 22 or newer with
 make setup        # install Python and Node tooling and the git hooks
 make check        # lint, types, unit tests and the asset registry check
 make test-integration   # integration tests on a real Postgres (needs Docker)
+make generate-api # rewrite apps/api/openapi.json and the typed web client
 make precommit    # run every pre-commit hook on every file
 make progress     # serve the build-status page at http://127.0.0.1:8094
 ```
@@ -58,6 +59,7 @@ Prerequisite: Docker with Compose.
 ```bash
 make up           # create .env if missing, build, start, wait until all four services are healthy
 make ps           # web on 127.0.0.1:3000, api on 127.0.0.1:8000, db on 127.0.0.1:5433
+curl http://127.0.0.1:8000/api/v1/health   # database, storage, ComfyUI, demo mode
 make noop-job     # send one no-op job through the queue and wait for the worker
 make down         # stop (data volumes are kept)
 ```

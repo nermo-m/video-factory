@@ -9,10 +9,12 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from urllib.parse import urlsplit
 
 from packages.core.logs import LEVELS
 
 PROVIDER_MODES = ("demo", "subscription", "api")
+DEFAULT_COMFYUI_URL = "http://host.docker.internal:8188"
 
 
 class SettingsError(Exception):
@@ -26,6 +28,7 @@ class Settings:
     data_dir: str = "/data"
     cpu_workers: int = 2
     log_level: str = "info"
+    comfyui_url: str = DEFAULT_COMFYUI_URL
 
 
 def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
@@ -55,6 +58,11 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     if log_level not in LEVELS:
         problems.append(f"LOG_LEVEL must be one of {', '.join(LEVELS)}.")
 
+    comfyui_url = env.get("COMFYUI_URL", "").strip() or DEFAULT_COMFYUI_URL
+    parsed = urlsplit(comfyui_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        problems.append("COMFYUI_URL must be an http or https address.")
+
     if problems:
         raise SettingsError("Invalid settings:\n- " + "\n- ".join(problems))
 
@@ -64,4 +72,5 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         data_dir=env.get("DATA_DIR", "/data").strip() or "/data",
         cpu_workers=cpu_workers,
         log_level=log_level,
+        comfyui_url=comfyui_url,
     )

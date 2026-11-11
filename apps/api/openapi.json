@@ -1,0 +1,196 @@
+{
+  "components": {
+    "schemas": {
+      "Check": {
+        "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What is wrong and what to do.",
+            "title": "Message"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CheckStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "Check",
+        "type": "object"
+      },
+      "CheckStatus": {
+        "enum": [
+          "ok",
+          "error",
+          "offline",
+          "not_needed"
+        ],
+        "title": "CheckStatus",
+        "type": "string"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "description": "Stable machine-readable reason, for example not_found.",
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "message": {
+            "description": "What happened and what to do next, in plain words.",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "HealthCheckResults": {
+        "properties": {
+          "comfyui": {
+            "$ref": "#/components/schemas/Check"
+          },
+          "database": {
+            "$ref": "#/components/schemas/Check"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/Check"
+          }
+        },
+        "required": [
+          "database",
+          "storage",
+          "comfyui"
+        ],
+        "title": "HealthCheckResults",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "checks": {
+            "$ref": "#/components/schemas/HealthCheckResults"
+          },
+          "demo_mode": {
+            "description": "True when PROVIDER_MODE is demo.",
+            "title": "Demo Mode",
+            "type": "boolean"
+          },
+          "provider_mode": {
+            "enum": [
+              "demo",
+              "subscription",
+              "api"
+            ],
+            "title": "Provider Mode",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          }
+        },
+        "required": [
+          "status",
+          "provider_mode",
+          "demo_mode",
+          "checks"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "HealthStatus": {
+        "enum": [
+          "ok",
+          "unavailable"
+        ],
+        "title": "HealthStatus",
+        "type": "string"
+      }
+    }
+  },
+  "info": {
+    "description": "Local API for the Video Factory Studio interface.",
+    "title": "Video Factory Studio API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "get_health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Database or storage is down."
+          }
+        },
+        "summary": "Liveness, database, storage, ComfyUI reachability and demo mode",
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  }
+}

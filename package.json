@@ -11,7 +11,7 @@
   },
   "scripts": {
     "lint": "eslint --max-warnings 0 .",
-    "test": "node --test \"tools/tests/**/*.test.mjs\"",
+    "test": "node --test \"tools/tests/**/*.test.mjs\" && pnpm --filter web check:api",
     "progress": "node tools/progress-server.js",
     "progress:sync": "node tools/sync-progress.mjs",
     "typecheck": "pnpm --filter web typecheck"
