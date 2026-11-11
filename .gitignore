@@ -1,0 +1,42 @@
+# Secrets: only .env.example is ever committed (design doc section 13, rule 1)
+.env
+.env.*
+!.env.example
+
+# Runtime data: the data volume, model files and exports never enter the repository
+/data/
+/models/
+/export/
+/backups/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Node
+node_modules/
+.next/
+out/
+storybook-static/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.log
