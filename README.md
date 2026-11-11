@@ -30,10 +30,16 @@ packages/agents/     agent runtime, critic, producer, evaluators
 packages/adapters/   llm, image, clip, tts, storage, each with a mock
 schemas/             JSON Schemas for the pipeline documents
 samples/             original demo spec, assets, recorded model responses
-docs/                plans, decisions and questions
+docs/                architecture, decision records, plans and questions
 scripts/             repository checks
 tools/               progress tracker server and sync
 ```
+
+## How it is built
+
+[docs/architecture.md](docs/architecture.md) has the component diagram, the pipeline state
+machine and the job queue. The reasons behind the main choices are in the
+[architecture decision records](docs/adr/README.md).
 
 ## Development setup
 

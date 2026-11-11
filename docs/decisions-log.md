@@ -32,7 +32,7 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 
 ## D-003: One virtual uv project, imports mirror folder paths
 
-- **Date:** 2026-11-11. **Card:** VFS-1. **ADR:** to be written in VFS-9.
+- **Date:** 2026-11-11. **Card:** VFS-1. **ADR:** [ADR 6](adr/0006-python-packaging.md).
 - **Problem:** The design fixes the folder layout but not the Python packaging.
 - **Options:** (a) one installable package per folder with a `src/` layout, (b) one project
   for the repository with code imported from the root.

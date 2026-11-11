@@ -292,12 +292,13 @@
       "id": "VFS-9",
       "order": 90,
       "title": "Architecture document and ADRs 1 to 5",
-      "status": "ready"
+      "status": "review",
+      "note": "Architecture document with three diagrams and ADRs 1 to 6, kept honest by tests. Waits for a pull request."
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-9 Architecture document and ADRs 1 to 5. Branch vfs-9-adrs, stacked on vfs-8-cd."
+    "next": "Every M0 card is built. Two are parked with VFS-61 (the GitHub repository): the first green CI run (VFS-7) and branch protection (VFS-8). Parked cards do not hold up M1, which starts with VFS-10, JSON Schemas for all pipeline documents."
   },
   "checklist": [
     {
@@ -332,7 +333,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "146 unit and 44 integration (Python, 88 percent line coverage), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "163 unit and 44 integration (Python, 88 percent line coverage), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -353,9 +354,17 @@
     {
       "label": "Dependency audit",
       "value": "No known vulnerabilities in Python packages. Node: no high, 2 moderate and 1 low in development tools"
+    },
+    {
+      "label": "Architecture records",
+      "value": "docs/architecture.md and ADRs 1 to 6, with tests that keep diagrams and code in step"
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "Architecture document and six decision records written, with a test that fails when the pipeline diagram and the code disagree, and a test that enforces the package boundaries."
+    },
     {
       "date": "2026-11-11",
       "text": "Delivery is ready to switch on: release and nightly workflows, weekly Dependabot updates, a release Compose file and a script for branch protection."
