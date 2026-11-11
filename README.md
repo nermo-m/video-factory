@@ -50,6 +50,19 @@ make progress     # serve the build-status page at http://127.0.0.1:8094
 Without `make` (for example on plain Windows), run the commands inside the
 [Makefile](Makefile) directly: each target is one or two lines.
 
+## Run the stack
+
+Prerequisite: Docker with Compose.
+
+```bash
+make up           # create .env if missing, build, start, wait until all four services are healthy
+make ps           # web on 127.0.0.1:3000, api on 127.0.0.1:8000, db on 127.0.0.1:5433
+make down         # stop (data volumes are kept)
+```
+
+Every published port binds to `127.0.0.1` only. Without `make`: copy `.env.example` to
+`.env`, then `docker compose up --build --detach --wait`.
+
 ## Build status
 
 [PROGRESS.html](PROGRESS.html) shows milestones, the current cards and what is being built

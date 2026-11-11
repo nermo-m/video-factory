@@ -8,12 +8,23 @@ license = "MIT"
 dependencies = []
 
 [dependency-groups]
+# One group per container image. Each image installs only its own group.
+api = [
+    "fastapi==0.162.4",
+    "uvicorn==0.54.0",
+]
+worker = []
 dev = [
+    { include-group = "api" },
+    { include-group = "worker" },
+    "httpx2==2.16.0",
     "mypy==2.4.1",
     "pre-commit==4.7.0",
     "pytest==9.2.0",
     "pytest-cov==7.1.0",
+    "pyyaml==6.0.3",
     "ruff==0.17.4",
+    "types-pyyaml==6.0.12.20261111",
 ]
 
 [tool.uv]
@@ -54,11 +65,11 @@ strict = true
 warn_unreachable = true
 explicit_package_bases = true
 mypy_path = "."
-files = ["scripts"]
+files = ["apps/api", "apps/worker", "scripts", "tests"]
 
 [tool.pytest.ini_options]
 minversion = "9.0"
 addopts = "-ra --strict-markers --strict-config"
 pythonpath = ["."]
-testpaths = ["scripts/tests"]
+testpaths = ["apps/api/tests", "apps/worker/tests", "scripts/tests", "tests"]
 xfail_strict = true

@@ -243,7 +243,8 @@
       "id": "VFS-2",
       "order": 20,
       "title": "Docker Compose with web, api, worker and db",
-      "status": "ready"
+      "status": "review",
+      "note": "All four services healthy on this PC, ports on 127.0.0.1 only. Waits for a pull request."
     },
     {
       "id": "VFS-3",
@@ -290,7 +291,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-2 Docker Compose with web, api, worker and db. Branch vfs-2-docker-compose, stacked on vfs-62-progress-tracker."
+    "next": "VFS-3 Database models and Alembic baseline. Branch vfs-3-db-models, stacked on vfs-2-docker-compose."
   },
   "checklist": [
     {
@@ -302,7 +303,7 @@
       "status": "open"
     },
     {
-      "item": "docker compose up shows the board",
+      "item": "docker compose up shows the board (services start healthy since VFS-2, the board itself arrives with VFS-6)",
       "status": "open"
     },
     {
@@ -325,11 +326,11 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "26 Python, 19 Node"
+      "value": "45 Python, 19 Node"
     },
     {
       "label": "Pre-commit hooks",
-      "value": "Ruff, mypy strict, ESLint, gitleaks, asset registry, tracker sync"
+      "value": "Ruff, mypy strict, ESLint, tsc, gitleaks, asset registry, tracker sync"
     },
     {
       "label": "Secrets in the repository",
@@ -345,6 +346,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "docker compose up brings web, api, worker and db to healthy, with every port bound to 127.0.0.1 and containers reaching the host."
+    },
     {
       "date": "2026-11-11",
       "text": "Progress tracker in place: this page, its JSON twin and a local server with live git state, kept in sync by a test and a pre-commit hook."

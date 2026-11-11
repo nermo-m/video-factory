@@ -40,3 +40,6 @@ test-results/
 .DS_Store
 Thumbs.db
 *.log
+
+# Next.js generated types
+next-env.d.ts

@@ -52,6 +52,13 @@ repos:
         language: system
         files: \.(js|mjs|cjs|jsx|ts|tsx)$
 
+      - id: tsc
+        name: tsc
+        entry: pnpm typecheck
+        language: system
+        files: ^apps/web/.*\.(ts|tsx)$
+        pass_filenames: false
+
       # Rule 2 (design doc section 13): every sample and media file has an ASSETS.md row.
       - id: check-assets
         name: asset licence registry

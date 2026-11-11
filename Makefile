@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -18,8 +18,9 @@ format: ## Format and auto-fix Python
 	uv run ruff format .
 	uv run ruff check --fix .
 
-types: ## Type-check Python
+types: ## Type-check Python and TypeScript
 	uv run mypy
+	pnpm typecheck
 
 test: ## Run the unit tests
 	uv run pytest
@@ -35,3 +36,18 @@ check: lint types test check-assets ## Run all local checks
 
 progress: ## Serve the build-status page at http://127.0.0.1:8094
 	node tools/progress-server.js
+
+env: ## Create .env from .env.example when it does not exist
+	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
+
+up: env ## Build and start web, api, worker and db, and wait until they are healthy
+	docker compose up --build --detach --wait
+
+down: ## Stop the stack (data volumes are kept)
+	docker compose down
+
+ps: ## Show service status
+	docker compose ps
+
+logs: ## Follow the service logs
+	docker compose logs --follow

@@ -117,3 +117,29 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   web app (VFS-6).
 - **Reverse:** Change the `contract` string in `PROGRESS.json` and its test if an aggregator
   needs another identifier. The port is one constant in `tools/progress-server.js`.
+
+## D-010: Smallest runnable services for the Compose card
+
+- **Date:** 2026-11-11. **Card:** VFS-2.
+- **Problem:** The Compose card needs four healthy services, but the API, the worker loops
+  and the web shell have their own later cards (VFS-5, VFS-4, VFS-6).
+- **Choice:** Each service gets the smallest thing that can run and report health: a FastAPI
+  app with `GET /api/v1/health`, a worker that touches a heartbeat file read by
+  `python -m apps.worker.health`, and a Next.js app with one placeholder page and
+  `/healthz`. The later cards grow these, they do not replace them.
+- **Other choices in this card:**
+  - The database is published on `127.0.0.1:5433`, not 5432, because this PC already runs a
+    Postgres on 5432. `DB_HOST_PORT` changes it.
+  - `docker-compose.yml` refuses to start without `POSTGRES_PASSWORD` from `.env`, so no
+    password default is committed. `make up` creates `.env` from `.env.example` when missing.
+  - `DATABASE_URL` is built in `docker-compose.yml` from the three `POSTGRES_*` values, so
+    the password is written in one place only.
+  - TypeScript is pinned to 6.0.3. Version 7 is out, but typescript-eslint 8.72 supports
+    only versions below 6.1.
+  - The API tests use `httpx2`, which the installed Starlette asks for in place of `httpx`.
+  - Images run as non-root users. `0.0.0.0` appears only inside containers. The host side
+    of every published port is `127.0.0.1`, and a test enforces it (NFR-02).
+- **Not done here:** The `LAN_ACCESS=true` half of NFR-02 needs a password session in the
+  API and the web app. It is a separate Backlog card (VFS-63).
+- **Reverse:** Each item is one line in `docker-compose.yml`, `.env.example` or a
+  `package.json`.

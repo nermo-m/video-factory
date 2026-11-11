@@ -13,11 +13,14 @@
     "lint": "eslint --max-warnings 0 .",
     "test": "node --test \"tools/tests/**/*.test.mjs\"",
     "progress": "node tools/progress-server.js",
-    "progress:sync": "node tools/sync-progress.mjs"
+    "progress:sync": "node tools/sync-progress.mjs",
+    "typecheck": "pnpm --filter web typecheck"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "10.14.0",
-    "globals": "17.14.0"
+    "globals": "17.14.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2"
   }
 }
