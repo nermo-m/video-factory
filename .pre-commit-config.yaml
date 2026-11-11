@@ -1,0 +1,61 @@
+# Run `make setup` once after cloning: the mypy, ESLint and asset hooks use the
+# project's own locked tools through uv and pnpm, so they match CI exactly.
+default_install_hook_types: [pre-commit, commit-msg]
+minimum_pre_commit_version: "4.0.0"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.4
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+
+  # Rule 1 (design doc section 13): no secrets in any file or commit.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.5.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run --locked mypy
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true
+
+      - id: eslint
+        name: eslint
+        entry: pnpm exec eslint --max-warnings 0
+        language: system
+        files: \.(js|mjs|cjs|jsx|ts|tsx)$
+
+      # Rule 2 (design doc section 13): every sample and media file has an ASSETS.md row.
+      - id: check-assets
+        name: asset licence registry
+        entry: uv run --locked python scripts/check_assets.py
+        language: system
+        pass_filenames: false
+        always_run: true

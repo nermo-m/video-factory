@@ -1,0 +1,19 @@
+# Questions about the design
+
+Things in the design document (v2.6) that were ambiguous, missing or contradictory, and how
+each was resolved. The implementing agent decides and continues (build rule 8). Decisions
+taken while unblocking work are in [decisions-log.md](decisions-log.md). Larger ones get an
+ADR in `docs/adr/`.
+
+| # | Date | Question | Resolution | Status |
+| --- | --- | --- | --- | --- |
+| Q-001 | 2026-11-11 | Section 11.1 says the mockups are in `docs/design/` and win over the written spec, but the folder did not exist when work started. | Build from the written spec and tokens until the images are there. The linked mockup page is read at the web shell card (VFS-6). When the owner exports the images, each needs an `ASSETS.md` row. | Open until VFS-6 |
+| Q-002 | 2026-11-11 | Section 3.3 lists one real `LLMAdapter` (Anthropic API). Section 3.4, added later, adds the Claude Code and Codex command line tools. | Section 3.4 is newer and wins: `LLMAdapter` has three implementations (mock, CLI bridge, API), selected only by `PROVIDER_MODE`. Cards VFS-55 to VFS-57 cover it. | Resolved |
+| Q-003 | 2026-11-11 | `GET /health` reports a "demo mode flag", but section 3.4 replaces `DEMO_MODE` with `PROVIDER_MODE`. | The flag is derived: demo mode is `PROVIDER_MODE=demo`. The response carries the provider mode and a boolean. | Resolved |
+| Q-004 | 2026-11-11 | `DEV_MAX_SPEND_USD` (section 16) and `LIMIT_CHECK_MINUTES` (section 3.5) are used in the text but missing from the environment variable table. | Both are in `.env.example` with the documented defaults (0 and 10). `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` are added for the `db` container. | Resolved |
+| Q-005 | 2026-11-11 | Build rule 8 names `docs/questions.md`, the Unblock protocol names `docs/decisions-log.md`. | Both exist. This file holds questions about the design. The log holds decisions taken to get past a blocker. They link to each other. | Resolved |
+| Q-006 | 2026-11-11 | The design gives folder paths (`packages/render/theme/`, `packages/skills/<name>/`, `packages/adapters/clip/workflows/`) but no Python import names or packaging. | One virtual uv project. Code is imported from the repository root, so import paths mirror folder paths (`packages.render`, `apps.api`). Recorded as D-003, ADR to follow in VFS-9. | Resolved |
+| Q-007 | 2026-11-11 | Section 14.2 makes ten CI jobs required to merge from M0, but what `render` and `e2e-demo` test arrives in M1 and M2. | To be decided in VFS-7. Direction: every job exists and runs real checks from the start, each covering what exists at that point. No job is a stub that always passes without saying so. | Open until VFS-7 |
+| Q-008 | 2026-11-11 | "Run the full local checks before opening a pull request: lint, types, unit, integration, render and the demo end-to-end test" cannot be met by the first cards, which create those checks. | Run every check that exists at that point and list them in the card's completion comment. | Resolved |
+| Q-009 | 2026-11-11 | The status line says v2.6, the changelog's newest entry is v2.6.1. Requirement IDs are listed out of numeric order (FR-33 after FR-34, FR-16 to FR-18 after FR-34). | Cosmetic. The changelog entry is treated as part of the current design. IDs are used as written. | Resolved |
+| Q-010 | 2026-11-11 | Rule 2 names `samples/` and theme assets for `ASSETS.md`, but its first bullet covers fixtures, golden frames, screenshots, GIFs and the demo video as well. | The check covers every file under `samples/` and every media file anywhere in the repository (D-005). | Resolved |

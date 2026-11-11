@@ -1,0 +1,64 @@
+[project]
+name = "video-factory"
+version = "0.1.0"
+description = "Self-hosted studio that turns one idea into a finished short vertical video."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy==2.4.1",
+    "pre-commit==4.7.0",
+    "pytest==9.2.0",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.4",
+]
+
+[tool.uv]
+# One virtual project for the whole repository: code is imported from the repository
+# root (apps.api, apps.worker, packages.*), nothing is built or published.
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # import order
+    "N",   # naming
+    "UP",  # modern syntax
+    "B",   # bugbear
+    "C4",  # comprehensions
+    "SIM", # simplifications
+    "PT",  # pytest style
+    "PTH", # pathlib over os.path
+    "RET", # return statements
+    "S",   # security (bandit)
+    "T20", # no print statements
+    "RUF", # ruff-specific
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use plain assert statements: that is how pytest works.
+"**/tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+explicit_package_bases = true
+mypy_path = "."
+files = ["scripts"]
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+addopts = "-ra --strict-markers --strict-config"
+pythonpath = ["."]
+testpaths = ["scripts/tests"]
+xfail_strict = true

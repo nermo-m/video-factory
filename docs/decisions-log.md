@@ -1,0 +1,102 @@
+# Decisions log
+
+Decisions the implementing agent took without the owner, following the Unblock protocol in
+design doc section 16. Each entry gives the problem, the options, the choice, why, and how
+to reverse it. Questions about the design itself are in [questions.md](questions.md).
+
+## D-001: No GitHub repository yet, work continues on stacked local branches
+
+- **Date:** 2026-11-11. **Card:** VFS-1, parked part in VFS-61.
+- **Problem:** The project folder had no git repository and no GitHub remote. The session's
+  permission guard refused `gh repo create`, for a public repository and then for a private
+  one. Without a remote there are no pull requests, no auto-merge and no CI.
+- **Options:** (a) stop and wait, (b) find another way to create the repository, (c) keep
+  building locally and park the remote for the owner.
+- **Choice:** (c). A deliberate guard is not worked around, and waiting is not allowed. Each
+  card is built on its own branch `vfs-<id>-<name>`, stacked on the previous card's branch,
+  and verified with every local check that exists. `main` holds only the initial commit.
+  Finished cards wait In review. VFS-61 is parked in Blocked with the two-minute fix.
+- **Consequence:** The rule "dependencies must be Done before a card starts" is read as
+  "dependencies must be finished and verified locally" until the remote exists. No card is
+  marked Done before its pull request has merged.
+- **Reverse:** Create the repository, push `main`, then open the pull requests in Order.
+
+## D-002: Commits use the GitHub no-reply address
+
+- **Date:** 2026-11-11. **Card:** VFS-1.
+- **Problem:** No git identity was configured on the machine, and the repository is meant
+  to be public, so a personal email address in commits would be published.
+- **Choice:** Repository-local identity `nermo-m` with the account's GitHub no-reply
+  address. Nothing global was changed.
+- **Reverse:** `git config user.name` and `git config user.email` in this repository.
+
+## D-003: One virtual uv project, imports mirror folder paths
+
+- **Date:** 2026-11-11. **Card:** VFS-1. **ADR:** to be written in VFS-9.
+- **Problem:** The design fixes the folder layout but not the Python packaging.
+- **Options:** (a) one installable package per folder with a `src/` layout, (b) one project
+  for the repository with code imported from the root.
+- **Choice:** (b). uv manages one locked environment (`package = false`), Python 3.12 is
+  pinned, and import paths equal folder paths: `packages.render.resolver`, `apps.api.main`.
+  The paths the design names (`packages/render/theme/`, `packages/skills/<name>/SKILL.md`)
+  stay exactly as written, and there is one lockfile for api and worker.
+- **Why:** Nothing is published as a library, so separate distributions add build steps
+  without a benefit. Boundary rules (no vendor SDK outside `packages/adapters/`, no network
+  in `packages/render/`) are enforced by lint and tests, not by packaging.
+- **Reverse:** Add a `pyproject.toml` per folder and turn the root into a uv workspace.
+  Imports would change from `packages.x` to the new package names.
+
+## D-004: Copyright holder in the licence
+
+- **Date:** 2026-11-11. **Card:** VFS-1.
+- **Problem:** The MIT licence needs a copyright holder. The GitHub profile has no name.
+- **Choice:** "Nermin (nermo-m)", from the design document's owner line and the account.
+- **Reverse:** Edit the one line in `LICENSE`. Listed in the Owner inbox as a name to confirm.
+
+## D-005: Scope of the asset check
+
+- **Date:** 2026-11-11. **Card:** VFS-1.
+- **Problem:** Rule 2 names `samples/` and theme assets, but also says fixtures, golden
+  frames, screenshots, GIFs and the demo video must be original or permissively licensed.
+- **Choice:** `scripts/check_assets.py` requires a row for every file under `samples/`
+  (README files excepted) and for every media file anywhere in the repository. A row may be
+  a glob. The check also fails on an unknown origin, a licence that is not on the permissive
+  list, an empty source, and a row that matches no file.
+- **Why:** A wider check is the safer reading of rule 2, and stale rows would make the
+  registry untrustworthy.
+- **Reverse:** Narrow `requires_row` in the script. The tests document each rule.
+
+## D-006: mypy, ESLint and the asset check run as local hooks
+
+- **Date:** 2026-11-11. **Card:** VFS-1.
+- **Problem:** Isolated pre-commit environments cannot see the project's own dependencies,
+  so an isolated mypy or ESLint would check against different versions than CI.
+- **Choice:** Ruff, gitleaks and the basic hooks are isolated. mypy and the asset check run
+  through `uv run --locked`, ESLint through `pnpm exec`. A clean clone needs `make setup`
+  once (uv and pnpm installed), which the README states.
+- **Reverse:** Replace the local hooks with the mirror repositories and list the
+  dependencies under `additional_dependencies`.
+
+## D-007: The owner's project standard is applied without the start-up interview
+
+- **Date:** 2026-11-11. **Cards:** VFS-1, VFS-62.
+- **Problem:** The owner's company-wide project standard asks for a yes/no interview on
+  scope and colours at project start, and for a progress tracker before feature code. The
+  owner's instruction for this project is to work unsupervised and never wait.
+- **Choice:** The design document already answers the interview, including the colour
+  tokens, so the answers are derived from it and recorded in
+  [project-contract.md](project-contract.md) for the owner to correct. The progress tracker
+  is added as its own card (VFS-62, Order 15) so it lands before any feature code.
+- **Reverse:** Edit the contract. Delete the tracker files if the owner does not want them
+  in the public repository.
+
+## D-008: Tool versions come from the registries, not from memory
+
+- **Date:** 2026-11-11. **Card:** VFS-1.
+- **Problem:** Build rule 10 and the Unblock protocol say the installed or published
+  version is the truth.
+- **Choice:** Every pinned version was read from PyPI, npm or the tool's GitHub releases on
+  the day it was added: uv 0.13.7, Ruff 0.17.4, mypy 2.4.1, pytest 9.2.0, pre-commit 4.7.0,
+  ESLint 10.14.0, gitleaks 8.30.1, pnpm 10.20.0, Python 3.12. Dependabot keeps them current
+  from VFS-8 on.
+- **Reverse:** Not applicable.
