@@ -269,3 +269,37 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   Vitest are left for the CI card to decide. Storybook is built locally, not yet in CI.
 - **Reverse:** tokens are in `apps/web/src/app/globals.css`, navigation items in
   `apps/web/src/components/shell/nav-items.tsx`.
+
+## D-015: CI workflow written and checked locally, not yet run on GitHub
+
+- **Date:** 2026-11-11. **Card:** VFS-7.
+- **Problem:** Section 14.2 lists ten required jobs, but there is no GitHub repository to
+  run them on (D-001), and two of the jobs test things that do not exist before M1 and M2.
+- **Choice:**
+  - `.github/workflows/ci.yml` has the ten jobs with the names from the design. Every job
+    calls a make target or script that also runs on a developer machine, and each of those
+    was run here: `make lint`, `make types`, `make coverage`, `make audit`,
+    `make secret-scan`, `make e2e`, `make noop-job`, `scripts/check_assets.py`,
+    `scripts/check_commits.py`. The workflow file passes actionlint.
+  - The 80 percent line coverage gate (NFR-04) is applied to unit and integration coverage
+    together, in the `integration` job. Unit tests alone reach 64 percent because the queue,
+    the worker and the migrations need a real Postgres. Together it is 88 percent.
+  - `render` builds the worker image and looks for render tests. While there are none it
+    passes with a visible notice. As soon as one exists it fails until the job is wired up,
+    so it can never pass silently.
+  - `e2e-demo` starts the stack in demo mode, runs the no-op job and the browser tests,
+    and uploads screenshots, traces and logs. The idea-to-export run is added in M2.
+  - `secret-scan` runs gitleaks from its container image over every commit. A planted fake
+    token, committed and then deleted in a later commit, made it fail on a scratch clone.
+  - `deps-audit` fails on any known vulnerability in Python packages and on high or worse
+    in Node packages. Three high advisories in `js-yaml` (pulled in by the API client
+    generator) were fixed with an override to 4.3.2. Two moderate advisories (glob through
+    Storybook, minimatch through ESLint) and one low remain and are left to Dependabot.
+  - `commit-lint` uses `scripts/check_commits.py` (standard library, tested) on the pull
+    request's commits and its title, because squash merges put the title on main.
+  - Actions are pinned to commit SHAs. The CI database uses trust authentication so no
+    password is written in the workflow.
+- **Not proven:** "CI is green on the skeleton" needs GitHub. The card is parked with
+  VFS-61. The first real run will probably need small fixes, which is normal for a
+  workflow that has only been linted.
+- **Reverse:** Not applicable. The gate threshold is `fail_under` in `pyproject.toml`.

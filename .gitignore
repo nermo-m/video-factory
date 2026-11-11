@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Browser test output
 apps/web/e2e/.results/
+
+# Dependency audit input
+.audit-requirements.txt

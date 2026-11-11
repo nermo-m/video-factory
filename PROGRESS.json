@@ -135,7 +135,8 @@
       "id": "VFS-7",
       "order": 70,
       "title": "CI workflow with all required jobs",
-      "status": "ready"
+      "status": "blocked",
+      "note": "Workflow written, linted and every job command run locally. Needs owner: the GitHub repository (VFS-61) to run it."
     },
     {
       "id": "VFS-8",
@@ -152,7 +153,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-7 CI workflow with all required jobs. Branch vfs-7-ci, stacked on vfs-6-web-shell. It cannot be proven until the GitHub repository exists (VFS-61)."
+    "next": "VFS-9 Architecture document and ADRs 1 to 5 (no dependency on the remote). VFS-8 CD and branch protection waits for the GitHub repository (VFS-61)."
   },
   "checklist": [
     {
@@ -187,7 +188,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "113 unit and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "140 unit and 44 integration (Python, 88 percent line coverage), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -203,10 +204,18 @@
     },
     {
       "label": "Continuous integration",
-      "value": "Not running yet: no remote repository (VFS-61)"
+      "value": "Ten jobs written and checked locally. Not running yet: no remote repository (VFS-61)"
+    },
+    {
+      "label": "Dependency audit",
+      "value": "No known vulnerabilities in Python packages. Node: no high, 2 moderate and 1 low in development tools"
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-11",
+      "text": "CI workflow with all ten required jobs is written, linted and each job command passes locally, including the 80 percent coverage gate and a secret scan that catches a planted token."
+    },
     {
       "date": "2026-11-11",
       "text": "The app shell is up: sidebar on desktop, icon rail on tablet, bottom bar on a phone, a status strip fed by /health and an empty Board, checked by 28 browser tests."

@@ -1,2 +1,9 @@
 packages:
   - apps/web
+
+# Security overrides for packages pulled in by other packages. Remove an entry once the
+# parent package depends on a fixed version by itself.
+overrides:
+  # GHSA-52cp-r559-cp3m, GHSA-5p4m-2wfm-xmqj, GHSA-2883-xcg3-v3hh (high): fixed in 4.3.2.
+  # Pulled in by @hey-api/openapi-ts, the API client generator.
+  js-yaml@>=4.0.0 <4.3.2: ^4.3.2

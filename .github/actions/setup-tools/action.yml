@@ -1,0 +1,41 @@
+name: Set up tools
+description: Install uv, Node.js and pnpm at the versions this repository pins, then the locked dependencies.
+
+inputs:
+  python:
+    description: Install the locked Python environment
+    default: "true"
+  node:
+    description: Install the locked Node packages
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      if: inputs.python == 'true'
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        version: "0.13.7"
+        enable-cache: true
+
+    - name: Install the locked Python environment
+      if: inputs.python == 'true'
+      shell: bash
+      run: uv sync --locked
+
+    - name: Install pnpm
+      if: inputs.node == 'true'
+      uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+    - name: Install Node.js
+      if: inputs.node == 'true'
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: "22"
+        cache: pnpm
+
+    - name: Install the locked Node packages
+      if: inputs.node == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile

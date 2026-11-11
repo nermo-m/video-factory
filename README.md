@@ -45,6 +45,9 @@ make setup        # install Python and Node tooling and the git hooks
 make check        # lint, types, unit tests and the asset registry check
 make test-integration   # integration tests on a real Postgres (needs Docker)
 make generate-api # rewrite apps/api/openapi.json and the typed web client
+make coverage     # unit and integration tests with the 80 percent coverage gate
+make audit        # known vulnerabilities in Python and Node packages
+make secret-scan  # gitleaks over every commit
 make precommit    # run every pre-commit hook on every file
 make progress     # serve the build-status page at http://127.0.0.1:8094
 ```

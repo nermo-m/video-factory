@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -31,10 +31,10 @@ test-integration: env ## Run the integration tests against the Compose database
 	uv run --env-file .env pytest -m integration
 
 migrate: ## Apply database migrations inside the api container
-	docker compose exec api alembic upgrade head
+	docker compose exec -T api alembic upgrade head
 
 noop-job: ## Send one no-op job through the queue and wait for the worker to finish it
-	docker compose exec worker python -m apps.worker.noop_check
+	docker compose exec -T worker python -m apps.worker.noop_check
 
 generate-api: ## Rewrite apps/api/openapi.json and the typed web client from the API routes
 	uv run python -m apps.api.openapi
@@ -52,6 +52,22 @@ e2e-update: env ## Rewrite the approved screenshots after an intended visual cha
 
 storybook: ## Browse the interface components at http://127.0.0.1:6006
 	pnpm --filter web storybook
+
+coverage: env ## Unit and integration tests with the 80 percent line coverage gate (NFR-04)
+	docker compose up --detach --wait db
+	uv run coverage erase
+	COVERAGE_FILE=.coverage.unit uv run coverage run -m pytest
+	COVERAGE_FILE=.coverage.integration uv run --env-file .env coverage run -m pytest -m integration
+	uv run coverage combine .coverage.unit .coverage.integration
+	uv run coverage report
+
+audit: ## Fail on known vulnerabilities: any in Python packages, high or worse in Node packages
+	uv export --locked --all-groups --no-hashes --no-emit-project --format requirements-txt --output-file .audit-requirements.txt
+	uvx pip-audit@2.10.1 --requirement .audit-requirements.txt --disable-pip --no-deps
+	pnpm audit --audit-level high
+
+secret-scan: ## Scan every commit for secrets with gitleaks (design doc section 13, rule 1)
+	docker run --rm --volume "$(CURDIR):/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --redact --no-banner
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py

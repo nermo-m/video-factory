@@ -79,6 +79,24 @@ explicit_package_bases = true
 mypy_path = "."
 files = ["apps/api", "apps/worker", "packages", "scripts", "tests", "conftest.py"]
 
+[tool.coverage.run]
+# NFR-04: 80 percent line coverage on apps/api, apps/worker and packages/.
+source = ["apps/api", "apps/worker", "packages"]
+omit = [
+    "*/tests/*",
+    # Generated schema definitions, exercised by the migration tests as a whole.
+    "packages/core/db/migrations/versions/*",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "raise SystemExit",
+]
+
 [tool.pytest.ini_options]
 minversion = "9.0"
 addopts = "-ra --strict-markers --strict-config -m \"not integration\""
