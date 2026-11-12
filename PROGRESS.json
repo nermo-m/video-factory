@@ -247,8 +247,8 @@
       "id": "VFS-65",
       "order": 213,
       "title": "Live check of the host bridge with the signed-in tools",
-      "status": "review",
-      "note": "Nine short live calls on the owner's plans, with his go-ahead. Everything held. The bridge now reads Claude Code's streaming output: the session's model, the pages a search retrieved, and the tool's own usage report (ADR 9). Captured outputs are test fixtures. In review as a pull request."
+      "status": "done",
+      "note": "Nine short live calls on the owner's plans, with his go-ahead. Everything held. The bridge now reads Claude Code's streaming output: the session's model, the pages a search retrieved, and the tool's own usage report (ADR 9). Captured outputs are test fixtures. Merged in pull request #30."
     },
     {
       "id": "VFS-57",
@@ -268,7 +268,8 @@
       "id": "VFS-20",
       "order": 220,
       "title": "Planner service and skills: brief, research, script",
-      "status": "ready"
+      "status": "active",
+      "note": "In progress: the planner service and the skills brief, research and script."
     },
     {
       "id": "VFS-21",
@@ -286,8 +287,8 @@
       "id": "VFS-67",
       "order": 233,
       "title": "Research sources in subscription mode",
-      "status": "review",
-      "note": "Research answers in subscription mode carry the pages the tool retrieved. Built together with VFS-65, in the same pull request."
+      "status": "done",
+      "note": "Research answers in subscription mode carry the pages the tool retrieved. Built together with VFS-65, in pull request #30."
     },
     {
       "id": "VFS-22",
@@ -321,8 +322,11 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-20 Planner service and skills: brief, research, script"
+    "status": "active",
+    "id": "VFS-20",
+    "title": "Planner service and skills: brief, research, script",
+    "started": "2026-11-12T16:55:00Z",
+    "resume": "Branch vfs-20-planner-skills from main after pull request #30. Plan is in the Started comment on the board card: packages/skills/planner.py with tests first, skill folders brief, research and script, rules for retrieved sources and the word budget, recordings in samples/recordings, worker handlers for plan.brief, plan.research and plan.script. Verify with: make check, make coverage. Then pull request with auto-merge."
   },
   "checklist": [
     {
