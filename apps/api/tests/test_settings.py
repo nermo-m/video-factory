@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
+from apps.api.providers import MemoryProviderService
 from apps.api.settings import MemorySettingStore
 from packages.core.settings import Settings
 
@@ -27,7 +28,12 @@ def make_client(
     settings = Settings(database_url=DATABASE_URL, provider_mode=provider_mode)
     checks = HealthChecks(database=ok, storage=ok, comfyui=ok)
     return TestClient(
-        create_app(settings, checks=checks, setting_store=store or MemorySettingStore())
+        create_app(
+            settings,
+            checks=checks,
+            setting_store=store or MemorySettingStore(),
+            provider_service=MemoryProviderService(),
+        )
     )
 
 

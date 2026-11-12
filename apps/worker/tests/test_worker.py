@@ -8,6 +8,7 @@ import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import pytest
 from sqlalchemy import Engine, text
@@ -36,6 +37,7 @@ def running_worker(
     heartbeat_file: Path | None = None,
     stale_after_s: float = queue.STALE_AFTER_S,
     critic_enabled: bool = True,
+    **options: Any,
 ) -> Iterator[Worker]:
     worker = Worker(
         sessions,
@@ -46,6 +48,7 @@ def running_worker(
         maintenance_interval_s=0.05,
         stale_after_s=stale_after_s,
         heartbeat_file=heartbeat_file,
+        **options,
     )
     stop = threading.Event()
     thread = threading.Thread(target=worker.run, args=(stop,))

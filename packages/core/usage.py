@@ -15,6 +15,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from packages.core import limits
 from packages.core.db.models import ModelCall
 from packages.core.enums import Billing, Provider
 from packages.core.providers import billing_of
@@ -53,4 +54,14 @@ def record_model_call(
     )
     session.add(call)
     session.flush()
+    # The same call counts towards the provider's 5 hour and 7 day windows (FR-31).
+    limits.record_usage(
+        session,
+        provider=provider,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost_usd=cost_usd,
+        job_id=job_id,
+    )
     return call

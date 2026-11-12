@@ -13,6 +13,7 @@ from types import FrameType
 
 from apps.worker.handlers import HANDLERS
 from apps.worker.runner import Worker
+from packages.adapters.limit_probe import ProviderProbe
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.logs import configure_logging
 from packages.core.settings import SettingsError, load_settings
@@ -52,6 +53,9 @@ def main() -> int:
         cpu_workers=settings.cpu_workers,
         heartbeat_file=heartbeat_path(),
         critic_enabled=settings.critic_enabled,
+        provider_mode=settings.provider_mode,
+        limit_probe=ProviderProbe(settings),
+        limit_check_interval_s=settings.limit_check_minutes * 60,
     )
     logger.info(
         "worker started",

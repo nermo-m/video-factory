@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
 from apps.api.openapi import OPENAPI_PATH, render_openapi
+from apps.api.providers import MemoryProviderService
 from apps.api.settings import MemorySettingStore
 from packages.core.settings import Settings
 
@@ -29,6 +30,7 @@ def make_app() -> FastAPI:
         settings,
         checks=HealthChecks(database=ok, storage=ok, comfyui=ok),
         setting_store=MemorySettingStore(),
+        provider_service=MemoryProviderService(),
     )
 
 

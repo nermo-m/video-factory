@@ -1,6 +1,137 @@
 {
   "components": {
     "schemas": {
+      "Billing": {
+        "enum": [
+          "demo",
+          "plan",
+          "api"
+        ],
+        "title": "Billing",
+        "type": "string"
+      },
+      "BudgetOut": {
+        "properties": {
+          "calls_5h": {
+            "title": "Calls 5H",
+            "type": "integer"
+          },
+          "calls_7d": {
+            "title": "Calls 7D",
+            "type": "integer"
+          },
+          "images_5h": {
+            "title": "Images 5H",
+            "type": "integer"
+          },
+          "images_7d": {
+            "title": "Images 7D",
+            "type": "integer"
+          },
+          "usd_5h": {
+            "title": "Usd 5H",
+            "type": "string"
+          },
+          "usd_7d": {
+            "title": "Usd 7D",
+            "type": "string"
+          }
+        },
+        "required": [
+          "calls_5h",
+          "calls_7d",
+          "images_5h",
+          "images_7d",
+          "usd_5h",
+          "usd_7d"
+        ],
+        "title": "BudgetOut",
+        "type": "object"
+      },
+      "BudgetUpdate": {
+        "additionalProperties": false,
+        "description": "Numbers that are left out keep their value.",
+        "properties": {
+          "calls_5h": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calls 5H"
+          },
+          "calls_7d": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calls 7D"
+          },
+          "images_5h": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images 5H"
+          },
+          "images_7d": {
+            "anyOf": [
+              {
+                "maximum": 100000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images 7D"
+          },
+          "usd_5h": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{1,6}(\\.[0-9]{1,4})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usd 5H"
+          },
+          "usd_7d": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{1,6}(\\.[0-9]{1,4})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usd 7D"
+          }
+        },
+        "title": "BudgetUpdate",
+        "type": "object"
+      },
       "Check": {
         "properties": {
           "message": {
@@ -34,6 +165,21 @@
         ],
         "title": "CheckStatus",
         "type": "string"
+      },
+      "ContinueRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "episode_id": {
+            "format": "uuid",
+            "title": "Episode Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "episode_id"
+        ],
+        "title": "ContinueRequest",
+        "type": "object"
       },
       "ErrorBody": {
         "properties": {
@@ -132,6 +278,137 @@
         "title": "HealthStatus",
         "type": "string"
       },
+      "Provider": {
+        "description": "Who answered a model call. `demo` is the recorded-response provider.",
+        "enum": [
+          "demo",
+          "claude_plan",
+          "chatgpt_plan",
+          "anthropic_api",
+          "openai_api"
+        ],
+        "title": "Provider",
+        "type": "string"
+      },
+      "ProviderOut": {
+        "properties": {
+          "billing": {
+            "$ref": "#/components/schemas/Billing",
+            "description": "demo, plan or api."
+          },
+          "budget": {
+            "$ref": "#/components/schemas/BudgetOut"
+          },
+          "budget_used": {
+            "description": "Share of the budget used, 1.0 is all of it.",
+            "title": "Budget Used",
+            "type": "number"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Provider"
+          },
+          "last_checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checked At"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the last check or limit event said.",
+            "title": "Last Error"
+          },
+          "limited_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a limit resets, if the tool said so.",
+            "title": "Limited Until"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ProviderState",
+            "description": "ok, near_budget, paused_by_budget or limited."
+          },
+          "state_source": {
+            "$ref": "#/components/schemas/StatusSource",
+            "description": "tool: a tool reported the limit. app: follows from this app's own count."
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/WindowsOut"
+          },
+          "usage_source": {
+            "const": "app",
+            "description": "Usage is counted by this app. It is not the plan's remaining quota.",
+            "title": "Usage Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "billing",
+          "state",
+          "state_source",
+          "limited_until",
+          "last_checked_at",
+          "last_error",
+          "usage",
+          "usage_source",
+          "budget",
+          "budget_used"
+        ],
+        "title": "ProviderOut",
+        "type": "object"
+      },
+      "ProviderState": {
+        "enum": [
+          "ok",
+          "near_budget",
+          "paused_by_budget",
+          "limited"
+        ],
+        "title": "ProviderState",
+        "type": "string"
+      },
+      "ProvidersResponse": {
+        "properties": {
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderOut"
+            },
+            "title": "Providers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "providers"
+        ],
+        "title": "ProvidersResponse",
+        "type": "object"
+      },
       "SettingsResponse": {
         "properties": {
           "paid_apis_active": {
@@ -193,6 +470,66 @@
         ],
         "title": "SettingsUpdate",
         "type": "object"
+      },
+      "StatusSource": {
+        "description": "Whether a provider status came from the tool itself or from this app's own count.",
+        "enum": [
+          "tool",
+          "app"
+        ],
+        "title": "StatusSource",
+        "type": "string"
+      },
+      "UsageOut": {
+        "properties": {
+          "calls": {
+            "description": "Text calls in the window.",
+            "title": "Calls",
+            "type": "integer"
+          },
+          "cost_usd": {
+            "description": "Real cost for a paid provider, 0 for a plan.",
+            "title": "Cost Usd",
+            "type": "string"
+          },
+          "images": {
+            "title": "Images",
+            "type": "integer"
+          },
+          "input_tokens": {
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "title": "Output Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "calls",
+          "images",
+          "input_tokens",
+          "output_tokens",
+          "cost_usd"
+        ],
+        "title": "UsageOut",
+        "type": "object"
+      },
+      "WindowsOut": {
+        "properties": {
+          "five_hours": {
+            "$ref": "#/components/schemas/UsageOut"
+          },
+          "seven_days": {
+            "$ref": "#/components/schemas/UsageOut"
+          }
+        },
+        "required": [
+          "five_hours",
+          "seven_days"
+        ],
+        "title": "WindowsOut",
+        "type": "object"
       }
     }
   },
@@ -251,6 +588,270 @@
         "summary": "Liveness, database, storage, ComfyUI reachability and demo mode",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/providers": {
+      "get": {
+        "operationId": "get_providers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Each provider with its state, usage and budget",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/api/v1/providers/check": {
+      "post": {
+        "operationId": "post_providers_check",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The limits were checked less than 30 seconds ago."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Check the limits of every provider now",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider}/budget": {
+      "put": {
+        "operationId": "put_provider_budget",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Provider"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BudgetUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request body could not be read."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The provider is not used in this mode."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The numbers contradict each other."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Set the owner's soft budget for a provider",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider}/continue": {
+      "post": {
+        "operationId": "post_provider_continue",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Provider"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContinueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request body could not be read."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The provider is not used in this mode, or the episode does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "\"Continue anyway\": let one episode pass a budget pause of this provider",
+        "tags": [
+          "providers"
         ]
       }
     },

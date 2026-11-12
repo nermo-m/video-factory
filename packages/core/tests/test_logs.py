@@ -108,6 +108,7 @@ def test_settings_have_the_documented_defaults() -> None:
         cli_bridge_url="http://host.docker.internal:8189",
         claude_cli_model="",
         codex_cli_model="",
+        limit_check_minutes=10,
     )
 
 
@@ -177,6 +178,12 @@ def test_settings_report_every_problem_at_once() -> None:
     assert "CPU_WORKERS must be a whole number, 1 or more" in message
     assert "LOG_LEVEL must be one of debug, info, warning, error" in message
     assert "COMFYUI_URL must be an http or https address" in message
+
+
+def test_fr34_settings_read_how_often_the_limits_are_checked() -> None:
+    assert load_settings({**BASE_ENV, "LIMIT_CHECK_MINUTES": "3"}).limit_check_minutes == 3
+    with pytest.raises(SettingsError, match="LIMIT_CHECK_MINUTES must be a whole number"):
+        load_settings({**BASE_ENV, "LIMIT_CHECK_MINUTES": "0"})
 
 
 def test_fr27_settings_read_where_the_bridge_is_and_which_models_it_is_asked_for() -> None:

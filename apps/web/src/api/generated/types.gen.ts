@@ -5,6 +5,73 @@ export type ClientOptions = {
 };
 
 /**
+ * Billing
+ */
+export type Billing = 'demo' | 'plan' | 'api';
+
+/**
+ * BudgetOut
+ */
+export type BudgetOut = {
+    /**
+     * Calls 5H
+     */
+    calls_5h: number;
+    /**
+     * Calls 7D
+     */
+    calls_7d: number;
+    /**
+     * Images 5H
+     */
+    images_5h: number;
+    /**
+     * Images 7D
+     */
+    images_7d: number;
+    /**
+     * Usd 5H
+     */
+    usd_5h: string;
+    /**
+     * Usd 7D
+     */
+    usd_7d: string;
+};
+
+/**
+ * BudgetUpdate
+ *
+ * Numbers that are left out keep their value.
+ */
+export type BudgetUpdate = {
+    /**
+     * Calls 5H
+     */
+    calls_5h?: number | null;
+    /**
+     * Calls 7D
+     */
+    calls_7d?: number | null;
+    /**
+     * Images 5H
+     */
+    images_5h?: number | null;
+    /**
+     * Images 7D
+     */
+    images_7d?: number | null;
+    /**
+     * Usd 5H
+     */
+    usd_5h?: string | null;
+    /**
+     * Usd 7D
+     */
+    usd_7d?: string | null;
+};
+
+/**
  * Check
  */
 export type Check = {
@@ -21,6 +88,16 @@ export type Check = {
  * CheckStatus
  */
 export type CheckStatus = 'ok' | 'error' | 'offline' | 'not_needed';
+
+/**
+ * ContinueRequest
+ */
+export type ContinueRequest = {
+    /**
+     * Episode Id
+     */
+    episode_id: string;
+};
 
 /**
  * ErrorBody
@@ -86,6 +163,81 @@ export type HealthResponse = {
 export type HealthStatus = 'ok' | 'unavailable';
 
 /**
+ * Provider
+ *
+ * Who answered a model call. `demo` is the recorded-response provider.
+ */
+export type Provider = 'demo' | 'claude_plan' | 'chatgpt_plan' | 'anthropic_api' | 'openai_api';
+
+/**
+ * ProviderOut
+ */
+export type ProviderOut = {
+    /**
+     * demo, plan or api.
+     */
+    billing: Billing;
+    budget: BudgetOut;
+    /**
+     * Budget Used
+     *
+     * Share of the budget used, 1.0 is all of it.
+     */
+    budget_used: number;
+    id: Provider;
+    /**
+     * Last Checked At
+     */
+    last_checked_at: string | null;
+    /**
+     * Last Error
+     *
+     * What the last check or limit event said.
+     */
+    last_error: string | null;
+    /**
+     * Limited Until
+     *
+     * When a limit resets, if the tool said so.
+     */
+    limited_until: string | null;
+    /**
+     * ok, near_budget, paused_by_budget or limited.
+     */
+    state: ProviderState;
+    /**
+     * tool: a tool reported the limit. app: follows from this app's own count.
+     */
+    state_source: StatusSource;
+    /**
+     * Title
+     */
+    title: string;
+    usage: WindowsOut;
+    /**
+     * Usage Source
+     *
+     * Usage is counted by this app. It is not the plan's remaining quota.
+     */
+    usage_source: 'app';
+};
+
+/**
+ * ProviderState
+ */
+export type ProviderState = 'ok' | 'near_budget' | 'paused_by_budget' | 'limited';
+
+/**
+ * ProvidersResponse
+ */
+export type ProvidersResponse = {
+    /**
+     * Providers
+     */
+    providers: Array<ProviderOut>;
+};
+
+/**
  * SettingsResponse
  */
 export type SettingsResponse = {
@@ -133,6 +285,51 @@ export type SettingsUpdate = {
     use_paid_apis: boolean;
 };
 
+/**
+ * StatusSource
+ *
+ * Whether a provider status came from the tool itself or from this app's own count.
+ */
+export type StatusSource = 'tool' | 'app';
+
+/**
+ * UsageOut
+ */
+export type UsageOut = {
+    /**
+     * Calls
+     *
+     * Text calls in the window.
+     */
+    calls: number;
+    /**
+     * Cost Usd
+     *
+     * Real cost for a paid provider, 0 for a plan.
+     */
+    cost_usd: string;
+    /**
+     * Images
+     */
+    images: number;
+    /**
+     * Input Tokens
+     */
+    input_tokens: number;
+    /**
+     * Output Tokens
+     */
+    output_tokens: number;
+};
+
+/**
+ * WindowsOut
+ */
+export type WindowsOut = {
+    five_hours: UsageOut;
+    seven_days: UsageOut;
+};
+
 export type GetHealthData = {
     body?: never;
     path?: never;
@@ -165,6 +362,150 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type GetProvidersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/providers';
+};
+
+export type GetProvidersErrors = {
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetProvidersError = GetProvidersErrors[keyof GetProvidersErrors];
+
+export type GetProvidersResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProvidersResponse;
+};
+
+export type GetProvidersResponse = GetProvidersResponses[keyof GetProvidersResponses];
+
+export type PostProvidersCheckData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/providers/check';
+};
+
+export type PostProvidersCheckErrors = {
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * The limits were checked less than 30 seconds ago.
+     */
+    429: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostProvidersCheckError = PostProvidersCheckErrors[keyof PostProvidersCheckErrors];
+
+export type PostProvidersCheckResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProvidersResponse;
+};
+
+export type PostProvidersCheckResponse = PostProvidersCheckResponses[keyof PostProvidersCheckResponses];
+
+export type PutProviderBudgetData = {
+    body: BudgetUpdate;
+    path: {
+        provider: Provider;
+    };
+    query?: never;
+    url: '/api/v1/providers/{provider}/budget';
+};
+
+export type PutProviderBudgetErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The provider is not used in this mode.
+     */
+    404: ErrorResponse;
+    /**
+     * The numbers contradict each other.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PutProviderBudgetError = PutProviderBudgetErrors[keyof PutProviderBudgetErrors];
+
+export type PutProviderBudgetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProvidersResponse;
+};
+
+export type PutProviderBudgetResponse = PutProviderBudgetResponses[keyof PutProviderBudgetResponses];
+
+export type PostProviderContinueData = {
+    body: ContinueRequest;
+    path: {
+        provider: Provider;
+    };
+    query?: never;
+    url: '/api/v1/providers/{provider}/continue';
+};
+
+export type PostProviderContinueErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The provider is not used in this mode, or the episode does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostProviderContinueError = PostProviderContinueErrors[keyof PostProviderContinueErrors];
+
+export type PostProviderContinueResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProvidersResponse;
+};
+
+export type PostProviderContinueResponse = PostProviderContinueResponses[keyof PostProviderContinueResponses];
 
 export type GetSettingsData = {
     body?: never;
