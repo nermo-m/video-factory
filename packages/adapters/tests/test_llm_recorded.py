@@ -156,12 +156,3 @@ def test_fr28_api_mode_without_the_switch_gives_no_language_model(
 
     with pytest.raises(NeedsOwnerError, match="Use paid APIs"):
         adapters("api", confirmed=False).llm()
-
-
-def test_fr28_subscription_mode_never_reaches_for_the_paid_api(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "planted value, not a real key")
-
-    with pytest.raises(NeedsOwnerError, match="host bridge"):
-        adapters("subscription", confirmed=True).llm()

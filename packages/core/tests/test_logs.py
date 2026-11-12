@@ -105,6 +105,9 @@ def test_settings_have_the_documented_defaults() -> None:
         kokoro_model_path="/models/kokoro/kokoro.onnx",
         kokoro_voices_path="/models/kokoro/voices.bin",
         critic_enabled=True,
+        cli_bridge_url="http://host.docker.internal:8189",
+        claude_cli_model="",
+        codex_cli_model="",
     )
 
 
@@ -174,6 +177,27 @@ def test_settings_report_every_problem_at_once() -> None:
     assert "CPU_WORKERS must be a whole number, 1 or more" in message
     assert "LOG_LEVEL must be one of debug, info, warning, error" in message
     assert "COMFYUI_URL must be an http or https address" in message
+
+
+def test_fr27_settings_read_where_the_bridge_is_and_which_models_it_is_asked_for() -> None:
+    settings = load_settings(
+        {
+            **BASE_ENV,
+            "CLI_BRIDGE_URL": " http://host.docker.internal:9001/ ",
+            "CLAUDE_CLI_MODEL": " claude-opus-5-5 ",
+            "CODEX_CLI_MODEL": "gpt-5.5",
+        }
+    )
+
+    assert settings.cli_bridge_url == "http://host.docker.internal:9001"
+    assert settings.claude_cli_model == "claude-opus-5-5"
+    assert settings.codex_cli_model == "gpt-5.5"
+
+
+@pytest.mark.parametrize("url", ["ftp://host:8189", "host.docker.internal:8189", "http://"])
+def test_a_bridge_address_that_is_not_an_http_address_is_refused(url: str) -> None:
+    with pytest.raises(SettingsError, match="CLI_BRIDGE_URL must be an http or https address"):
+        load_settings({**BASE_ENV, "CLI_BRIDGE_URL": url})
 
 
 def test_nfr01_settings_never_print_the_database_password() -> None:

@@ -5,7 +5,8 @@ at that moment. The mode comes from the settings and is never changed here: ther
 fallback from one mode to another.
 
 So far it knows the adapters that exist: storage and voice, which are local in every
-mode, and the language model. The image adapter is added by its own card.
+mode, the language model, and the second reviewer. The image adapter is added by its
+own card.
 """
 
 from __future__ import annotations
@@ -14,7 +15,13 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from packages.adapters.llm import AnthropicLLM, LLMAdapter, RecordedLLM
+from packages.adapters.llm import (
+    AnthropicLLM,
+    ClaudeCliLLM,
+    CodexCliLLM,
+    LLMAdapter,
+    RecordedLLM,
+)
 from packages.adapters.llm.anthropic_api import DEFAULT_MODEL
 from packages.adapters.storage import LocalStorage
 from packages.adapters.tts import TTSAdapter, create_tts_adapter
@@ -52,10 +59,12 @@ class Adapters:
         if mode == "demo":
             return RecordedLLM(RECORDINGS_DIR)
         if mode == "subscription":
-            raise NeedsOwnerError(
-                "Subscription mode reaches its models through the host bridge. The bridge is "
-                "built, the adapters that call it are not yet (card VFS-57). Use "
-                "PROVIDER_MODE=demo until they are."
+            # The owner's Claude plan, through the host bridge. A usage limit makes the
+            # job wait. Nothing in this branch can reach the paid API.
+            return ClaudeCliLLM(
+                mode=mode,
+                bridge_url=self.settings.cli_bridge_url,
+                model=self.settings.claude_cli_model or None,
             )
         try:
             return AnthropicLLM(
@@ -66,6 +75,23 @@ class Adapters:
             )
         except PaidApiRefusedError as refused:
             raise NeedsOwnerError(str(refused)) from refused
+
+    def second_opinion(self) -> LLMAdapter:
+        """The model for the independent second review inside the critic (section 3.4):
+        a different model than the planner's, so it does not review its own work."""
+        mode = self.settings.provider_mode
+        if mode == "demo":
+            return RecordedLLM(RECORDINGS_DIR)
+        if mode == "subscription":
+            return CodexCliLLM(
+                mode=mode,
+                bridge_url=self.settings.cli_bridge_url,
+                model=self.settings.codex_cli_model or None,
+            )
+        raise NeedsOwnerError(
+            "API mode has no model for the second review yet: the OpenAI adapter arrives "
+            "with the critic. Use PROVIDER_MODE=demo or subscription until then."
+        )
 
     def storage(self) -> LocalStorage:
         return LocalStorage(self.settings.data_dir)

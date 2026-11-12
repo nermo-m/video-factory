@@ -15,6 +15,7 @@ from packages.core.logs import LEVELS
 
 PROVIDER_MODES = ("demo", "subscription", "api")
 DEFAULT_COMFYUI_URL = "http://host.docker.internal:8188"
+DEFAULT_CLI_BRIDGE_URL = "http://host.docker.internal:8189"
 DEFAULT_KOKORO_MODEL_PATH = "/models/kokoro/kokoro.onnx"
 DEFAULT_KOKORO_VOICES_PATH = "/models/kokoro/voices.bin"
 
@@ -38,6 +39,12 @@ class Settings:
     # The critic agent reviews a video before the owner does (section 6.1). When it is off
     # the pipeline passes the critique state without a job.
     critic_enabled: bool = True
+    # Subscription mode: where the host bridge to the command line tools listens
+    # (section 3.4), and the model each tool is asked for. Empty leaves the choice to
+    # the tool.
+    cli_bridge_url: str = DEFAULT_CLI_BRIDGE_URL
+    claude_cli_model: str = ""
+    codex_cli_model: str = ""
 
 
 def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
@@ -72,6 +79,11 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         problems.append("COMFYUI_URL must be an http or https address.")
 
+    cli_bridge_url = (env.get("CLI_BRIDGE_URL", "").strip() or DEFAULT_CLI_BRIDGE_URL).rstrip("/")
+    parsed = urlsplit(cli_bridge_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        problems.append("CLI_BRIDGE_URL must be an http or https address.")
+
     critic = env.get("CRITIC_ENABLED", "true").strip().lower() or "true"
     if critic not in {"true", "false"}:
         problems.append("CRITIC_ENABLED must be true or false.")
@@ -89,4 +101,7 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         kokoro_model_path=env.get("KOKORO_MODEL_PATH", "").strip() or DEFAULT_KOKORO_MODEL_PATH,
         kokoro_voices_path=env.get("KOKORO_VOICES_PATH", "").strip() or DEFAULT_KOKORO_VOICES_PATH,
         critic_enabled=critic == "true",
+        cli_bridge_url=cli_bridge_url,
+        claude_cli_model=env.get("CLAUDE_CLI_MODEL", "").strip(),
+        codex_cli_model=env.get("CODEX_CLI_MODEL", "").strip(),
     )

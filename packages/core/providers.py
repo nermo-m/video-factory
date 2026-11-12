@@ -11,6 +11,7 @@ This module is pure: it holds the tables and the guard.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 
 from packages.core.enums import Billing, Provider
 
@@ -60,6 +61,18 @@ def providers_for(mode: str) -> ModeProviders:
 def billing_of(provider: Provider) -> Billing:
     """How calls to a provider are paid for: demo, plan or api (FR-29)."""
     return _BILLING[provider]
+
+
+def cost_text(billing: Billing, cost_usd: Decimal) -> str:
+    """How the cost of a model call is shown (section 3.4).
+
+    A plan call is "covered by plan", whatever number is stored with it.
+    """
+    if billing is Billing.PLAN:
+        return "covered by plan"
+    if billing is Billing.DEMO:
+        return "no cost (demo)"
+    return f"${cost_usd:.4f}"
 
 
 def ensure_paid_apis_allowed(mode: str, *, confirmed: bool) -> None:

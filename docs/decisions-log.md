@@ -781,3 +781,44 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   can be used by accident before it exists.
 - **Reverse:** the worker only knows the contract. Another implementation behind the same
   contract replaces this one.
+
+## D-029: The adapters that call the host bridge
+
+- **Date:** 2026-11-12. **Card:** VFS-57.
+- **Problem:** The card asks for `LLMAdapter` implementations that call the bridge: Claude
+  for the planner and the agents, Codex for the second review. It does not say how a
+  request maps to the bridge, what happens to output schemas, how the bridge's errors
+  reach the job queue, or what a missing bridge is.
+- **Choice:**
+  - **Two adapters in `packages/adapters/llm/cli_bridge.py`.** `ClaudeCliLLM` posts to
+    `/claude`, `CodexCliLLM` to `/codex`. Both refuse to be built unless the mode is
+    `subscription`. They use Python's own HTTP client, so the worker gains no dependency.
+  - **Schemas.** Claude Code enforces the schema itself. Two cases put the schema into the
+    prompt and parse the answer in the adapter: a research call, as in API mode, and every
+    Codex call, because Codex only takes schemas in OpenAI's strict form (every property
+    required, no extra properties), which this project's schemas are not written in.
+  - **Errors** follow section 4.4. `plan_limit` becomes `PlanLimitError` with the reset
+    time. `busy`, `timeout`, `tool_failed` and `internal` are retried. `invalid_output` is
+    invalid output. A tool that is missing or not signed in with a plan is an owner task
+    with the bridge's own instruction. A refused request, or an error class the adapter
+    does not know, is a bug.
+  - **A bridge that does not answer is an owner task**, like ComfyUI in section 8: the
+    message says to run `make bridge-start`. Something else on the port is an owner task
+    too. Only a bridge that is there but slow is retried.
+  - **Waiting.** The adapter waits for the model call, for the tool's turn and a margin,
+    1230 seconds by default, because the bridge holds a request while the tool is busy.
+  - **Cost.** A plan call has cost 0, and `cost_text` in `packages/core/providers.py`
+    turns a plan call into "covered by plan" for whatever shows costs later.
+  - **Models.** `CLAUDE_CLI_MODEL` and `CODEX_CLI_MODEL` are passed on when set. When
+    Codex does not say which model answered, the call is recorded as "codex default".
+  - **Efforts.** Codex knows three. `xhigh` and `max` become `high`.
+  - **Second review.** `Adapters.second_opinion()` is new: recordings in demo mode, Codex
+    in subscription mode. API mode has no second reviewer until the OpenAI adapter exists.
+- **Not available in this mode:** the passages a web search retrieved. The bridge gets one
+  JSON result from Claude Code, without the pages. FR-02 needs them, so research in
+  subscription mode waits for card VFS-67, which needs a real run first (VFS-65).
+- **Not done in this card:** "the planner skills pass their recorded-response tests through
+  the bridge". The skills are built later by Order (VFS-20, VFS-21). Card VFS-66 runs
+  that test once they exist. Here the adapters are tested through a real bridge with the
+  fake tools, and against a stub that answers with every error class of the contract.
+- **Reverse:** another way to reach the tools is another class behind `LLMAdapter`.

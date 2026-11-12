@@ -254,8 +254,8 @@
       "id": "VFS-57",
       "order": 214,
       "title": "Claude CLI and Codex CLI adapters",
-      "status": "active",
-      "note": "In progress: the adapters that call the host bridge."
+      "status": "review",
+      "note": "The adapters of subscription mode: ClaudeCliLLM and CodexCliLLM call the host bridge, a plan call costs nothing, a usage limit makes the job wait until the reset time, and neither adapter can be built in another mode. 57 unit tests through a real bridge with fake tools. In review as a pull request."
     },
     {
       "id": "VFS-58",
@@ -274,6 +274,18 @@
       "order": 230,
       "title": "Skills: direct, assets, package, revise",
       "status": "ready"
+    },
+    {
+      "id": "VFS-66",
+      "order": 232,
+      "title": "Planner skills pass their recorded tests through the bridge",
+      "status": "backlog"
+    },
+    {
+      "id": "VFS-67",
+      "order": 233,
+      "title": "Research sources in subscription mode",
+      "status": "backlog"
     },
     {
       "id": "VFS-22",
@@ -307,11 +319,8 @@
     }
   ],
   "now_building": {
-    "status": "active",
-    "id": "VFS-57",
-    "title": "Claude CLI and Codex CLI adapters",
-    "started": "2026-11-12T14:50:00Z",
-    "resume": "Branch vfs-57-cli-adapters from main after pull request #27. Next: tests in packages/adapters/tests/test_llm_bridge.py (through a real bridge with the fake tools from tools/cli_bridge/tests, plus a stub server for the error classes), then packages/adapters/llm/bridge.py, settings CLI_BRIDGE_URL, CLAUDE_CLI_MODEL and CODEX_CLI_MODEL, and the factory. Verify with: make check, make coverage. Then push, open the pull request and enable auto-merge."
+    "status": "idle",
+    "next": "VFS-58 Usage and limits tracker with owner budgets"
   },
   "checklist": [
     {
@@ -346,7 +355,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1020 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 123 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1083 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 123 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -374,6 +383,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "Subscription mode is wired end to end in code: the planner asks Claude Code and the second reviewer asks Codex through the host bridge, covered by the owner's plans, and a usage limit pauses the job instead of ever reaching a paid API."
+    },
     {
       "date": "2026-11-12",
       "text": "Subscription mode has its bridge: a small service on the PC that runs the Claude Code and Codex command line tools for the worker and refuses any sign-in that is billed per use. Checked from a container, and every flag checked against the installed tools without a model call."
