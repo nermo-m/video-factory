@@ -22,7 +22,7 @@ from apps.worker.handlers import produce
 from apps.worker.runner import JobContext
 from packages.adapters.storage import LocalStorage
 from packages.adapters.tts.samples import SampleVoice
-from packages.core import queue, schemas
+from packages.core import assets, queue, schemas
 from packages.core.db import models
 from packages.core.enums import ErrorClass, JobStatus, JobTag, RenderKind, SpecAuthor, SpecKind
 from packages.core.queue import JobError
@@ -45,8 +45,11 @@ def sample() -> dict[str, Any]:
 
 
 @pytest.fixture
-def episode_id(sessions: sessionmaker[Session], sample: dict[str, Any]) -> uuid.UUID:
-    """An episode whose current spec is the sample episode, as the direction job leaves it."""
+def episode_id(
+    sessions: sessionmaker[Session], sample: dict[str, Any], tmp_path: Path
+) -> uuid.UUID:
+    """An episode whose current spec is the sample episode and whose pictures are resolved,
+    as the direction and asset plan jobs leave it."""
     with sessions.begin() as session:
         channel = models.Channel(name="Small Steps", voice_id="bm_george", theme="night_scrolls")
         session.add(channel)
@@ -55,6 +58,8 @@ def episode_id(sessions: sessionmaker[Session], sample: dict[str, Any]) -> uuid.
         session.add(episode)
         session.flush()
         store_spec(session, episode.id, sample, author=SpecAuthor.MODEL)
+        assets.ensure_library(session, LocalStorage(tmp_path / "data"), channel.id)
+        assets.sync(session, episode, sample)
         return episode.id
 
 
@@ -219,7 +224,7 @@ def test_a_voice_job_for_a_scene_that_is_not_in_the_spec_is_a_bug(
 # --- render.scene ------------------------------------------------------------------------
 
 
-def test_fr12_a_scene_job_encodes_its_scene_only_and_stores_the_bundled_pictures(
+def test_fr12_a_scene_job_encodes_its_scene_only_and_draws_the_library_pictures(
     stage: Stage, episode_id: uuid.UUID, sample: dict[str, Any]
 ) -> None:
     stage.speak_all(episode_id, sample)
@@ -276,7 +281,7 @@ def test_a_voice_that_was_spoken_for_other_words_is_not_used(
     assert "voice" in str(refused.value)
 
 
-def test_a_picture_that_was_never_made_is_an_owner_task_that_names_it(
+def test_fr05_a_render_does_not_start_while_a_picture_is_unresolved(
     stage: Stage, sessions: sessionmaker[Session], episode_id: uuid.UUID, sample: dict[str, Any]
 ) -> None:
     assets = copy.deepcopy(sample["assets"])
@@ -298,7 +303,8 @@ def test_a_picture_that_was_never_made_is_an_owner_task_that_names_it(
         stage.run("render.scene", episode_id, scene_id="s02_climb")
 
     assert refused.value.error_class is ErrorClass.NEEDS_OWNER
-    assert "a_new_harbour" in str(refused.value)
+    assert "a_new_harbour has not been generated yet" in str(refused.value)
+    assert stage.encoder.calls == []
 
 
 def test_a_plan_that_does_not_fit_its_length_says_which_scenes_to_shorten(

@@ -258,3 +258,36 @@ def test_a_job_that_needs_the_spec_says_so_when_there_is_none(
 ) -> None:
     with pytest.raises(JobError, match="spec"):
         run_job(sessions, Spy(), "plan.assets", episode_id)
+
+
+def test_fr05_the_asset_plan_stores_the_library_and_a_row_for_every_picture_to_get(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, tmp_path: Path
+) -> None:
+    """With a storage, `plan.assets` leaves the episode's pictures resolved or named."""
+    from packages.adapters.storage import LocalStorage
+    from packages.core import assets
+
+    llm = Spy()
+    handlers = plan_handlers(sessions, lambda: llm, LocalStorage(tmp_path / "data"))
+    for job_type in ("plan.brief", "plan.research", "plan.script", "plan.direct", "plan.assets"):
+        with sessions.begin() as session:
+            queue.enqueue(session, job_type=job_type, tag=JobTag.CPU, episode_id=episode_id)
+        with sessions.begin() as session:
+            claim = queue.claim_next(session, JobTag.CPU)
+        assert claim is not None
+        output = handlers[job_type](
+            JobContext(claim, queue.job_output_path(claim.type, claim.input_hash))
+        )
+        with sessions.begin() as session:
+            queue.complete(session, claim, dict(output or {}))
+
+    with sessions() as session:
+        episode = session.get(models.Episode, episode_id)
+        assert episode is not None
+        spec = session.get(models.SpecVersion, episode.current_spec_id)
+        assert spec is not None
+        stored, unresolved = assets.files(assets.resolve(session, episode, spec.body))
+
+    assert unresolved == []
+    assert sorted(stored) == ["a_hill_dawn", "a_lamp_room", "a_lighthouse_beam", "a_storm_sea"]
+    assert (tmp_path / "data" / stored["a_hill_dawn"].file).is_file()

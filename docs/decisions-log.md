@@ -1216,3 +1216,32 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - **CI:** the uploaded demo video is the one this test made. `make demo-render` still
     runs in the same job, as before.
 - **Reverse:** the wording is in `apps/web/src/lib/episodes.ts` and `lib/workspace.ts`.
+
+## D-041: The owner's priority, and how an episode's pictures are stored
+
+- **Date:** 2026-11-13. **Card:** VFS-26.
+- **The owner's instruction (2026-11-13, in the chat):** skip the paid API key for now and
+  get to a working version that makes first videos. So the picture path of milestone M3
+  (VFS-26, VFS-27, VFS-60, the Assets tab) is built before the two remaining M2 cards,
+  VFS-66 and VFS-68, which stay Ready. VFS-64 stays parked.
+- **Choice for this card:**
+  - **Library assets belong to the channel, an episode's own assets to the episode.** The
+    table is unique on channel and key, so an episode's own key is `<episode id>:<asset
+    id>`: two episodes may both name a picture `a_harbour`. A library picture needs no row
+    of the episode's own.
+  - **The bundled sample pictures are the first library assets**, stored once per channel
+    when its first asset plan runs.
+  - **The manifest has the last word** on where a picture comes from and on its prompt.
+    Where it has no entry, the spec's own asset entry counts.
+  - **`plan.assets` stores the rows.** The render only reads them, so two scene jobs can
+    never race to create one. A render fails as an owner task that names every picture
+    without a file (FR-05).
+  - **Nothing is deleted.** A picture that left the spec keeps its row and its files, and a
+    new file is a new version with the earlier ones kept (FR-06).
+  - **The rights check (FR-08) is a function now and a gate later.** It lists every picture
+    that is not cleared, is blocked, has no row, or is marked as someone else's work.
+    Finish and export, which it blocks, arrive in M4 and M5. The assets route already
+    shows what it would say.
+  - **`GET /episodes/{id}/assets` is not paged.** It lists the pictures of one spec, a
+    handful by the spec's own limits.
+- **Reverse:** `packages/core/assets.py`.

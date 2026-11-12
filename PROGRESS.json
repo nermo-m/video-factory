@@ -2,7 +2,7 @@
   "contract": "progress/1",
   "project": "Video Factory Studio",
   "repo": "video-factory",
-  "updated": "2026-11-12",
+  "updated": "2026-11-13",
   "theme": {
     "bg": "#0B0F1A",
     "primary": "#FF9610",
@@ -345,11 +345,30 @@
       "title": "End to end demo test: idea to rendered video",
       "status": "done",
       "note": "One browser test runs an idea through the real API and worker to a rendered video, and the interface passes the pictures gate, shows the video and says why a step stopped. Merged in pull request #39."
+    },
+    {
+      "id": "VFS-26",
+      "order": 300,
+      "title": "Asset manifest, asset models and rights check",
+      "status": "review",
+      "note": "An episode's pictures are stored assets with versions, a render waits for all of them, and the rights check exists. First card of milestone M3, taken early on the owner's instruction to get to first videos. In review as a pull request."
+    },
+    {
+      "id": "VFS-27",
+      "order": 310,
+      "title": "Image adapter with mock",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-60",
+      "order": 312,
+      "title": "Image creation through the Codex CLI",
+      "status": "ready"
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-66 Planner skills pass their recorded tests through the bridge"
+    "next": "VFS-27 and VFS-60: pictures made through the Codex CLI"
   },
   "checklist": [
     {
@@ -384,7 +403,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1435 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 225 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
+      "value": "1436 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 241 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
