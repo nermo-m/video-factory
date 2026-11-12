@@ -98,6 +98,11 @@ def test_fr29_a_codex_limit_gives_its_reset_time(message: str, resets: datetime)
         "Usage limit reached. You've reached your usage limit. Increase your limits to "
         "continue using codex.",
         "You've hit your session limit",
+        # A reset time that cannot be a time is left out, the limit stays.
+        "You've hit your session limit · resets 13pm",
+        "You've hit your session limit · resets 25:00",
+        "You've hit your weekly limit · resets Feb 31, 9am",
+        "You've hit your weekly limit · resets soon",
     ],
 )
 def test_fr29_a_limit_without_a_reset_time_is_still_a_limit(message: str) -> None:
@@ -129,3 +134,17 @@ def test_the_limit_keeps_the_tools_own_words_for_the_owner() -> None:
 
     assert limit is not None
     assert limit.message == "You've hit your session limit · resets 3pm (Europe/Sofia)"
+
+
+def test_fr29_a_reset_time_on_the_24_hour_clock_is_read_too() -> None:
+    limit = find_limit("You've hit your session limit · resets 15:30", now=NOW)
+
+    assert limit is not None
+    assert limit.retry_at == at(11, 12, 15, 30)
+
+
+def test_fr29_a_date_without_a_time_means_the_start_of_that_day() -> None:
+    limit = find_limit("You've hit your weekly limit · resets Nov 14", now=NOW)
+
+    assert limit is not None
+    assert limit.retry_at == at(11, 14, 0)

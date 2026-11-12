@@ -381,3 +381,36 @@ def test_a_caller_that_sends_less_than_it_announced_is_answered_without_a_long_w
 
     assert status == 403
     assert time.monotonic() - started < 5
+
+
+def test_nfr01_a_failure_inside_the_bridge_is_answered_and_logged_without_its_words(
+    running: Running, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    def broken(self: Bridge) -> dict[str, Any]:
+        raise RuntimeError("words that might quote a prompt")
+
+    monkeypatch.setattr(Bridge, "health", broken)
+    caplog.set_level("INFO")
+
+    status, _, body = running.send("GET", "/health")
+
+    assert status == 500
+    assert body["error"]["code"] == "internal"
+    (failure,) = [record for record in caplog.records if record.message == "bridge failure"]
+    assert failure.__dict__["error"] == "RuntimeError"
+    assert "broken" in failure.__dict__["frames"], "the log says where it happened"
+    assert "might quote a prompt" not in json.dumps(body) + caplog.text
+
+
+def test_a_signed_in_tool_that_prints_an_unreadable_status_is_not_ready() -> None:
+    # Each fake is put in the other tool's place, so each status command is answered in
+    # the other tool's form, which its reader cannot make sense of.
+    studio = Bridge(
+        BridgeConfig(claude_command=(*fake("codex"),), codex_command=(*fake("claude"),)),
+        clock=lambda: NOW,
+    )
+
+    health = studio.health()["tools"]
+
+    assert (health["claude"]["signed_in"], health["claude"]["ready"]) == (False, False)
+    assert (health["codex"]["signed_in"], health["codex"]["ready"]) == (False, False)
