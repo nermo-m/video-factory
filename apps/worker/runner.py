@@ -22,7 +22,7 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from packages.core import queue
+from packages.core import pipeline, queue
 from packages.core.enums import ErrorClass, JobTag
 
 logger = logging.getLogger("apps.worker")
@@ -52,6 +52,7 @@ class Worker:
         maintenance_interval_s: float = queue.HEARTBEAT_INTERVAL_S,
         stale_after_s: float = queue.STALE_AFTER_S,
         heartbeat_file: Path | None = None,
+        critic_enabled: bool = True,
     ) -> None:
         if cpu_workers < 1:
             raise ValueError("cpu_workers must be 1 or more")
@@ -62,6 +63,7 @@ class Worker:
         self._maintenance_interval_s = maintenance_interval_s
         self._stale_after_s = stale_after_s
         self._heartbeat_file = heartbeat_file
+        self._critic_enabled = critic_enabled
         self._active: dict[int, queue.ClaimedJob] = {}
         self._active_lock = threading.Lock()
 
@@ -127,6 +129,8 @@ class Worker:
         try:
             with self._sessions.begin() as session:
                 kept = queue.complete(session, claim, output)
+                if kept and claim.episode_id is not None:
+                    self._move_episode_on(session, claim, ids)
         except SQLAlchemyError:
             # The job stays running, goes stale and is picked up again. Jobs are idempotent.
             logger.exception("could not store the job result", extra=ids)
@@ -135,6 +139,23 @@ class Worker:
             logger.info("job succeeded", extra=ids)
         else:
             logger.warning("job result discarded: the job was cancelled or reassigned", extra=ids)
+
+    def _move_episode_on(
+        self, session: Session, claim: queue.ClaimedJob, ids: dict[str, Any]
+    ) -> None:
+        """Tell the pipeline about the result, in the transaction that stores it.
+
+        When the pipeline cannot move on (for example, the next state needs a spec that is
+        not there), that is rolled back by itself and the job keeps its result. The
+        episode then waits until it is advanced by hand.
+        """
+        try:
+            with session.begin_nested():
+                pipeline.job_succeeded(session, claim.id, critic_enabled=self._critic_enabled)
+        except pipeline.PipelineError as error:
+            logger.warning(
+                "the job succeeded but the episode could not move on: %s", error, extra=ids
+            )
 
     def _fail(
         self,

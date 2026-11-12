@@ -350,11 +350,90 @@
       "title": "Original sample episode and make demo-render",
       "status": "review",
       "note": "The Lighthouse Keeper: original spec, four pictures drawn in code, narration recorded with the Kokoro voice. make demo-render produces a 44 second video in the worker image and checks its format. Rendered in 53 seconds with 4 workers. Waits for a pull request."
+    },
+    {
+      "id": "VFS-18",
+      "order": 200,
+      "title": "Pipeline state machine, gates and stale marking",
+      "status": "review",
+      "note": "The episode state machine: jobs per state, three gates, reject with a comment, re-run with stale marking, and stale scenes after a spec edit. The worker moves an episode on in the transaction that stores a job's result. 44 unit and 40 integration tests. Waits for a pull request."
+    },
+    {
+      "id": "VFS-55",
+      "order": 205,
+      "title": "Provider mode switch and paid API guard",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-19",
+      "order": 210,
+      "title": "LLM adapter with mock and recorded responses",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-56",
+      "order": 212,
+      "title": "Host CLI bridge for Claude Code and Codex",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-57",
+      "order": 214,
+      "title": "Claude CLI and Codex CLI adapters",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-58",
+      "order": 216,
+      "title": "Usage and limits tracker with owner budgets",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-20",
+      "order": 220,
+      "title": "Planner service and skills: brief, research, script",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-21",
+      "order": 230,
+      "title": "Skills: direct, assets, package, revise",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-22",
+      "order": 240,
+      "title": "Episode API: lifecycle, spec versions and diff",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-23",
+      "order": 250,
+      "title": "Board and New episode screens",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-24",
+      "order": 260,
+      "title": "Episode workspace with Plan tab and revise flow",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-59",
+      "order": 264,
+      "title": "Model picker and Usage page",
+      "status": "ready"
+    },
+    {
+      "id": "VFS-25",
+      "order": 270,
+      "title": "End to end demo test: idea to rendered video",
+      "status": "ready"
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "Milestone M2 (pipeline and planning): write docs/plan/M2.md, move the M2 cards from Backlog to Ready, take the lowest Order"
+    "next": "VFS-55 Provider mode switch and paid API guard"
   },
   "checklist": [
     {
@@ -389,7 +468,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "600 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "645 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 84 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -417,6 +496,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "Episodes can move: the pipeline runs from an idea to the plan gate by itself, waits for approval, takes a rejection with a comment, and after an edit makes only the stale scenes again."
+    },
     {
       "date": "2026-11-12",
       "text": "Milestone M1 works end to end on this PC: make demo-render turns the sample spec into a correct 44 second video with voice, music and sound cues inside the worker image, in 53 seconds. It needs no keys, no GPU and no downloads."

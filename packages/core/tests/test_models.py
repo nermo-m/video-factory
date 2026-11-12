@@ -99,6 +99,7 @@ def test_json_documents_use_jsonb() -> None:
     expected = {
         ("channel", "pronunciation"),
         ("channel", "banned_topics"),
+        ("episode", "stale_scenes"),
         ("spec_version", "body"),
         ("asset", "tags"),
         ("job", "input"),

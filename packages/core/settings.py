@@ -35,6 +35,9 @@ class Settings:
     # falls back to bundled sample audio, so a wrong path is not a start-up error.
     kokoro_model_path: str = DEFAULT_KOKORO_MODEL_PATH
     kokoro_voices_path: str = DEFAULT_KOKORO_VOICES_PATH
+    # The critic agent reviews a video before the owner does (section 6.1). When it is off
+    # the pipeline passes the critique state without a job.
+    critic_enabled: bool = True
 
 
 def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
@@ -69,6 +72,10 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         problems.append("COMFYUI_URL must be an http or https address.")
 
+    critic = env.get("CRITIC_ENABLED", "true").strip().lower() or "true"
+    if critic not in {"true", "false"}:
+        problems.append("CRITIC_ENABLED must be true or false.")
+
     if problems:
         raise SettingsError("Invalid settings:\n- " + "\n- ".join(problems))
 
@@ -81,4 +88,5 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         comfyui_url=comfyui_url,
         kokoro_model_path=env.get("KOKORO_MODEL_PATH", "").strip() or DEFAULT_KOKORO_MODEL_PATH,
         kokoro_voices_path=env.get("KOKORO_VOICES_PATH", "").strip() or DEFAULT_KOKORO_VOICES_PATH,
+        critic_enabled=critic == "true",
     )

@@ -104,7 +104,20 @@ def test_settings_have_the_documented_defaults() -> None:
         comfyui_url="http://host.docker.internal:8188",
         kokoro_model_path="/models/kokoro/kokoro.onnx",
         kokoro_voices_path="/models/kokoro/voices.bin",
+        critic_enabled=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("written", "expected"), [("false", False), ("FALSE", False), ("true", True), (" True ", True)]
+)
+def test_the_critic_can_be_switched_off(written: str, expected: bool) -> None:
+    assert load_settings({**BASE_ENV, "CRITIC_ENABLED": written}).critic_enabled is expected
+
+
+def test_a_critic_switch_that_is_neither_true_nor_false_is_refused() -> None:
+    with pytest.raises(SettingsError, match="CRITIC_ENABLED must be true or false"):
+        load_settings({**BASE_ENV, "CRITIC_ENABLED": "maybe"})
 
 
 def test_settings_read_where_the_voice_model_files_are() -> None:

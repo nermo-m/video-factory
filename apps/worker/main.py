@@ -51,6 +51,7 @@ def main() -> int:
         HANDLERS,
         cpu_workers=settings.cpu_workers,
         heartbeat_file=heartbeat_path(),
+        critic_enabled=settings.critic_enabled,
     )
     logger.info(
         "worker started",

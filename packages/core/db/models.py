@@ -90,6 +90,11 @@ class Episode(Base):
     stale_from_state: Mapped[enums.EpisodeState | None] = mapped_column(
         enum_type(enums.EpisodeState)
     )
+    # Scenes an edit of the spec made stale: {"voice": [scene ids], "render": [scene ids]}.
+    # Empty when no scene is stale (section 4.2).
+    stale_scenes: Mapped[dict[str, list[str]]] = mapped_column(
+        JSONB, default=dict, server_default=EMPTY_OBJECT
+    )
     # Points back at spec_version, which points at episode: created after both tables exist.
     current_spec_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(

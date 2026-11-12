@@ -609,3 +609,47 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   first. Watch `export/demo/video.mp4` after `make demo-render`. The wording is in
   `samples/lighthouse_keeper/episode_spec.json`, the pictures in one script.
 - **Reverse:** edit the spec or the script, run `make sample-voice` if narration changed.
+
+## D-025: The pipeline state machine
+
+- **Date:** 2026-11-12. **Card:** VFS-18.
+- **Problem:** Section 4.2 gives four transition rules. It does not say who notices that a
+  state's jobs have all succeeded, how the jobs of one run of a state are told from an
+  earlier run, where stale scenes are kept, or what exactly "visual" and "timing" cover.
+- **Choice:**
+  - **Who moves the episode.** The rules live in `packages/core` (`stages.py`, `stale.py`,
+    `pipeline.py`), so the api and the worker use the same code. The worker calls
+    `pipeline.job_succeeded` in the transaction that stores a job's result. An episode then
+    runs from the idea to the next gate without anyone polling, also with the browser
+    closed. Section 3.2 says "api advances the state machine": the api keeps the owner's
+    actions (advance, approve, reject, re-run, card VFS-22), the automatic step is the
+    worker's. If the pipeline cannot move on, the job still keeps its result and the
+    episode waits for `advance`.
+  - **Runs and stages.** A state has stages (`asset_gen`: images, then clips. `render`:
+    scenes, then join). Every job carries `state`, `stage` and `run` in its input. The
+    current run of a state is its highest run number. No new table.
+  - **One job per scene** for `gen.voice` and `render.scene`, so a single scene can be made
+    again. `gen.image` only for assets whose origin is `generated`, `gen.clip` on the gpu
+    queue only for scenes that ask for a clip. A stage with no job is passed over.
+  - **Gates** follow `direction`, `asset_gen` and `critique`. With the critic switched off
+    (`CRITIC_ENABLED=false`) `critique` has no job and the review gate comes right after
+    the checks.
+  - **Reject** returns by default to the state that produced what was rejected: the plan to
+    `direction`, the assets to `asset_gen`, the video to `render`. It may name an earlier
+    state, never a later one. The comment travels in the new jobs' input.
+  - **Re-run** cancels the jobs of the current state that had not finished, deletes
+    nothing, and sets `stale_from_state` to the first later state that has finished work.
+    The marker moves forward when that state is done again.
+  - **Stale scenes** are stored in a new column, `episode.stale_scenes` (migration 0002).
+    Narration: the scene's text, or the episode's voice settings. Timing: pads, fixed
+    duration, hold, and a scene added, removed or moved. Visual or asset: everything else
+    a scene shows or plays, a transition (both scenes it touches), and seed, theme and
+    format (every scene). `retention_device` is never drawn and marks nothing. Marks are
+    only kept for outputs that exist. An edit only marks: nothing runs until a state is
+    run again.
+  - **`advance`** starts the pipeline from `idea` and otherwise moves on only when the
+    current state has finished. At a gate it is refused.
+- **Checked:** 37 integration tests on real Postgres, grouped by the rule of 4.2 they
+  prove, including two jobs finishing at the same moment. Breaking "all jobs must have
+  succeeded" or the gates on purpose makes them fail.
+- **Reverse:** the rules are tables at the top of `packages/core/stages.py`.

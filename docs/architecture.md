@@ -116,6 +116,27 @@ stateDiagram-v2
 | `export` | `export.pack` | cpu | Export folder |
 | `done` | | | Listed under Finished |
 
+How an episode moves (`packages/core/pipeline.py`, rules of design section 4.2):
+
+- **By itself between gates.** When the worker stores a job's result it tells the
+  pipeline in the same transaction. Once every job of the state's current stage has
+  succeeded, the next stage or the next state is queued. Nothing polls.
+- **Gates.** After `direction`, `asset_gen` and `critique` the episode sets
+  `awaiting_approval` and queues nothing. Approve enters the next state. Reject needs a
+  comment and runs a state again with that comment: by default the state that produced
+  what was rejected (the plan: `direction`, the assets: `asset_gen`, the video: `render`).
+- **Re-run.** Any state the episode has reached can be run again. Jobs that were still
+  waiting are cancelled, nothing is deleted, and `stale_from_state` names the first later
+  state whose finished work is now out of date. The marker moves forward as those states
+  are done again.
+- **Stale scenes.** An edit of the spec after plan approval is compared with the version
+  before it. Changed narration marks voice and render of that scene, a changed visual or
+  asset marks its render, changed timing marks the render of that scene and every later
+  one. The ids are kept in `episode.stale_scenes`, and the voice and render states then
+  make only those scenes again.
+- **Runs.** Every job the pipeline creates carries `state`, `stage` and `run` in its input.
+  A state's current run is its highest run number.
+
 ## Job queue
 
 Jobs live in the `job` table (ADR 2). The worker is one process with `CPU_WORKERS` threads

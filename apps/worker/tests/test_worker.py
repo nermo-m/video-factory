@@ -35,10 +35,12 @@ def running_worker(
     cpu_workers: int = 2,
     heartbeat_file: Path | None = None,
     stale_after_s: float = queue.STALE_AFTER_S,
+    critic_enabled: bool = True,
 ) -> Iterator[Worker]:
     worker = Worker(
         sessions,
         handlers,
+        critic_enabled=critic_enabled,
         cpu_workers=cpu_workers,
         poll_interval_s=0.02,
         maintenance_interval_s=0.05,
