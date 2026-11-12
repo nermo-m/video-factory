@@ -254,14 +254,15 @@
       "id": "VFS-57",
       "order": 214,
       "title": "Claude CLI and Codex CLI adapters",
-      "status": "review",
-      "note": "The adapters of subscription mode: ClaudeCliLLM and CodexCliLLM call the host bridge, a plan call costs nothing, a usage limit makes the job wait until the reset time, and neither adapter can be built in another mode. 57 unit tests through a real bridge with fake tools. In review as a pull request."
+      "status": "done",
+      "note": "The adapters of subscription mode: ClaudeCliLLM and CodexCliLLM call the host bridge, a plan call costs nothing, a usage limit makes the job wait until the reset time, and neither adapter can be built in another mode. 57 unit tests through a real bridge with fake tools. Merged in pull request #28."
     },
     {
       "id": "VFS-58",
       "order": 216,
       "title": "Usage and limits tracker with owner budgets",
-      "status": "ready"
+      "status": "active",
+      "note": "In progress: usage windows, limit events, owner budgets and the provider check."
     },
     {
       "id": "VFS-20",
@@ -319,8 +320,11 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-58 Usage and limits tracker with owner budgets"
+    "status": "active",
+    "id": "VFS-58",
+    "title": "Usage and limits tracker with owner budgets",
+    "started": "2026-11-12T15:25:00Z",
+    "resume": "Branch vfs-58-usage-tracker from main after pull request #28. Plan is in the Started comment on the board card: rules in packages/core/limits.py with tests first, provider_usage rows from record_model_call, the worker gate and limit events, the periodic and on-demand check, then the four /providers endpoints. Verify with: make check, make coverage. Then pull request with auto-merge."
   },
   "checklist": [
     {
