@@ -435,7 +435,7 @@ test.describe("New episode", () => {
     expect(await sidewaysOverflow(page)).toBeLessThanOrEqual(0);
   });
 
-  test("Start sends the idea and the length, then shows the episode on the Board", async ({
+  test("Start sends the idea and the length, then opens the episode", async ({
     page,
   }) => {
     const list = [...SAMPLE_EPISODES];
@@ -452,11 +452,13 @@ test.describe("New episode", () => {
     await dialog(page).getByRole("radio", { name: "60 seconds" }).check();
     await start(page).click();
 
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000050$/);
     await expect(dialog(page)).toBeHidden();
     expect(sent).toEqual([
       { idea: "A clock that only runs when someone is kind", target_duration_s: 60, start: true },
     ]);
+
+    await page.goto("/");
     await expect(
       page
         .getByTestId("group-planning")
@@ -518,7 +520,7 @@ test.describe("New episode", () => {
 
     refuse = false;
     await start(page).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000051$/);
     expect(sent).toHaveLength(2);
   });
 
@@ -561,7 +563,7 @@ test.describe("New episode", () => {
     const busy = dialog(page).getByRole("button", { name: "Starting" });
     await expect(busy).toBeDisabled();
     release();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000052$/);
     expect(posts).toBe(1);
   });
 
@@ -609,7 +611,7 @@ test.describe("New episode", () => {
     expect(outline).not.toBe("none");
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000053$/);
     expect(sent).toEqual([
       { idea: "Typed with the keyboard", target_duration_s: 60, start: true },
     ]);
@@ -637,7 +639,7 @@ test.describe("New episode", () => {
 });
 
 test.describe("UX-03 an episode from idea to the plan gate, through the real API", () => {
-  test("on a 390 px phone: New episode, idea, Start, and the Board asks to approve the plan", async ({
+  test("on a 390 px phone: New episode, idea, Start, and later the Board asks to approve the plan", async ({
     page,
   }) => {
     test.setTimeout(180_000);
@@ -656,7 +658,8 @@ test.describe("UX-03 an episode from idea to the plan gate, through the real API
     expect(response.status()).toBe(201);
     const { id } = (await response.json()) as { id: string };
 
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(new RegExp(`/episodes/${id}$`));
+    await page.goto("/");
     const mine = page.locator(`[data-episode-id="${id}"]:visible`);
     await expect(mine).toBeVisible();
     await expect(mine).toContainText("Approve the plan", { timeout: 150_000 });

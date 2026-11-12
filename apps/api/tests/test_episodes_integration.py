@@ -350,3 +350,58 @@ def test_what_does_not_exist_is_not_found(client: TestClient) -> None:
             404,
             "episode_not_found",
         ), path
+
+
+@pytest.mark.usefixtures("worker")
+def test_the_plan_shows_the_brief_and_how_long_each_scene_is_estimated_to_take(
+    client: TestClient,
+) -> None:
+    episode_id = planned(client)
+
+    answer = client.get(f"/api/v1/episodes/{episode_id}/plan")
+
+    body = answer.json()
+    assert answer.status_code == 200
+    assert set(body["brief"]) >= {"angle", "lesson", "audience", "titles"}
+    spec = client.get(f"/api/v1/episodes/{episode_id}/spec").json()["spec"]
+    assert [scene["id"] for scene in body["scenes"]] == [scene["id"] for scene in spec["scenes"]]
+    assert all(scene["estimated_s"] > 0 and scene["words"] > 0 for scene in body["scenes"])
+    assert body["estimated_total_s"] == pytest.approx(
+        sum(scene["estimated_s"] for scene in body["scenes"]), abs=0.5
+    )
+    assert body["target_duration_s"] == 45
+    assert body["shortest_s"] < 45 < body["longest_s"]
+    assert body["fits"] is True
+
+
+@pytest.mark.usefixtures("worker")
+def test_the_plan_estimate_follows_an_edit_of_the_narration(client: TestClient) -> None:
+    episode_id = planned(client)
+    before = client.get(f"/api/v1/episodes/{episode_id}/plan").json()
+    spec = client.get(f"/api/v1/episodes/{episode_id}/spec").json()["spec"]
+    spec["scenes"][1]["narration"] += " " + " ".join(["more"] * 46)
+
+    assert client.put(f"/api/v1/episodes/{episode_id}/spec", json=spec).status_code == 200
+
+    after = client.get(f"/api/v1/episodes/{episode_id}/plan").json()
+    assert after["scenes"][1]["words"] == before["scenes"][1]["words"] + 46
+    assert after["scenes"][1]["estimated_s"] == pytest.approx(
+        before["scenes"][1]["estimated_s"] + 20, abs=0.11
+    )
+    assert after["fits"] is False
+
+
+def test_before_the_plan_is_written_the_plan_is_empty_and_says_nothing_about_fit(
+    client: TestClient,
+) -> None:
+    created = client.post("/api/v1/episodes", json={"idea": "Not started.", "start": False}).json()
+
+    body = client.get(f"/api/v1/episodes/{created['id']}/plan").json()
+
+    assert (body["brief"], body["scenes"], body["estimated_total_s"], body["fits"]) == (
+        None,
+        [],
+        None,
+        None,
+    )
+    assert client.get(f"/api/v1/episodes/{uuid.uuid4()}/plan").status_code == 404

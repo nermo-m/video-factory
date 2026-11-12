@@ -710,6 +710,80 @@
         "title": "JobStatus",
         "type": "string"
       },
+      "PlanOut": {
+        "description": "What the Plan tab shows beside the spec itself.",
+        "properties": {
+          "brief": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The brief, once it is written.",
+            "title": "Brief"
+          },
+          "estimated_total_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the spec exists.",
+            "title": "Estimated Total S"
+          },
+          "fits": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until the spec exists.",
+            "title": "Fits"
+          },
+          "longest_s": {
+            "description": "The longest estimate that still fits the target.",
+            "title": "Longest S",
+            "type": "number"
+          },
+          "scenes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenePlan"
+            },
+            "title": "Scenes",
+            "type": "array"
+          },
+          "shortest_s": {
+            "description": "The shortest estimate that still fits the target.",
+            "title": "Shortest S",
+            "type": "number"
+          },
+          "target_duration_s": {
+            "title": "Target Duration S",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "brief",
+          "scenes",
+          "estimated_total_s",
+          "target_duration_s",
+          "shortest_s",
+          "longest_s",
+          "fits"
+        ],
+        "title": "PlanOut",
+        "type": "object"
+      },
       "Provider": {
         "description": "Who answered a model call. `demo` is the recorded-response provider.",
         "enum": [
@@ -989,6 +1063,30 @@
           "message"
         ],
         "title": "RevisionOut",
+        "type": "object"
+      },
+      "ScenePlan": {
+        "properties": {
+          "estimated_s": {
+            "description": "Estimated from the words, before the voice exists.",
+            "title": "Estimated S",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "words": {
+            "title": "Words",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "words",
+          "estimated_s"
+        ],
+        "title": "ScenePlan",
         "type": "object"
       },
       "SettingsResponse": {
@@ -1583,6 +1681,69 @@
           }
         },
         "summary": "Pass the gate the episode waits at",
+        "tags": [
+          "episodes"
+        ]
+      }
+    },
+    "/api/v1/episodes/{episode_id}/plan": {
+      "get": {
+        "operationId": "get_episode_plan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode, or what was asked of it, does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "The brief and the estimated length of each scene",
         "tags": [
           "episodes"
         ]

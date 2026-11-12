@@ -1040,3 +1040,46 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     New episode on a 390 px screen, and the Board asks to approve the plan.
 - **Reverse:** the mapping from states to groups, steps and words is one file,
   `apps/web/src/lib/episodes.ts`.
+
+## D-036: Episode workspace and Plan tab
+
+- **Date:** 2026-11-12. **Card:** VFS-24.
+- **Problem:** The Plan tab needs the brief and an estimated length per scene, which no
+  route returned. The card says "inline edit" without saying of what, and the mockups show
+  a storyboard preview that nothing can draw yet.
+- **Choice:**
+  - **New route `GET /episodes/{id}/plan`:** the brief, and for each scene its word count
+    and estimated seconds, the total, and whether it fits the target.
+  - **One estimate for script and plan.** `packages/core/lengths.py` holds the rule the
+    script budget already used: 2.3 words per second, 0.7 seconds of pause per scene. A
+    silent scene counts its declared length and a hold is added. A plan "fits" inside the
+    2 second tolerance widened by 5 percent, because the estimate is not exact. The bar
+    says "about", and the voice decides the real length.
+  - **Inline edit covers the text of a scene:** narration, title, label, sublabel, the
+    on-screen lines of a title or outro scene, and the question it leaves. Pictures,
+    overlays, sounds and timing are changed in words or in the raw JSON. An emptied
+    optional field is left out of the spec.
+  - **Every edit sends the whole spec** to `PUT /spec`, which checks it and stores a new
+    version. What the API refuses is shown problem by problem and the edit stays open.
+  - **Raw JSON replaces the scene cards** while it is on. It is checked as JSON in the
+    browser and against the schema and theme by the API. Below 1024 px it is read only,
+    as section 11.5 says.
+  - **A change in words** is sent to `POST /revise`, followed until the planner answers,
+    and shown as its summary and its changes in plain words ("Scene 1, transition out:
+    smoke becomes cut"). Apply stores it. Discard drops it.
+  - **The pipeline has eight steps** as in the mockups (Brief, Research, Script, Plan,
+    Assets, Voice, Render, Review). The Board strip keeps its seven.
+  - **Gate bar:** Approve plan is the one accent action. Request changes needs a comment.
+    On a phone the bar sticks above the bottom bar. At the assets and review gates it only
+    says what waits, because those screens come later.
+  - **Preview:** a placeholder that says the video appears after Render, shown from
+    1440 px. No storyboard frame is drawn, and the phone has no mini player yet: there is
+    nothing true to show in them before a render exists.
+  - **Assets, Voice, Render and Export tabs** say that they are not built yet and when
+    they arrive.
+  - **Board cards are links now** and Start opens the workspace, as the key flow in 11.5
+    says. This closes two follow-ups of D-035.
+  - **A source address becomes a link only when it is http or https.** It comes from a
+    model's answer.
+- **Reverse:** the wording lives in `apps/web/src/lib/workspace.ts`, the estimate in
+  `packages/core/lengths.py`.

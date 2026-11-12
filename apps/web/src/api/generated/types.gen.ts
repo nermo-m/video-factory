@@ -398,6 +398,54 @@ export type JobOut = {
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
 /**
+ * PlanOut
+ *
+ * What the Plan tab shows beside the spec itself.
+ */
+export type PlanOut = {
+    /**
+     * Brief
+     *
+     * The brief, once it is written.
+     */
+    brief: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Estimated Total S
+     *
+     * Null until the spec exists.
+     */
+    estimated_total_s: number | null;
+    /**
+     * Fits
+     *
+     * Null until the spec exists.
+     */
+    fits: boolean | null;
+    /**
+     * Longest S
+     *
+     * The longest estimate that still fits the target.
+     */
+    longest_s: number;
+    /**
+     * Scenes
+     */
+    scenes: Array<ScenePlan>;
+    /**
+     * Shortest S
+     *
+     * The shortest estimate that still fits the target.
+     */
+    shortest_s: number;
+    /**
+     * Target Duration S
+     */
+    target_duration_s: number;
+};
+
+/**
  * Provider
  *
  * Who answered a model call. `demo` is the recorded-response provider.
@@ -549,6 +597,26 @@ export type RevisionOut = {
      * What the proposal changes, in words.
      */
     summary: string | null;
+};
+
+/**
+ * ScenePlan
+ */
+export type ScenePlan = {
+    /**
+     * Estimated S
+     *
+     * Estimated from the words, before the voice exists.
+     */
+    estimated_s: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Words
+     */
+    words: number;
 };
 
 /**
@@ -917,6 +985,44 @@ export type PostEpisodeApproveResponses = {
 };
 
 export type PostEpisodeApproveResponse = PostEpisodeApproveResponses[keyof PostEpisodeApproveResponses];
+
+export type GetEpisodePlanData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/plan';
+};
+
+export type GetEpisodePlanErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodePlanError = GetEpisodePlanErrors[keyof GetEpisodePlanErrors];
+
+export type GetEpisodePlanResponses = {
+    /**
+     * Successful Response
+     */
+    200: PlanOut;
+};
+
+export type GetEpisodePlanResponse = GetEpisodePlanResponses[keyof GetEpisodePlanResponses];
 
 export type PostEpisodeRejectData = {
     body: RejectRequest;

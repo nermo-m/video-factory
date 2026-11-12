@@ -32,7 +32,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.api.errors import BAD_BODY_RESPONSE, ApiError, ErrorResponse
-from packages.core import pipeline, queue, schemas, specs
+from packages.core import lengths, pipeline, queue, schemas, specs
 from packages.core.db.models import Channel, Episode, Job, SpecVersion
 from packages.core.enums import EpisodeState, JobStatus, JobTag, SpecAuthor
 from packages.core.stages import GATES
@@ -41,6 +41,7 @@ from packages.render.theme import check_capabilities, load_theme
 router = APIRouter(tags=["episodes"])
 
 REVISE_JOB = "plan.revise"
+BRIEF_JOB = "plan.brief"
 DEFAULT_CHANNEL = {"name": "My channel", "voice_id": "bm_george", "theme": "night_scrolls"}
 JOBS_SHOWN = 50
 
@@ -161,6 +162,24 @@ class RevisionOut(BaseModel):
     message: str | None = Field(description="Why it failed, waits, or can no longer be applied.")
 
 
+class ScenePlan(BaseModel):
+    id: str
+    words: int
+    estimated_s: float = Field(description="Estimated from the words, before the voice exists.")
+
+
+class PlanOut(BaseModel):
+    """What the Plan tab shows beside the spec itself."""
+
+    brief: dict[str, Any] | None = Field(description="The brief, once it is written.")
+    scenes: list[ScenePlan]
+    estimated_total_s: float | None = Field(description="Null until the spec exists.")
+    target_duration_s: int
+    shortest_s: float = Field(description="The shortest estimate that still fits the target.")
+    longest_s: float = Field(description="The longest estimate that still fits the target.")
+    fits: bool | None = Field(description="Null until the spec exists.")
+
+
 class ApplyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -181,6 +200,7 @@ class EpisodeService(Protocol):
     def reject(self, episode_id: uuid.UUID, body: RejectRequest) -> EpisodeDetail: ...
     def rerun(self, episode_id: uuid.UUID, state: EpisodeState) -> EpisodeDetail: ...
     def spec(self, episode_id: uuid.UUID) -> SpecOut: ...
+    def plan(self, episode_id: uuid.UUID) -> PlanOut: ...
     def replace_spec(self, episode_id: uuid.UUID, body: dict[str, Any]) -> SpecOut: ...
     def versions(self, episode_id: uuid.UUID) -> SpecVersions: ...
     def diff(self, episode_id: uuid.UUID, from_version: int, to_version: int) -> SpecDiff: ...
@@ -382,6 +402,50 @@ class DatabaseEpisodeService:
         with self._sessions.begin() as session:
             return _spec_out(self._current(session, episode_id))
 
+    def plan(self, episode_id: uuid.UUID) -> PlanOut:
+        with self._sessions.begin() as session:
+            episode = self._episode(session, episode_id)
+            channel = session.get(Channel, episode.channel_id)
+            assert channel is not None  # noqa: S101 - the foreign key guarantees it
+            target = episode.target_duration_s or channel.target_duration_s
+            brief = session.scalar(
+                select(Job.output)
+                .where(
+                    Job.episode_id == episode_id,
+                    Job.type == BRIEF_JOB,
+                    Job.status == JobStatus.SUCCEEDED,
+                )
+                .order_by(Job.finished_at.desc(), Job.created_at.desc())
+                .limit(1)
+            )
+            document = brief.get("document") if isinstance(brief, dict) else None
+            version = specs.current(session, episode_id)
+            body = dict(version.body) if version is not None else None
+        low, high = lengths.accepted_range(target)
+        scenes: list[ScenePlan] = []
+        total: float | None = None
+        if body is not None:
+            speed = float(body.get("voice", {}).get("speed", 1.0))
+            exact = [(scene, lengths.estimate(scene, speed)) for scene in body.get("scenes", [])]
+            scenes = [
+                ScenePlan(
+                    id=str(scene.get("id", "")),
+                    words=lengths.count_words(str(scene.get("narration", ""))),
+                    estimated_s=round(seconds, 1),
+                )
+                for scene, seconds in exact
+            ]
+            total = sum(seconds for _, seconds in exact)
+        return PlanOut(
+            brief=document if isinstance(document, dict) else None,
+            scenes=scenes,
+            estimated_total_s=None if total is None else round(total, 1),
+            target_duration_s=target,
+            shortest_s=round(low, 1),
+            longest_s=round(high, 1),
+            fits=None if total is None else lengths.fits(total, target),
+        )
+
     def _store(
         self, session: Session, episode_id: uuid.UUID, body: dict[str, Any], author: SpecAuthor
     ) -> SpecOut:
@@ -543,7 +607,7 @@ class MemoryEpisodeService:
     def _missing(self, *_: Any) -> Any:
         raise _not_found()
 
-    advance = approve = reject = rerun = spec = replace_spec = _missing
+    advance = approve = reject = rerun = spec = replace_spec = plan = _missing
     versions = diff = revise = revision = apply = _missing
 
 
@@ -637,6 +701,15 @@ def post_episode_rerun(
 @router.get("/episodes/{episode_id}/spec", summary="The current authored spec", responses=NOT_FOUND)
 def get_episode_spec(episode_id: uuid.UUID, request: Request) -> SpecOut:
     return _service(request).spec(episode_id)
+
+
+@router.get(
+    "/episodes/{episode_id}/plan",
+    summary="The brief and the estimated length of each scene",
+    responses=NOT_FOUND,
+)
+def get_episode_plan(episode_id: uuid.UUID, request: Request) -> PlanOut:
+    return _service(request).plan(episode_id)
 
 
 @router.put(

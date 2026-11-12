@@ -27,3 +27,42 @@ function apiMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+/** A request the API answered with an error, or did not answer at all. */
+export class ApiFailure extends Error {
+  constructor(
+    message: string,
+    /** Every single problem, when the API listed them (a spec that is not valid). */
+    readonly problems: string[] = [],
+    readonly status: number | null = null,
+  ) {
+    super(message);
+  }
+}
+
+function problemsOf(error: unknown): string[] {
+  if (typeof error !== "object" || error === null || !("error" in error)) {
+    return [];
+  }
+  const details = (error as { error?: { details?: { problems?: unknown } } }).error?.details;
+  return Array.isArray(details?.problems) ? details.problems.map(String) : [];
+}
+
+/** The data of an answer, or an ApiFailure that says what went wrong. */
+export function unwrap<T>(
+  result: { data?: T; error?: unknown; response?: Response },
+  fallback: string,
+): T {
+  if (result.data !== undefined) {
+    return result.data;
+  }
+  throw new ApiFailure(
+    failureMessage(result, fallback),
+    problemsOf(result.error),
+    result.response?.status ?? null,
+  );
+}
+
+export function failureOf(error: unknown): ApiFailure {
+  return error instanceof ApiFailure ? error : new ApiFailure(API_NOT_ANSWERING);
+}

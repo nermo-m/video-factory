@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { EpisodeOut } from "@/api/client";
 import {
   type StatusTone,
@@ -43,20 +45,22 @@ function CheckIcon() {
 /**
  * One episode on the Board, as in the mockups: title, the progress strip of the pipeline,
  * and one line that says what it is doing or what it needs. A card that waits for the
- * owner has the accent border. Cards are not draggable: only the pipeline moves them.
+ * owner has the accent border. The card opens the episode's workspace. Cards are not
+ * draggable: only the pipeline moves them.
  */
 export function EpisodeCard({ episode }: { episode: EpisodeOut }) {
   const progress = progressOf(episode);
   const status = statusOf(episode);
 
   return (
-    <article
-      data-episode-id={episode.id}
-      className={cn(
-        "flex min-w-0 flex-col gap-2.5 rounded-lg border bg-card p-3.5",
-        status.tone === "waiting" && "border-primary",
-      )}
-    >
+    <article data-episode-id={episode.id} className="min-w-0">
+      <Link
+        href={`/episodes/${episode.id}`}
+        className={cn(
+          "flex min-w-0 flex-col gap-2.5 rounded-lg border bg-card p-3.5 hover:bg-raised",
+          status.tone === "waiting" && "border-primary",
+        )}
+      >
       <div className="flex items-start justify-between gap-2">
         <h3 className="line-clamp-2 min-w-0 font-sans text-sm leading-snug font-semibold wrap-anywhere">
           {displayTitle(episode)}
@@ -76,6 +80,7 @@ export function EpisodeCard({ episode }: { episode: EpisodeOut }) {
         {status.tone === "finished" && <CheckIcon />}
         {status.label}
       </p>
+      </Link>
     </article>
   );
 }
