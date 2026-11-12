@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthErrors, GetHealthResponses } from './types.gen';
+import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -22,3 +22,20 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * Liveness, database, storage, ComfyUI reachability and demo mode
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, GetHealthErrors, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, GetHealthErrors, ThrowOnError>({ url: '/api/v1/health', ...options });
+
+/**
+ * Non-secret settings and which secrets are present
+ */
+export const getSettings = <ThrowOnError extends boolean = false>(options?: Options<GetSettingsData, ThrowOnError>): RequestResult<GetSettingsResponses, GetSettingsErrors, ThrowOnError> => (options?.client ?? client).get<GetSettingsResponses, GetSettingsErrors, ThrowOnError>({ url: '/api/v1/settings', ...options });
+
+/**
+ * Turn the "Use paid APIs" switch on or off
+ */
+export const putSettings = <ThrowOnError extends boolean = false>(options: Options<PutSettingsData, ThrowOnError>): RequestResult<PutSettingsResponses, PutSettingsErrors, ThrowOnError> => (options.client ?? client).put<PutSettingsResponses, PutSettingsErrors, ThrowOnError>({
+    url: '/api/v1/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});

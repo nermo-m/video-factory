@@ -35,10 +35,25 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from packages.core import enums
 from packages.core.db.base import Base, enum_check, enum_type, not_negative
+from packages.core.providers import billing_of
 
 EMPTY_OBJECT = text("'{}'::jsonb")
 EMPTY_LIST = text("'[]'::jsonb")
 ZERO = Decimal("0")
+
+
+def _billing_checks() -> tuple[CheckConstraint, CheckConstraint]:
+    """The billing type is the one of the provider, and only api calls cost money (FR-29)."""
+    pairs = []
+    for billing in enums.Billing:
+        providers = ", ".join(
+            f"'{provider.value}'" for provider in enums.Provider if billing_of(provider) is billing
+        )
+        pairs.append(f"(billing = '{billing.value}') = (provider IN ({providers}))")
+    return (
+        CheckConstraint(" AND ".join(pairs), name="billing_matches_provider"),
+        CheckConstraint("billing = 'api' OR cost_usd = 0", name="only_api_calls_cost"),
+    )
 
 
 def _fk(target: str, *, nullable: bool = False, index: bool = True) -> Mapped[Any]:
@@ -322,6 +337,7 @@ class ProviderUsage(Base):
         not_negative("output_tokens"),
         not_negative("images"),
         not_negative("cost_usd"),
+        *_billing_checks(),
     )
 
     provider: Mapped[enums.Provider] = mapped_column(enum_type(enums.Provider))
@@ -369,6 +385,7 @@ class ModelCall(Base):
         not_negative("output_tokens"),
         not_negative("cost_usd"),
         not_negative("latency_ms"),
+        *_billing_checks(),
     )
 
     job_id: Mapped[uuid.UUID | None] = _fk("job.id", nullable=True)

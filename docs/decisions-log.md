@@ -653,3 +653,39 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   prove, including two jobs finishing at the same moment. Breaking "all jobs must have
   succeeded" or the gates on purpose makes them fail.
 - **Reverse:** the rules are tables at the top of `packages/core/stages.py`.
+
+## D-026: Provider mode and the paid API guard
+
+- **Date:** 2026-11-12. **Card:** VFS-55.
+- **Problem:** Section 3.4 says paid APIs need the mode `api` and a Settings switch
+  together and that the mode never changes by itself. It does not say where the switch is
+  kept, how "refuse to start" is made impossible to forget, or how a test can show that
+  "no code path switches mode automatically".
+- **Choice:**
+  - **Tables in one place.** `packages/core/providers.py` holds who answers in each mode
+    and the billing type of each provider. There is no function that maps one mode to
+    another, so there is nothing a fallback could call.
+  - **The switch** is the row `use_paid_apis` in the `setting` table. Only a stored `true`
+    counts. `GET /settings` shows the mode, the switch, whether paid APIs are really on
+    and why not, and which secret variables are set, never their values. `PUT /settings`
+    changes the switch and nothing else: a body that names the mode is rejected.
+  - **The refusal is a constructor.** `PaidApiAdapter` checks mode, switch and key before
+    an adapter exists. The key is held in a closure, not in an attribute, so printing the
+    adapter or its attributes cannot leak it. Adapters are built per job, so turning the
+    switch off takes effect with the next job.
+  - **Scans instead of promises.** `tests/infra/test_provider_mode.py` reads the source: no
+    code outside `settings.py` assigns or chooses a provider mode, no code writes the
+    process environment, the variable is read in one file, settings are frozen, and a
+    module that imports the `anthropic` or `openai` SDK must build on `PaidApiAdapter`.
+    The scans also bind code that is written later.
+  - **Billing in the database.** Migration 0003 adds two CHECK constraints to `model_call`
+    and `provider_usage`: the billing type must be the provider's, and only api calls may
+    carry a cost.
+  - **No paid SDK is installed.** The Anthropic and OpenAI adapters themselves come with
+    the cards that need them. This card makes sure they cannot be written without the
+    guard.
+- **Found on the way:** the contract test that fuzzes the API showed two gaps in the API
+  skeleton. A wrong method on an address with two routes named only the first route's
+  methods in the `Allow` header, and an unreadable request body answered 400, which was
+  not documented. Both are fixed with tests.
+- **Reverse:** the tables are at the top of `packages/core/providers.py`.

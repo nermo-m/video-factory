@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
 from apps.api.openapi import OPENAPI_PATH, render_openapi
+from apps.api.settings import MemorySettingStore
 from packages.core.settings import Settings
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -24,7 +25,11 @@ def make_app() -> FastAPI:
         return Check(status=CheckStatus.OK)
 
     settings = Settings(database_url="postgresql+psycopg://vfs:not-used@db:5432/vfs")
-    return create_app(settings, checks=HealthChecks(database=ok, storage=ok, comfyui=ok))
+    return create_app(
+        settings,
+        checks=HealthChecks(database=ok, storage=ok, comfyui=ok),
+        setting_store=MemorySettingStore(),
+    )
 
 
 def test_committed_openapi_file_is_current() -> None:

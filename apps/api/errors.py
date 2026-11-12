@@ -9,6 +9,7 @@ Messages are written for the owner: what happened and what to do next. Internal 
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -74,15 +75,41 @@ def error_response(
     return JSONResponse(body.model_dump(), status_code=status_code, headers=headers)
 
 
+#: For operations that take a body: a body that cannot be read at all, for example bytes
+#: that are not text. A readable body with wrong fields is a 422.
+BAD_BODY_RESPONSE: dict[int | str, dict[str, Any]] = {
+    400: {"model": ErrorResponse, "description": "The request body could not be read."},
+}
+
+
+def _allowed_methods(request: Request) -> list[str]:
+    """Every method the API documents for the requested address.
+
+    Two routes can share an address (GET and PUT /settings). Starlette's own answer names
+    only the methods of the first one it finds, so the list is taken from the OpenAPI
+    document, which is what clients are told. Empty for an address that is not in it.
+    """
+    for template, operations in request.app.openapi()["paths"].items():
+        pattern = re.sub(r"\\\{[^/]+?\\\}", "[^/]+", re.escape(template))
+        if re.fullmatch(pattern, request.url.path):
+            return sorted(method.upper() for method in operations)
+    return []
+
+
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def handle_api_error(_request: Request, error: ApiError) -> JSONResponse:
         return error_response(error.status_code, error.code, error.message, error.details)
 
     @app.exception_handler(StarletteHTTPException)
-    async def handle_http_error(_request: Request, error: StarletteHTTPException) -> JSONResponse:
+    async def handle_http_error(request: Request, error: StarletteHTTPException) -> JSONResponse:
         code, message = _HTTP_CODES.get(error.status_code, ("http_error", "The request failed."))
         headers = dict(error.headers) if error.headers else None
+        if error.status_code == 405 and (allowed := _allowed_methods(request)):
+            kept = {
+                name: value for name, value in (headers or {}).items() if name.lower() != "allow"
+            }
+            headers = {**kept, "allow": ", ".join(allowed)}
         return error_response(error.status_code, code, message, headers=headers)
 
     @app.exception_handler(RequestValidationError)

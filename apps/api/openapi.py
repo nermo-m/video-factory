@@ -13,6 +13,7 @@ from pathlib import Path
 
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
+from apps.api.settings import MemorySettingStore
 from packages.core.settings import Settings
 
 OPENAPI_PATH = Path(__file__).resolve().parent / "openapi.json"
@@ -27,7 +28,11 @@ def render_openapi() -> str:
     # The document depends only on the routes, so placeholder settings and checks are enough
     # and nothing is contacted.
     settings = Settings(database_url="postgresql+psycopg://unused:unused@unused/unused")
-    app = create_app(settings, checks=HealthChecks(database=unused, storage=unused, comfyui=unused))
+    app = create_app(
+        settings,
+        checks=HealthChecks(database=unused, storage=unused, comfyui=unused),
+        setting_store=MemorySettingStore(),
+    )
     return json.dumps(app.openapi(), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 

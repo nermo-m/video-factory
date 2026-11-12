@@ -85,6 +85,54 @@ export type HealthResponse = {
  */
 export type HealthStatus = 'ok' | 'unavailable';
 
+/**
+ * SettingsResponse
+ */
+export type SettingsResponse = {
+    /**
+     * Paid Apis Active
+     *
+     * True only when the mode is api and the switch is on.
+     */
+    paid_apis_active: boolean;
+    /**
+     * Paid Apis Message
+     *
+     * Why paid APIs are off, in plain words. Null when they are on.
+     */
+    paid_apis_message: string | null;
+    /**
+     * Provider Mode
+     *
+     * demo, subscription or api. Set by PROVIDER_MODE at start-up, read-only.
+     */
+    provider_mode: string;
+    /**
+     * Secrets
+     *
+     * Which secret environment variables are set. Never their values.
+     */
+    secrets: {
+        [key: string]: boolean;
+    };
+    /**
+     * Use Paid Apis
+     *
+     * The owner's "Use paid APIs" switch.
+     */
+    use_paid_apis: boolean;
+};
+
+/**
+ * SettingsUpdate
+ */
+export type SettingsUpdate = {
+    /**
+     * Use Paid Apis
+     */
+    use_paid_apis: boolean;
+};
+
 export type GetHealthData = {
     body?: never;
     path?: never;
@@ -117,3 +165,65 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type GetSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/settings';
+};
+
+export type GetSettingsErrors = {
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetSettingsError = GetSettingsErrors[keyof GetSettingsErrors];
+
+export type GetSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SettingsResponse;
+};
+
+export type GetSettingsResponse = GetSettingsResponses[keyof GetSettingsResponses];
+
+export type PutSettingsData = {
+    body: SettingsUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/settings';
+};
+
+export type PutSettingsErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PutSettingsError = PutSettingsErrors[keyof PutSettingsErrors];
+
+export type PutSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SettingsResponse;
+};
+
+export type PutSettingsResponse = PutSettingsResponses[keyof PutSettingsResponses];

@@ -181,11 +181,22 @@ and there is no fallback to a paid service.
 
 Everything in `demo` mode works with no keys, no GPU and no accounts. CI runs in it.
 
+Paid APIs need two things together: `PROVIDER_MODE=api` and the owner's "Use paid APIs"
+switch, which is kept in the `setting` table and changed with `PUT /settings`. Every paid
+adapter builds on `PaidApiAdapter` (`packages/adapters/paid.py`), whose constructor
+refuses without both and says which is missing. A paid adapter that was not switched on
+does not exist, so it cannot call anything. Each model call is stored with its billing
+type (`demo`, `plan` or `api`), and the database refuses a record whose billing type does
+not match its provider, or a plan or demo call that carries a cost.
+
 ## Where the rules are enforced
 
 | Rule | Enforced by |
 | --- | --- |
 | Services bind to 127.0.0.1 (NFR-02) | `docker-compose.yml`, checked by `tests/infra/test_compose.py` |
+| The provider mode never changes by itself (FR-28) | Frozen settings, and source scans in `tests/infra/test_provider_mode.py`: no code sets the mode or writes the environment |
+| No paid API without mode and switch (FR-28) | `PaidApiAdapter`, and a scan that fails when a module imports a paid SDK without it |
+| Billing type on every model call (FR-29) | CHECK constraints on `model_call` and `provider_usage` (migration 0003) |
 | No secrets in the repository (rule 1) | gitleaks pre-commit hook and the `secret-scan` CI job |
 | No secrets in logs or responses (NFR-01) | `packages/core/logs.py` redaction, generic 500 responses, tests |
 | Every asset has a licence row (rule 2) | `scripts/check_assets.py`, pre-commit hook and the `asset-licence` CI job |

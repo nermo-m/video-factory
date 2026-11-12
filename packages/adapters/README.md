@@ -8,6 +8,15 @@ Rule: this is the only place a vendor SDK may be imported.
 So far: `storage/` (local folder, the v1 storage), `clip/probe.py` (is ComfyUI reachable)
 and `tts/` (the voice).
 
+## Provider mode (`factory.py`, `paid.py`)
+
+`Adapters` in `factory.py` is built for each job from the settings and the owner's "Use
+paid APIs" switch. It picks by `PROVIDER_MODE` and never falls back from one mode to
+another. Every adapter that calls a paid API builds on `PaidApiAdapter` in `paid.py`:
+it refuses to start unless the mode is `api` and the switch is on, and it keeps the key
+out of anything that could be printed. A test fails when a module imports a paid SDK
+without it.
+
 ## Voice (`tts/`)
 
 `create_tts_adapter` returns the Kokoro voice when the model files from `make models` are

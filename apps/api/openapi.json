@@ -131,6 +131,68 @@
         ],
         "title": "HealthStatus",
         "type": "string"
+      },
+      "SettingsResponse": {
+        "properties": {
+          "paid_apis_active": {
+            "description": "True only when the mode is api and the switch is on.",
+            "title": "Paid Apis Active",
+            "type": "boolean"
+          },
+          "paid_apis_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why paid APIs are off, in plain words. Null when they are on.",
+            "title": "Paid Apis Message"
+          },
+          "provider_mode": {
+            "description": "demo, subscription or api. Set by PROVIDER_MODE at start-up, read-only.",
+            "title": "Provider Mode",
+            "type": "string"
+          },
+          "secrets": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "Which secret environment variables are set. Never their values.",
+            "title": "Secrets",
+            "type": "object"
+          },
+          "use_paid_apis": {
+            "description": "The owner's \"Use paid APIs\" switch.",
+            "title": "Use Paid Apis",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "provider_mode",
+          "use_paid_apis",
+          "paid_apis_active",
+          "paid_apis_message",
+          "secrets"
+        ],
+        "title": "SettingsResponse",
+        "type": "object"
+      },
+      "SettingsUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "use_paid_apis": {
+            "title": "Use Paid Apis",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "use_paid_apis"
+        ],
+        "title": "SettingsUpdate",
+        "type": "object"
       }
     }
   },
@@ -189,6 +251,106 @@
         "summary": "Liveness, database, storage, ComfyUI reachability and demo mode",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "operationId": "get_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Non-secret settings and which secrets are present",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "operationId": "put_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request body could not be read."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Turn the \"Use paid APIs\" switch on or off",
+        "tags": [
+          "settings"
         ]
       }
     }

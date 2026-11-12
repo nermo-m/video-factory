@@ -356,13 +356,14 @@
       "order": 200,
       "title": "Pipeline state machine, gates and stale marking",
       "status": "review",
-      "note": "The episode state machine: jobs per state, three gates, reject with a comment, re-run with stale marking, and stale scenes after a spec edit. The worker moves an episode on in the transaction that stores a job's result. 44 unit and 40 integration tests. Waits for a pull request."
+      "note": "The episode state machine: jobs per state, three gates, reject with a comment, re-run with stale marking, and stale scenes after a spec edit. The worker moves an episode on in the transaction that stores a job's result. 45 unit and 40 integration tests. Waits for a pull request."
     },
     {
       "id": "VFS-55",
       "order": 205,
       "title": "Provider mode switch and paid API guard",
-      "status": "ready"
+      "status": "review",
+      "note": "Paid APIs need the mode and the owner's switch together, and a paid adapter cannot even be built without both. Source scans prove nothing can change the mode, and the database ties the billing type to the provider. 48 unit and 31 integration tests. Waits for a pull request."
     },
     {
       "id": "VFS-19",
@@ -433,7 +434,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-55 Provider mode switch and paid API guard"
+    "next": "VFS-19 LLM adapter with mock and recorded responses"
   },
   "checklist": [
     {
@@ -468,7 +469,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "645 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 84 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "693 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 115 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -496,6 +497,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The paid API guard is in place before any paid adapter exists: no mode switch, no fallback, and a paid call cannot be recorded as anything else."
+    },
     {
       "date": "2026-11-12",
       "text": "Episodes can move: the pipeline runs from an idea to the plan gate by itself, waits for approval, takes a rejection with a comment, and after an edit makes only the stale scenes again."

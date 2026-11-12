@@ -125,3 +125,21 @@ def test_nfr01_unhandled_errors_are_generic_and_leak_nothing() -> None:
     assert SECRET not in response.text
     assert "RuntimeError" not in response.text
     assert "postgresql" not in response.text
+
+
+def test_a_wrong_method_on_an_address_with_an_id_names_every_method_it_supports() -> None:
+    app = make_app()
+
+    @app.get(f"{API_PREFIX}/test/things/{{thing_id}}")
+    def read_thing(thing_id: str) -> dict[str, str]:
+        return {"id": thing_id}
+
+    @app.put(f"{API_PREFIX}/test/things/{{thing_id}}")
+    def replace_thing(thing_id: str) -> dict[str, str]:
+        return {"id": thing_id}
+
+    response = TestClient(app).delete(f"{API_PREFIX}/test/things/t-42")
+
+    assert response.status_code == 405
+    assert response.headers["allow"] == "GET, PUT"
+    assert response.json()["error"]["code"] == "method_not_allowed"
