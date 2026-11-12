@@ -316,8 +316,8 @@
       "id": "VFS-59",
       "order": 264,
       "title": "Model picker and Usage page",
-      "status": "active",
-      "note": "The model picker with status and usage for each option, and the Usage page with budgets and Check limits now."
+      "status": "review",
+      "note": "The model picker with status and usage for each option, the Usage page with budgets, Check limits now and the Use paid APIs switch, and a warning in the status strip. In review as a pull request."
     },
     {
       "id": "VFS-25",
@@ -327,11 +327,8 @@
     }
   ],
   "now_building": {
-    "status": "active",
-    "id": "VFS-59",
-    "title": "Model picker and Usage page",
-    "started": "2026-11-12T21:10:00Z",
-    "resume": "Branch vfs-59-model-picker-usage. Next: browser tests in apps/web/e2e/usage.spec.ts, then apps/web/src/components/providers and the page at /settings/usage. Verify with make e2e, then make check."
+    "status": "idle",
+    "next": "VFS-25 End to end demo test: idea to rendered video"
   },
   "checklist": [
     {
@@ -366,7 +363,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1381 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 198 integration (Python), 19 Node, 117 browser tests with axe and screenshots"
+      "value": "1381 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 198 integration (Python), 19 Node, 146 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -394,6 +391,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The Usage page shows what each provider used in the last 5 hours and 7 days against your budget, checks limits on demand, and the status strip warns on every screen when a provider is near budget, paused or limited."
+    },
     {
       "date": "2026-11-12",
       "text": "An idea becomes an approved plan in the browser: type it, read the plan, ask for a change in words, apply it, approve. Tested on a 390 px screen through the real API and worker."

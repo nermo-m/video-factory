@@ -65,6 +65,19 @@ export const GpuOffline: Story = {
   },
 };
 
+export const ProviderNearBudget: Story = {
+  args: { providerWarning: { label: "Claude plan near budget", severe: false } },
+};
+
+export const ProviderLimited: Story = {
+  args: { providerWarning: { label: "ChatGPT plan limited", severe: true } },
+};
+
+export const ProviderLimitedOnPhone: Story = {
+  args: { runningJobs: 2, waitingForOwner: 2, providerWarning: { label: "ChatGPT plan limited", severe: true } },
+  globals: { viewport: { value: "phone", isRotated: false } },
+};
+
 export const Loading: Story = { args: { state: { kind: "loading" } } };
 
 export const ApiUnreachable: Story = { args: { state: { kind: "unreachable" } } };

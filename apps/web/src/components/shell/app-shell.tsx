@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { EpisodesProvider } from "@/components/episodes/episodes-provider";
+import { ProvidersProvider } from "@/components/providers/providers-provider";
 
 import { BottomNav, SideNav } from "./main-nav";
 import { StatusStrip } from "./status-strip";
@@ -11,6 +12,7 @@ import { StatusStrip } from "./status-strip";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
+    <ProvidersProvider>
     <EpisodesProvider>
       <div className="flex min-h-dvh flex-col">
         <a
@@ -30,5 +32,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         <BottomNav />
       </div>
     </EpisodesProvider>
+    </ProvidersProvider>
   );
 }
