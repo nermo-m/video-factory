@@ -5,6 +5,9 @@ FROM python:3.12-slim-bookworm AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
+# espeak-ng turns narration text into phonemes for the Kokoro voice. It is GPL-3.0, so it
+# is installed as a separate program and run as one, never imported as a library.
+RUN apt-get update     && apt-get install --yes --no-install-recommends "espeak-ng=1.51*"     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 FROM base AS deps
@@ -23,17 +26,22 @@ FROM deps AS test
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 WORKDIR /src
-ENV PYTHONPATH=/src
+# The voice tests (make voice-test) find the model files in the mounted models volume.
+ENV PYTHONPATH=/src \
+    KOKORO_MODEL_PATH=/models/kokoro/kokoro.onnx \
+    KOKORO_VOICES_PATH=/models/kokoro/voices.bin
 CMD ["python", "-m", "pytest", "-m", "render", "-p", "no:cacheprovider"]
 
 FROM base AS runtime
 RUN useradd --system --uid 10001 --create-home app \
-    && mkdir -p /data \
-    && chown app:app /data
+    && mkdir -p /data /models \
+    && chown app:app /data /models
 COPY --from=deps /opt/venv /opt/venv
 COPY apps/__init__.py apps/__init__.py
 COPY apps/worker apps/worker
 COPY packages packages
 COPY schemas schemas
+# `make models` runs this inside the container to fill the models volume.
+COPY scripts/__init__.py scripts/download_models.py scripts/
 USER app
 CMD ["python", "-m", "apps.worker"]

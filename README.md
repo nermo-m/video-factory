@@ -70,6 +70,8 @@ make up           # create .env if missing, build, start, wait until all four se
 make ps           # web on 127.0.0.1:3000, api on 127.0.0.1:8000, db on 127.0.0.1:5433
 curl http://127.0.0.1:8000/api/v1/health   # database, storage, ComfyUI, demo mode
 make noop-job     # send one no-op job through the queue and wait for the worker
+make models       # download the Kokoro voice model into the models volume (354 MB, once)
+make voice-test   # run the real voice inside the worker image (needs make models)
 make e2e          # browser tests (Playwright and axe) in the pinned Linux image
 make down         # stop (data volumes are kept)
 ```

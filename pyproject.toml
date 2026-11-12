@@ -25,8 +25,10 @@ api = [
 ]
 worker = [
     { include-group = "core" },
+    # The Kokoro voice model runs on ONNX Runtime (packages/adapters/tts).
     # The render engine: frames are drawn with Pillow and NumPy.
     "numpy==2.5.4",
+    "onnxruntime==1.31.1",
     "pillow==13.0.0",
 ]
 dev = [
@@ -78,6 +80,11 @@ select = [
 # Migrations spell out constraint SQL in full. Wrapping those strings would make them
 # harder to compare with the database, so the line length rule is off for them.
 "packages/core/db/migrations/versions/*" = ["E501"]
+# The voice adapter works with phonemes, which are written in the International Phonetic
+# Alphabet, and with typographic punctuation in narration. Those characters are the data,
+# so the "looks like another character" rule is off for these files.
+"packages/adapters/tts/*" = ["RUF001"]
+"packages/adapters/tests/test_tts_*" = ["S101", "RUF001"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -86,6 +93,12 @@ warn_unreachable = true
 explicit_package_bases = true
 mypy_path = "."
 files = ["apps/api", "apps/worker", "packages", "scripts", "tests", "conftest.py"]
+
+[[tool.mypy.overrides]]
+# ONNX Runtime ships no type information. It is imported in one place, the Kokoro voice
+# adapter, behind a typed Protocol.
+module = ["onnxruntime"]
+ignore_missing_imports = true
 
 [tool.coverage.run]
 # NFR-04: 80 percent line coverage on apps/api, apps/worker and packages/.
@@ -107,10 +120,11 @@ exclude_also = [
 
 [tool.pytest.ini_options]
 minversion = "9.0"
-addopts = "-ra --strict-markers --strict-config -m \"not integration and not render\""
+addopts = "-ra --strict-markers --strict-config -m \"not integration and not render and not voice\""
 markers = [
     "integration: needs a real Postgres. Run with make test-integration",
     "render: golden-frame and audio tests that run inside the worker image",
+    "voice: the real Kokoro voice. Needs the model files. Run with make voice-test",
 ]
 pythonpath = ["."]
 testpaths = ["apps", "packages", "scripts", "tests"]

@@ -15,6 +15,8 @@ from packages.core.logs import LEVELS
 
 PROVIDER_MODES = ("demo", "subscription", "api")
 DEFAULT_COMFYUI_URL = "http://host.docker.internal:8188"
+DEFAULT_KOKORO_MODEL_PATH = "/models/kokoro/kokoro.onnx"
+DEFAULT_KOKORO_VOICES_PATH = "/models/kokoro/voices.bin"
 
 
 class SettingsError(Exception):
@@ -29,6 +31,10 @@ class Settings:
     cpu_workers: int = 2
     log_level: str = "info"
     comfyui_url: str = DEFAULT_COMFYUI_URL
+    # The voice model files from `make models`. When they are missing the voice adapter
+    # falls back to bundled sample audio, so a wrong path is not a start-up error.
+    kokoro_model_path: str = DEFAULT_KOKORO_MODEL_PATH
+    kokoro_voices_path: str = DEFAULT_KOKORO_VOICES_PATH
 
 
 def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
@@ -73,4 +79,6 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         cpu_workers=cpu_workers,
         log_level=log_level,
         comfyui_url=comfyui_url,
+        kokoro_model_path=env.get("KOKORO_MODEL_PATH", "").strip() or DEFAULT_KOKORO_MODEL_PATH,
+        kokoro_voices_path=env.get("KOKORO_VOICES_PATH", "").strip() or DEFAULT_KOKORO_VOICES_PATH,
     )

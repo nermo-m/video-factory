@@ -440,3 +440,47 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   episode is 1350 frames, so drawing is well inside the RN-11 budget before encoding.
 - **Reverse:** The constants sit at the top of `compositor.py`, `primitives.py` and
   `text.py`. After a visual change run `make render-golden-update` and review the frames.
+
+## D-021: The voice adapter
+
+- **Date:** 2026-11-12. **Card:** VFS-14.
+- **Problem:** The design names Kokoro but not a library, says word timings are estimated
+  per sentence without saying where a sentence's audio time comes from when a scene is
+  spoken as one passage, and says the twin "returns bundled sample audio" without saying
+  for which text.
+- **Choice:**
+  - **Library.** The `kokoro-onnx` package needs GPL-3.0 packages, which the build rules do
+    not allow. The adapter runs the model with ONNX Runtime directly and starts the
+    `espeak-ng` program as a separate process for phonemes. Full reasoning in
+    [ADR 7](adr/0007-kokoro-without-gpl-dependencies.md).
+  - **Model files.** `kokoro-v1.0.onnx` (326 MB) and `voices-v1.0.bin` (28 MB) from the
+    kokoro-onnx release page, pinned by SHA-256 in `scripts/download_models.py`.
+    `make models` downloads them inside the worker container into the named volume
+    `models`, because decision D9 keeps data in named volumes and a guard test enforces
+    it. They are never committed.
+  - **Checked against the real model** (build rule 10): inputs `tokens`, `style` and
+    `speed`, audio out at 24 kHz, no timestamps. 7.7 seconds of speech take about 4 seconds
+    on the owner's CPU. The same request gives byte-identical audio.
+  - **Word timings.** The pauses in the audio are measured (quiet for at least 80 ms).
+    First every punctuation mark is matched to a pause, longest pauses first. If the audio
+    has too few pauses, or the match would make a phrase 2.5 times faster or slower than
+    the passage, only sentence ends are matched. If that fails too, the whole passage is
+    shared by letter count with extra weight after punctuation. On the real voice the first
+    attempt succeeded on every test narration and word times met every measured pause.
+  - **One timing per whitespace-separated word**, with the word as written, because the
+    resolver counts words that way and refuses a mismatch.
+  - **Pronunciation dictionary.** Whole words, any case, phonemes in the model's alphabet.
+    An inflected form ("Nermin's") needs its own entry. A dictionary with characters the
+    model does not know is refused before anything is synthesised, naming the word.
+  - **The twin.** `SampleVoice` returns a recording made earlier with the real voice, found
+    by a key of text, voice, speed and the dictionary words used. Narration with no
+    recording is refused with the instruction to run `make models`: a silent or wrong
+    voice would be worse than a clear error. The recordings for the sample episode are
+    made in VFS-17.
+  - **Live tests.** `make voice-test` runs the real voice inside the worker image. It is
+    not a CI job: it needs the 354 MB download on every run, and the design puts real
+    providers at the "Live" test level. CI covers the adapter with a stand-in model.
+  - **Voices.** English only (D5): names starting `af_`, `am_`, `bf_`, `bm_`. British
+    voices are phonemised as British English.
+- **Reverse:** The adapter is behind `TTSAdapter`. Another engine, or forced alignment for
+  timings, replaces one module and keeps the `Narration` it returns.

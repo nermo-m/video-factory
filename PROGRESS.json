@@ -184,7 +184,8 @@
       "id": "VFS-14",
       "order": 140,
       "title": "Kokoro voice adapter with pronunciation and word timings",
-      "status": "ready"
+      "status": "review",
+      "note": "Kokoro voice on ONNX Runtime with espeak-ng as a separate program, pronunciation dictionary, word timings from measured pauses, bundled-sample twin, make models. 92 unit tests and 5 tests on the real model. Waits for a pull request."
     },
     {
       "id": "VFS-15",
@@ -207,7 +208,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-14 Kokoro voice adapter with pronunciation and word timings"
+    "next": "VFS-15 Audio mix: cues, music bed, ducking, loudness"
   },
   "checklist": [
     {
@@ -242,7 +243,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "391 unit, 14 golden-frame and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "485 unit, 14 golden-frame, 5 real-voice and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -266,10 +267,14 @@
     },
     {
       "label": "Architecture records",
-      "value": "docs/architecture.md and ADRs 1 to 6, with tests that keep diagrams and code in step"
+      "value": "docs/architecture.md and ADRs 1 to 7, with tests that keep diagrams and code in step"
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The voice works: the real Kokoro model speaks a scene inside the worker image, with a pronunciation dictionary and word timings that follow the pauses in the audio. No GPL package is a dependency."
+    },
     {
       "date": "2026-11-12",
       "text": "The compositor draws every scene kind and primitive: slam text, word-by-word captions, scroll unroll, pinned tags, stamps, smoke, clips. The same spec gives the same frames, checked by 14 golden frames."

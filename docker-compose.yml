@@ -70,8 +70,12 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-vfs}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vfs}
       DATA_DIR: /data
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      KOKORO_MODEL_PATH: /models/kokoro/kokoro.onnx
+      KOKORO_VOICES_PATH: /models/kokoro/voices.bin
     volumes:
       - app-data:/data
+      # Voice model files from `make models`. Without them the bundled sample voice is used.
+      - models:/models
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -105,3 +109,4 @@ services:
 volumes:
   db-data:
   app-data:
+  models:

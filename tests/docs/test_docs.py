@@ -20,6 +20,7 @@ EXPECTED_ADRS = {
     "0004-adapter-pattern.md": "adapter",
     "0005-spec-driven-rendering.md": "Spec-driven rendering",
     "0006-python-packaging.md": "Python",
+    "0007-kokoro-without-gpl-dependencies.md": "Kokoro",
 }
 REQUIRED_SECTIONS = [
     "## Status",

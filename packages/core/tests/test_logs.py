@@ -102,7 +102,22 @@ def test_settings_have_the_documented_defaults() -> None:
         cpu_workers=2,
         log_level="info",
         comfyui_url="http://host.docker.internal:8188",
+        kokoro_model_path="/models/kokoro/kokoro.onnx",
+        kokoro_voices_path="/models/kokoro/voices.bin",
     )
+
+
+def test_settings_read_where_the_voice_model_files_are() -> None:
+    settings = load_settings(
+        {
+            **BASE_ENV,
+            "KOKORO_MODEL_PATH": " /srv/models/kokoro.onnx ",
+            "KOKORO_VOICES_PATH": "/srv/models/voices.bin",
+        }
+    )
+
+    assert settings.kokoro_model_path == "/srv/models/kokoro.onnx"
+    assert settings.kokoro_voices_path == "/srv/models/voices.bin"
 
 
 def test_settings_read_the_environment() -> None:

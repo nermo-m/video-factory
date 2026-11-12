@@ -13,6 +13,7 @@ decided, why, what follows from it and what was turned down. Smaller choices are
 | 4 | [Every external tool behind an adapter with a mock twin](0004-adapter-pattern.md) |
 | 5 | [Spec-driven rendering](0005-spec-driven-rendering.md) |
 | 6 | [One Python project, imports mirror folder paths](0006-python-packaging.md) |
+| 7 | [The Kokoro voice runs on ONNX Runtime, with espeak-ng as a separate program](0007-kokoro-without-gpl-dependencies.md) |
 
 ## Adding a record
 

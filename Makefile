@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update models voice-test
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -78,6 +78,13 @@ render-test: ## Golden-frame tests inside the pinned worker image
 render-golden-update: ## Approve the frames as they are drawn now (review them before committing)
 	docker build --quiet --target test --tag vfs-worker-test --file apps/worker/Dockerfile .
 	$(RENDER_IMAGE) --env UPDATE_GOLDEN=1 vfs-worker-test
+
+models: env ## Download the Kokoro voice model files into the models volume (about 340 MB, once)
+	docker compose run --rm --no-deps --build worker python -m scripts.download_models --folder /models/kokoro
+
+voice-test: ## Run the real Kokoro voice inside the worker image (needs make models first)
+	docker build --quiet --target test --tag vfs-worker-test --file apps/worker/Dockerfile .
+	$(RENDER_IMAGE) --volume video-factory_models:/models:ro vfs-worker-test python -m pytest -m voice -p no:cacheprovider
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py
