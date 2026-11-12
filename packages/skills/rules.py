@@ -17,18 +17,16 @@ from urllib.parse import unquote, urlsplit
 
 from packages.adapters.llm.base import LLMResponse
 from packages.core import json_patch, schemas
+from packages.core.lengths import (
+    PAUSE_PER_SCENE_S,
+    SLACK,
+    TOLERANCE_S,
+    WORDS_PER_SECOND,
+    count_words,
+)
 from packages.render.theme import check_capabilities
 from packages.skills.planner import Repair
 
-WORDS_PER_SECOND = 2.3
-# The silence around each scene's narration (section 5.2: pad_before_s and pad_after_s).
-PAUSE_PER_SCENE_S = 0.7
-# The resolver accepts a video up to 2 seconds longer than its target (section 5.2).
-TOLERANCE_S = 2.0
-# The budget is an estimate: the real voice speaks a little faster or slower than 2.3
-# words per second, and the resolver has the last word on the length (section 5.2). A
-# script is sent back only when it is more than this far over.
-SLACK = 1.05
 NO_SOURCE_NOTE = "No claim is made: no source was retrieved that supports one."
 
 
@@ -72,10 +70,6 @@ def word_budget(target_duration_s: float, scenes: int, speed: float = 1.0) -> in
     """The most words a script may have to fit its video."""
     speaking_s = target_duration_s + TOLERANCE_S - scenes * PAUSE_PER_SCENE_S
     return max(0, math.floor(speaking_s * WORDS_PER_SECOND * speed))
-
-
-def count_words(text: str) -> int:
-    return len(text.split())
 
 
 def script_fits(

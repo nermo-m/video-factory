@@ -302,14 +302,15 @@
       "id": "VFS-23",
       "order": 250,
       "title": "Board and New episode screens",
-      "status": "review",
-      "note": "The Board shows the episodes in the groups of the mockups, with loading, empty and error states, and New episode starts one from an idea. In review as a pull request."
+      "status": "done",
+      "note": "The Board shows the episodes in the groups of the mockups, with loading, empty and error states, and New episode starts one from an idea. Merged in pull request #34."
     },
     {
       "id": "VFS-24",
       "order": 260,
       "title": "Episode workspace with Plan tab and revise flow",
-      "status": "ready"
+      "status": "active",
+      "note": "The episode workspace: stepper, Plan tab with scene cards and inline edit, duration bar, raw JSON, revision by comment with a diff, and the gate bar."
     },
     {
       "id": "VFS-59",
@@ -325,8 +326,11 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-24 Episode workspace with Plan tab and revise flow"
+    "status": "active",
+    "id": "VFS-24",
+    "title": "Episode workspace with Plan tab and revise flow",
+    "started": "2026-11-12T19:40:00Z",
+    "resume": "Branch vfs-24-episode-workspace. The /plan route is done. Next: browser tests in apps/web/e2e/workspace.spec.ts, then the workspace under apps/web/src/components/workspace. Verify with make e2e, then make check."
   },
   "checklist": [
     {
