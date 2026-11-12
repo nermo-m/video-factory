@@ -309,14 +309,15 @@
       "id": "VFS-24",
       "order": 260,
       "title": "Episode workspace with Plan tab and revise flow",
-      "status": "review",
-      "note": "The episode workspace: pipeline, tabs, the Plan tab with brief, claims, duration bar and scene cards that are edited in place, raw JSON, a change asked for in words with its diff, and the gate bar. In review as a pull request."
+      "status": "done",
+      "note": "The episode workspace: pipeline, tabs, the Plan tab with brief, claims, duration bar and scene cards that are edited in place, raw JSON, a change asked for in words with its diff, and the gate bar. Merged in pull request #35."
     },
     {
       "id": "VFS-59",
       "order": 264,
       "title": "Model picker and Usage page",
-      "status": "ready"
+      "status": "active",
+      "note": "The model picker with status and usage for each option, and the Usage page with budgets and Check limits now."
     },
     {
       "id": "VFS-25",
@@ -326,8 +327,11 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-59 Model picker and Usage page"
+    "status": "active",
+    "id": "VFS-59",
+    "title": "Model picker and Usage page",
+    "started": "2026-11-12T21:10:00Z",
+    "resume": "Branch vfs-59-model-picker-usage. Next: browser tests in apps/web/e2e/usage.spec.ts, then apps/web/src/components/providers and the page at /settings/usage. Verify with make e2e, then make check."
   },
   "checklist": [
     {
