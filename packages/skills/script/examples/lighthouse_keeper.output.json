@@ -1,0 +1,39 @@
+{
+  "scenes": [
+    {
+      "id": "s01_hook",
+      "beat": "hook",
+      "narration": "To everyone who keeps putting it off. Small steps still count."
+    },
+    {
+      "id": "s02_climb",
+      "beat": "setup",
+      "narration": "The keeper climbed the same hill every morning. Nobody asked him to."
+    },
+    {
+      "id": "s03_lamp",
+      "beat": "story",
+      "narration": "He trimmed the wick, cleaned the glass, and wrote one line in the log. Then he did it all again."
+    },
+    {
+      "id": "s04_storm",
+      "beat": "story",
+      "narration": "Years passed. Then one night a storm took the stars, and a ship lost its way."
+    },
+    {
+      "id": "s05_light",
+      "beat": "story",
+      "narration": "The lamp was burning, as it had every night before. Because of one small habit, the ship came home."
+    },
+    {
+      "id": "s06_steps",
+      "beat": "takeaway",
+      "narration": "So pick one small thing. Do it today. Do it again tomorrow."
+    },
+    {
+      "id": "s07_outro",
+      "beat": "closing",
+      "narration": "Nobody may see it. It still counts."
+    }
+  ]
+}

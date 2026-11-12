@@ -26,6 +26,7 @@ no file.
 | `apps/web/e2e/__screenshots__/*.png` | original | MIT | Playwright screenshots of this app, made by `make e2e-update` |
 | `samples/lighthouse_keeper/episode_spec.json` | original | MIT | The sample episode "The Lighthouse Keeper", written for this project |
 | `samples/lighthouse_keeper/assets/*.png` | original | MIT | Drawn in code by `scripts/sample_pictures.py` for this project |
+| `samples/recordings/*.json` | original | MIT | The answers the planner skills give in demo mode, written for this project to tell the sample episode's story |
 | `samples/voice/*.wav` | generated | MIT | The sample episode's narration, spoken by the Kokoro-82M voice model (Apache-2.0) from this project's text, recorded by `scripts/record_sample_voice.py` |
 | `packages/render/tests/golden/*.png` | original | MIT | Frames drawn by this project's render engine, made by `make render-golden-update` |
 | `packages/render/theme/night_scrolls/assets/backgrounds/*.png` | original | MIT | Drawn in code by `packages/render/theme/night_scrolls/build_assets.py` for this project |

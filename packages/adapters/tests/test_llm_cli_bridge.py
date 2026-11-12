@@ -31,6 +31,7 @@ import pytest
 
 from packages.adapters.factory import Adapters
 from packages.adapters.llm import ClaudeCliLLM, CodexCliLLM, LLMRequest, RecordedLLM
+from packages.adapters.llm.cli_bridge import tool_schema
 from packages.core import logs
 from packages.core.enums import ErrorClass, Provider
 from packages.core.queue import (
@@ -575,3 +576,61 @@ def test_nfr01_a_call_is_logged_with_its_numbers_and_without_its_text(
     assert "A secret idea" not in everything
     assert "You plan short videos." not in everything
     assert "A secret answer." not in everything
+
+
+# --- Schemas as the tool takes them ----------------------------------------------------------
+
+
+def test_a_schema_goes_to_claude_code_without_the_lines_it_refuses() -> None:
+    full = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "x.json", **SCHEMA}
+    with stub(200, {**OK, "output": {"lesson": "Small lights matter.", "beats": 3}}) as (url, seen):
+        claude(url).complete(ask(output_schema=full))
+
+    assert seen[0]["body"]["schema"] == SCHEMA
+
+
+def test_a_schema_that_refers_into_another_file_travels_in_the_prompt() -> None:
+    outside = {
+        "type": "object",
+        "properties": {"claim": {"$ref": "claims.schema.json#/$defs/claim"}},
+    }
+    with stub(200, {**OK, "text": '{"claim": {}}'}) as (url, seen):
+        answer = claude(url).complete(ask("Plan it.", output_schema=outside))
+
+    assert "schema" not in seen[0]["body"]
+    assert "claims.schema.json#/$defs/claim" in seen[0]["body"]["prompt"]
+    assert answer.output == {"claim": {}}
+
+
+def test_a_reference_inside_the_same_schema_is_kept() -> None:
+    inside = {"type": "object", "properties": {"a": {"$ref": "#/$defs/a"}}, "$defs": {"a": {}}}
+
+    assert tool_schema(inside) == inside
+
+
+@pytest.mark.host_tools
+@pytest.mark.parametrize("name", ["brief", "script"])
+def test_the_installed_claude_code_accepts_the_skills_schemas_as_they_are_sent(name: str) -> None:
+    """No model call: the tool reads its options first and stops at the missing prompt."""
+    import os
+    import tempfile
+
+    from packages.skills.planner import load_skill
+    from tools.cli_bridge.environment import child_environment
+    from tools.cli_bridge.process import resolve, run
+
+    program = resolve(("claude",))
+    if program is None:
+        pytest.skip("claude is not installed on this PC")
+    sendable = tool_schema(load_skill(name).output_schema)
+    assert sendable is not None
+    with tempfile.TemporaryDirectory() as folder:
+        finished = run(
+            [*program, "-p", "--output-format", "json", "--json-schema", json.dumps(sendable)],
+            stdin="",
+            env=child_environment(os.environ),
+            cwd=Path(folder),
+            timeout_s=60,
+        )
+
+    assert "Input must be provided" in finished.stdout + finished.stderr

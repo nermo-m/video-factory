@@ -138,7 +138,7 @@ bridge-status: env ## Show whether the bridge runs and whether each tool is sign
 	$(BRIDGE) status
 
 bridge-flags: ## Ask the installed claude and codex whether they accept the bridge's flags (no model call)
-	uv run pytest tools/cli_bridge -m host_tools -q
+	uv run pytest -m host_tools -q
 
 ps: ## Show service status
 	docker compose ps

@@ -12,8 +12,12 @@ from pathlib import Path
 from types import FrameType
 
 from apps.worker.handlers import HANDLERS
+from apps.worker.handlers.plan import plan_handlers
 from apps.worker.runner import Worker
+from packages.adapters.factory import Adapters
 from packages.adapters.limit_probe import ProviderProbe
+from packages.adapters.llm.base import LLMAdapter
+from packages.core import app_settings
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.logs import configure_logging
 from packages.core.settings import SettingsError, load_settings
@@ -47,9 +51,18 @@ def main() -> int:
     signal.signal(signal.SIGINT, request_stop)
 
     engine = make_engine(settings.database_url)
+    sessions = make_session_factory(engine)
+
+    def language_model() -> LLMAdapter:
+        """The model of the configured mode, with the owner's paid API switch as it is now."""
+        with sessions() as session:
+            confirmed = app_settings.paid_apis_confirmed(session)
+        return Adapters(settings, paid_apis_confirmed=confirmed).llm()
+
+    handlers = {**HANDLERS, **plan_handlers(sessions, language_model)}
     worker = Worker(
-        make_session_factory(engine),
-        HANDLERS,
+        sessions,
+        handlers,
         cpu_workers=settings.cpu_workers,
         heartbeat_file=heartbeat_path(),
         critic_enabled=settings.critic_enabled,
@@ -62,7 +75,7 @@ def main() -> int:
         extra={
             "cpu_workers": settings.cpu_workers,
             "provider_mode": settings.provider_mode,
-            "job_types": sorted(HANDLERS),
+            "job_types": sorted(handlers),
         },
     )
     worker.run(stop)

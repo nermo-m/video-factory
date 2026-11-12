@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Brief input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "idea",
+    "channel",
+    "past_titles"
+  ],
+  "properties": {
+    "idea": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "target_duration_s"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "motto": {
+          "type": "string"
+        },
+        "target_duration_s": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 180
+        }
+      }
+    },
+    "past_titles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

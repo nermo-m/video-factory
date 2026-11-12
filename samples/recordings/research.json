@@ -1,0 +1,12 @@
+{
+  "skill": "research",
+  "skill_version": "1.0",
+  "output": {
+    "claims": [],
+    "note": "The video tells a made-up story about a made-up keeper and states no fact that needs a source."
+  },
+  "input_tokens": 910,
+  "output_tokens": 40,
+  "sources": [],
+  "searches": 0
+}
