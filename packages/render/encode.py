@@ -181,6 +181,41 @@ def _finish(
         partial.unlink(missing_ok=True)
 
 
+def _scene_files(
+    resolved: Mapping[str, Any], theme: Theme, storage_root: Path | None, folder: Path
+) -> list[SceneFile]:
+    """Where each scene's file belongs, and whether it is already there."""
+    counts = scene_frame_counts(resolved)
+    files: list[SceneFile] = []
+    for index, (scene, key) in enumerate(
+        zip(resolved["scenes"], scene_keys(resolved, theme, storage_root), strict=True)
+    ):
+        path = folder / f"scene_{index:02d}_{scene['id']}_{key}.mp4"
+        files.append(SceneFile(index, scene["id"], key, path, counts[index], reused=path.is_file()))
+    return files
+
+
+def render_scene(
+    resolved: Mapping[str, Any],
+    theme: Theme,
+    scene_id: str,
+    *,
+    storage_root: Path | None,
+    folder: Path,
+    encode: SceneEncoder | None = None,
+) -> SceneFile:
+    """Make sure one scene has its file (the `render.scene` job). A file that exists is
+    kept, so a retry and a later `render_scenes` on the same folder encode nothing twice."""
+    folder.mkdir(parents=True, exist_ok=True)
+    files = _scene_files(resolved, theme, storage_root, folder)
+    wanted = next((file for file in files if file.scene_id == scene_id), None)
+    if wanted is None:
+        raise EncodeError(f"The spec has no scene '{scene_id}'.")
+    if not wanted.reused:
+        _finish(encode or encode_scene, resolved, theme, wanted.index, storage_root, wanted.path)
+    return wanted
+
+
 def render_scenes(
     resolved: Mapping[str, Any],
     theme: Theme,
@@ -197,13 +232,7 @@ def render_scenes(
     """
     encoder = encode or encode_scene
     folder.mkdir(parents=True, exist_ok=True)
-    counts = scene_frame_counts(resolved)
-    files: list[SceneFile] = []
-    for index, (scene, key) in enumerate(
-        zip(resolved["scenes"], scene_keys(resolved, theme, storage_root), strict=True)
-    ):
-        path = folder / f"scene_{index:02d}_{scene['id']}_{key}.mp4"
-        files.append(SceneFile(index, scene["id"], key, path, counts[index], reused=path.is_file()))
+    files = _scene_files(resolved, theme, storage_root, folder)
 
     missing = [file for file in files if not file.reused]
     if workers > 1 and len(missing) > 1:
@@ -406,17 +435,24 @@ def render_video(
     folder: Path,
     preview: bool = False,
     workers: int = 1,
+    scenes_folder: Path | None = None,
 ) -> RenderResult:
     """Render a resolved spec into `folder`: scene files, audio mix, video and contact sheet.
 
-    Calling it again after a change re-encodes only the scenes that changed.
+    Calling it again after a change re-encodes only the scenes that changed. The scene
+    files go into `folder/scenes`, or into `scenes_folder` when several renders of one
+    episode share them.
     """
     spec = for_preview(resolved) if preview else dict(resolved)
     name = "preview" if preview else "video"
     folder.mkdir(parents=True, exist_ok=True)
 
     scenes = render_scenes(
-        spec, theme, storage_root=storage_root, folder=folder / "scenes", workers=workers
+        spec,
+        theme,
+        storage_root=storage_root,
+        folder=scenes_folder or folder / "scenes",
+        workers=workers,
     )
 
     mix = mix_audio(spec, theme, storage_root=storage_root)

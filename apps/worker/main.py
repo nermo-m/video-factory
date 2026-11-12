@@ -11,16 +11,19 @@ import threading
 from pathlib import Path
 from types import FrameType
 
+from sqlalchemy.orm import Session, sessionmaker
+
 from apps.worker.handlers import HANDLERS
 from apps.worker.handlers.plan import plan_handlers
-from apps.worker.runner import Worker
+from apps.worker.handlers.produce import cached_voice, produce_handlers
+from apps.worker.runner import Handler, Worker
 from packages.adapters.factory import Adapters
 from packages.adapters.limit_probe import ProviderProbe
 from packages.adapters.llm.base import LLMAdapter
 from packages.core import app_settings
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.logs import configure_logging
-from packages.core.settings import SettingsError, load_settings
+from packages.core.settings import Settings, SettingsError, load_settings
 
 logger = logging.getLogger("apps.worker")
 
@@ -31,6 +34,28 @@ def heartbeat_path() -> Path:
     if configured:
         return Path(configured)
     return Path(tempfile.gettempdir()) / "vfs-worker-heartbeat"
+
+
+def build_handlers(settings: Settings, sessions: sessionmaker[Session]) -> dict[str, Handler]:
+    """Every job type this worker can run."""
+
+    def language_model() -> LLMAdapter:
+        """The model of the configured mode, with the owner's paid API switch as it is now."""
+        with sessions() as session:
+            confirmed = app_settings.paid_apis_confirmed(session)
+        return Adapters(settings, paid_apis_confirmed=confirmed).llm()
+
+    local = Adapters(settings)
+    return {
+        **HANDLERS,
+        **plan_handlers(sessions, language_model),
+        **produce_handlers(
+            sessions,
+            storage=local.storage(),
+            data_dir=Path(settings.data_dir),
+            tts=cached_voice(local.tts),
+        ),
+    }
 
 
 def main() -> int:
@@ -52,14 +77,7 @@ def main() -> int:
 
     engine = make_engine(settings.database_url)
     sessions = make_session_factory(engine)
-
-    def language_model() -> LLMAdapter:
-        """The model of the configured mode, with the owner's paid API switch as it is now."""
-        with sessions() as session:
-            confirmed = app_settings.paid_apis_confirmed(session)
-        return Adapters(settings, paid_apis_confirmed=confirmed).llm()
-
-    handlers = {**HANDLERS, **plan_handlers(sessions, language_model)}
+    handlers = build_handlers(settings, sessions)
     worker = Worker(
         sessions,
         handlers,

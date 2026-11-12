@@ -53,6 +53,11 @@ _STAGES: dict[EpisodeState, int] = {
     EpisodeState.RENDER: 2,
 }
 
+# The last state whose jobs have handlers. An episode rests after it instead of queuing a
+# job that nothing can run. Quality checks and export arrive in milestone M4, the critic
+# in M6. Move this forward as they are built, and set it to None when `done` is reachable.
+LAST_BUILT_STATE: EpisodeState | None = EpisodeState.RENDER
+
 # Which scenes to speak and to encode again. Empty means all of them.
 Scope = StaleScenes
 

@@ -16,7 +16,13 @@ import pytest
 from PIL import Image
 
 from packages.render.compositor import scene_frame_counts
-from packages.render.encode import for_preview, render_scenes, scene_keys
+from packages.render.encode import (
+    EncodeError,
+    for_preview,
+    render_scene,
+    render_scenes,
+    scene_keys,
+)
 from packages.render.tests import support
 from packages.render.theme import Theme, load_theme
 
@@ -238,3 +244,57 @@ def test_rn05_a_render_after_a_failure_picks_up_where_it_stopped(
 
     assert encoder.calls == list(range(2, len(resolved["scenes"])))
     assert [scene.reused for scene in scenes[:2]] == [True, True]
+
+
+# --- one scene at a time (the `render.scene` job) ----------------------------------------
+
+
+def test_one_named_scene_is_encoded_by_itself(
+    resolved: dict[str, Any], theme: Theme, storage: Path, tmp_path: Path
+) -> None:
+    encoder = FakeEncoder()
+    wanted = resolved["scenes"][1]["id"]
+
+    scene = render_scene(
+        resolved, theme, wanted, storage_root=storage, folder=tmp_path / "scenes", encode=encoder
+    )
+
+    assert encoder.calls == [1]
+    assert (scene.index, scene.scene_id, scene.reused) == (1, wanted, False)
+    assert scene.path.is_file()
+    assert scene.frames == scene_frame_counts(resolved)[1]
+
+
+def test_rn04_a_scene_that_has_its_file_is_not_encoded_again(
+    resolved: dict[str, Any], theme: Theme, storage: Path, tmp_path: Path
+) -> None:
+    encoder = FakeEncoder()
+    folder = tmp_path / "scenes"
+    wanted = resolved["scenes"][1]["id"]
+    first = render_scene(
+        resolved, theme, wanted, storage_root=storage, folder=folder, encode=encoder
+    )
+
+    again = render_scene(
+        resolved, theme, wanted, storage_root=storage, folder=folder, encode=encoder
+    )
+    everything = render_scenes(resolved, theme, storage_root=storage, folder=folder, encode=encoder)
+
+    assert again.reused
+    assert again.path == first.path
+    assert encoder.calls == [1, *(index for index in range(len(resolved["scenes"])) if index != 1)]
+    assert everything[1].reused, "the whole render uses the file the single scene job made"
+
+
+def test_a_scene_that_is_not_in_the_spec_is_named(
+    resolved: dict[str, Any], theme: Theme, storage: Path, tmp_path: Path
+) -> None:
+    with pytest.raises(EncodeError, match="s99_missing"):
+        render_scene(
+            resolved,
+            theme,
+            "s99_missing",
+            storage_root=storage,
+            folder=tmp_path / "scenes",
+            encode=FakeEncoder(),
+        )

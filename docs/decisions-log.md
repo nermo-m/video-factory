@@ -1121,3 +1121,42 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - **One provider list for every screen**, read every 30 seconds while the tab is
     visible, like the episode list.
 - **Reverse:** the wording is in `apps/web/src/lib/providers.ts`.
+
+## D-038: Voice and render jobs, and where the pipeline rests
+
+- **Date:** 2026-11-12. **Card:** VFS-69.
+- **Problem:** VFS-25 needs an episode rendered through the queue. The handlers for
+  `gen.voice`, `render.scene` and `render.join` did not exist, and after the render the
+  pipeline queued `qc.run`, which nothing can run before milestone M4.
+- **Choice:**
+  - **A card of its own**, as `docs/plan/M2.md` foresaw. VFS-70 (renders route and file
+    serving) was split off VFS-25 the same way.
+  - **The render jobs resolve the spec themselves**, each time, from the episode's current
+    authored spec, the stored voice and the stored pictures. The resolver always gives the
+    same answer, so the scene jobs and the join agree without passing a file around.
+  - **A voice file belongs to a scene only while the narration is unchanged.** The voice
+    job stores a key of the words, voice, speed and pronunciation. A render that finds no
+    voice with the current key fails as an owner task that says to run the voice step.
+  - **Paths:** narration goes into the voice job's own folder (a retry overwrites it).
+    Scene files go into `episodes/<id>/scenes`, named by their key, so the next render
+    keeps what it can. Each joined video goes into the join job's own folder, so an earlier
+    video is never overwritten. FFmpeg writes below the data folder directly, as it
+    already did in `make demo-render`. Everything else uses the storage adapter.
+  - **The video of the pipeline is a `draft` render at full size.** Its resolved spec is
+    stored as a `spec_version` of kind `resolved`. Authored and resolved versions share
+    one counter, so the authored numbers the owner sees can skip one after a render.
+  - **Pictures:** until the asset library exists (M3), the pictures bundled with the
+    sample episode are copied into the storage as `library/<id>/v1.png`. A plan that
+    names any other picture fails at the render as an owner task that lists them.
+  - **The episode rests after `render`.** `LAST_BUILT_STATE` in `packages/core/stages.py`
+    names the last state whose jobs have handlers. Finishing it queues nothing, and
+    `advance` answers `not_built` with the reason. The rules of section 4.2 are still
+    tested on the whole pipeline, to `done`.
+  - **Errors:** a narration the bundled voice does not know, a missing voice, a missing
+    picture and a plan that does not fit its length are owner tasks with the next step in
+    the message. A video in the wrong format is a bug and stores no render.
+  - **The real voice is loaded once per worker** and used by one job at a time. While
+    only the bundled recordings are there, the model files are looked for on every job,
+    so `make models` takes effect without a restart.
+- **Reverse:** move `LAST_BUILT_STATE` forward as later states get handlers, and set it to
+  `None` when `done` is reachable. The paths are in `apps/worker/handlers/produce.py`.
