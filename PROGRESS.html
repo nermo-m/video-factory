@@ -159,19 +159,19 @@
     {
       "id": "M0",
       "title": "Foundation",
-      "status": "active",
+      "status": "passed",
       "done_when": "CI is green, branch protection is on, docker compose up shows the board and a no-op job completes."
     },
     {
       "id": "M1",
       "title": "Spec and render",
-      "status": "pending",
+      "status": "passed",
       "done_when": "make demo-render turns the sample spec into a correct 45 second video inside the worker image."
     },
     {
       "id": "M2",
       "title": "Pipeline and planning",
-      "status": "pending",
+      "status": "active",
       "done_when": "In demo mode an idea reaches the plan gate, is edited, approved and rendered through the interface."
     },
     {
@@ -222,155 +222,155 @@
       "id": "VFS-61",
       "order": 5,
       "title": "Create the GitHub repository and open the stacked pull requests",
-      "status": "blocked",
-      "note": "Needs owner: the repository nermo-m/video-factory, or permission to create it."
+      "status": "done",
+      "note": "The public repository nermo-m/video-factory holds every finished card as one squashed pull request (#1 to #21), CI is green on main and main is protected."
     },
     {
       "id": "VFS-1",
       "order": 10,
       "title": "Repository skeleton and tooling",
-      "status": "review",
-      "note": "Verified on a fresh clone. Waits for a pull request."
+      "status": "done",
+      "note": "Verified on a fresh clone. Merged in pull request #1."
     },
     {
       "id": "VFS-62",
       "order": 15,
       "title": "Progress tracker: page, JSON twin and local server",
-      "status": "review",
-      "note": "Tests pass, page checked at desktop and phone width. Waits for a pull request."
+      "status": "done",
+      "note": "Tests pass, page checked at desktop and phone width. Merged in pull request #2."
     },
     {
       "id": "VFS-2",
       "order": 20,
       "title": "Docker Compose with web, api, worker and db",
-      "status": "review",
-      "note": "All four services healthy on this PC, ports on 127.0.0.1 only. Waits for a pull request."
+      "status": "done",
+      "note": "All four services healthy on this PC, ports on 127.0.0.1 only. Merged in pull request #3."
     },
     {
       "id": "VFS-3",
       "order": 30,
       "title": "Database models and Alembic baseline",
-      "status": "review",
-      "note": "15 tables, baseline migration, 16 integration tests on real Postgres. Waits for a pull request."
+      "status": "done",
+      "note": "15 tables, baseline migration, 16 integration tests on real Postgres. Merged in pull request #4."
     },
     {
       "id": "VFS-4",
       "order": 40,
       "title": "Job queue and worker loops",
-      "status": "review",
-      "note": "Queue and worker verified on real Postgres and in Compose, including worker and database restarts. Waits for a pull request."
+      "status": "done",
+      "note": "Queue and worker verified on real Postgres and in Compose, including worker and database restarts. Merged in pull request #5."
     },
     {
       "id": "VFS-5",
       "order": 50,
       "title": "API skeleton, health endpoint and generated client",
-      "status": "review",
-      "note": "Health, common error shape, OpenAPI file and generated client with drift checks. Waits for a pull request."
+      "status": "done",
+      "note": "Health, common error shape, OpenAPI file and generated client with drift checks. Merged in pull request #6."
     },
     {
       "id": "VFS-6",
       "order": 60,
       "title": "Web app shell with responsive navigation",
-      "status": "review",
-      "note": "Shell, status strip and empty Board follow the mockups. 28 browser tests pass, axe clean, screenshots approved at 390, 820 and 1440 px. Waits for a pull request."
+      "status": "done",
+      "note": "Shell, status strip and empty Board follow the mockups. 28 browser tests pass, axe clean, screenshots approved at 390, 820 and 1440 px. Merged in pull request #7."
     },
     {
       "id": "VFS-7",
       "order": 70,
       "title": "CI workflow with all required jobs",
-      "status": "blocked",
-      "note": "Workflow written, linted and every job command run locally. Needs owner: the GitHub repository (VFS-61) to run it."
+      "status": "done",
+      "note": "CI ran on GitHub for the first time on its own pull request and all 12 checks passed. Merged in pull request #8."
     },
     {
       "id": "VFS-8",
       "order": 80,
       "title": "CD workflows, Dependabot and branch protection",
-      "status": "blocked",
-      "note": "Release, nightly and Dependabot written and linted, protection script ready. Needs owner: the GitHub repository (VFS-61), then a run of scripts/protect_main.sh."
+      "status": "done",
+      "note": "On main the release workflow published the web, api and worker images to the GitHub Container Registry. Branch protection, squash-only merging, secret scanning and push protection are on. Merged in pull request #9."
     },
     {
       "id": "VFS-9",
       "order": 90,
       "title": "Architecture document and ADRs 1 to 5",
-      "status": "review",
-      "note": "Architecture document with three diagrams and ADRs 1 to 6, kept honest by tests. Waits for a pull request."
+      "status": "done",
+      "note": "Architecture document with three diagrams and ADRs 1 to 6, kept honest by tests. Merged in pull request #10."
     },
     {
       "id": "VFS-10",
       "order": 100,
       "title": "JSON Schemas for all pipeline documents",
-      "status": "review",
-      "note": "Six schemas with 11 valid and 77 invalid fixtures, each failing where it says. Waits for a pull request."
+      "status": "done",
+      "note": "Six schemas with 11 valid and 77 invalid fixtures, each failing where it says. Merged in pull request #11."
     },
     {
       "id": "VFS-11",
       "order": 110,
       "title": "Resolver: cues to absolute times",
-      "status": "review",
-      "note": "All four cue types, pads, outro hold, the 2 second tolerance and reference checks, 29 tests. Waits for a pull request."
+      "status": "done",
+      "note": "All four cue types, pads, outro hold, the 2 second tolerance and reference checks, 29 tests. Merged in pull request #12."
     },
     {
       "id": "VFS-12",
       "order": 120,
       "title": "Theme night_scrolls with original assets",
-      "status": "review",
-      "note": "Original artwork and sounds made by a script, three OFL fonts, capabilities and layout, 18 tests. Waits for a pull request."
+      "status": "done",
+      "note": "Original artwork and sounds made by a script, three OFL fonts, capabilities and layout. The asset rebuild test moved here from VFS-13 to meet the coverage gate (92 percent). Merged in pull request #13."
     },
     {
       "id": "VFS-13",
       "order": 130,
       "title": "Compositor and animation primitives",
-      "status": "review",
-      "note": "Frame drawing for all five scene kinds and every primitive, deterministic from the seed. 14 golden frames pass inside the worker image. Waits for a pull request."
+      "status": "done",
+      "note": "Frame drawing for all five scene kinds and every primitive, deterministic from the seed. 14 golden frames pass inside the worker image. Merged in pull request #14."
     },
     {
       "id": "VFS-14",
       "order": 140,
       "title": "Kokoro voice adapter with pronunciation and word timings",
-      "status": "review",
-      "note": "Kokoro voice on ONNX Runtime with espeak-ng as a separate program, pronunciation dictionary, word timings from measured pauses, bundled-sample twin, make models. 92 unit tests and 5 tests on the real model. Waits for a pull request."
+      "status": "done",
+      "note": "Kokoro voice on ONNX Runtime with espeak-ng as a separate program, pronunciation dictionary, word timings from measured pauses, bundled-sample twin, make models. 92 unit tests and 5 tests on the real model. Merged in pull request #15."
     },
     {
       "id": "VFS-15",
       "order": 150,
       "title": "Audio mix: cues, music bed, ducking, loudness",
-      "status": "review",
-      "note": "Narration, sound cues and a synthesised music bed mixed to 48 kHz stereo: voice 13 dB over the music, -14 LUFS, true peak under -1 dB, confirmed by FFmpeg's meter. 56 unit tests and 5 FFmpeg tests. Waits for a pull request."
+      "status": "done",
+      "note": "Narration, sound cues and a synthesised music bed mixed to 48 kHz stereo: voice 13 dB over the music, -14 LUFS, true peak under -1 dB, confirmed by FFmpeg's meter. 56 unit tests and 5 FFmpeg tests. Merged in pull request #16."
     },
     {
       "id": "VFS-16",
       "order": 160,
       "title": "Scene encode, join, contact sheet and preview mode",
-      "status": "review",
-      "note": "One H.264 file per scene, joined by copying with AAC sound and faststart. Only changed scenes are encoded again, files appear only when complete, preview mode, clip decoding and the contact sheet. 22 unit tests and 17 FFmpeg tests. Waits for a pull request."
+      "status": "done",
+      "note": "One H.264 file per scene, joined by copying with AAC sound and faststart. Only changed scenes are encoded again, files appear only when complete, preview mode, clip decoding and the contact sheet. 22 unit tests and 17 FFmpeg tests. Merged in pull request #17."
     },
     {
       "id": "VFS-17",
       "order": 170,
       "title": "Original sample episode and make demo-render",
-      "status": "review",
-      "note": "The Lighthouse Keeper: original spec, four pictures drawn in code, narration recorded with the Kokoro voice. make demo-render produces a 44 second video in the worker image and checks its format. Rendered in 53 seconds with 4 workers. Waits for a pull request."
+      "status": "done",
+      "note": "The Lighthouse Keeper: original spec, four pictures drawn in code, narration recorded with the Kokoro voice. make demo-render produces a 44 second video in the worker image and checks its format. Rendered in 53 seconds with 4 workers. Merged in pull request #18."
     },
     {
       "id": "VFS-18",
       "order": 200,
       "title": "Pipeline state machine, gates and stale marking",
-      "status": "review",
-      "note": "The episode state machine: jobs per state, three gates, reject with a comment, re-run with stale marking, and stale scenes after a spec edit. The worker moves an episode on in the transaction that stores a job's result. 45 unit and 40 integration tests. Waits for a pull request."
+      "status": "done",
+      "note": "The episode state machine: jobs per state, three gates, reject with a comment, re-run with stale marking, and stale scenes after a spec edit. The worker moves an episode on in the transaction that stores a job's result. 45 unit and 40 integration tests. Merged in pull request #19."
     },
     {
       "id": "VFS-55",
       "order": 205,
       "title": "Provider mode switch and paid API guard",
-      "status": "review",
-      "note": "Paid APIs need the mode and the owner's switch together, and a paid adapter cannot even be built without both. Source scans prove nothing can change the mode, and the database ties the billing type to the provider. 48 unit and 31 integration tests. Waits for a pull request."
+      "status": "done",
+      "note": "Paid APIs need the mode and the owner's switch together, and a paid adapter cannot even be built without both. Source scans prove nothing can change the mode, and the database ties the billing type to the provider. 48 unit and 31 integration tests. Merged in pull request #20."
     },
     {
       "id": "VFS-19",
       "order": 210,
       "title": "LLM adapter with mock and recorded responses",
-      "status": "review",
-      "note": "The language model adapter: recorded responses for demo mode, the Anthropic adapter with web search behind the paid API guard, and model call logging. Tested through the real SDK with a mock transport, no paid call. 49 unit and 8 integration tests. Waits for a pull request."
+      "status": "done",
+      "note": "The language model adapter: recorded responses for demo mode, the Anthropic adapter with web search behind the paid API guard, and model call logging. Tested through the real SDK with a mock transport, no paid call. 49 unit and 8 integration tests. Merged in pull request #21."
     },
     {
       "id": "VFS-64",
@@ -383,7 +383,8 @@
       "id": "VFS-56",
       "order": 212,
       "title": "Host CLI bridge for Claude Code and Codex",
-      "status": "ready"
+      "status": "active",
+      "note": "In progress: the host bridge for the Claude Code and Codex command line tools."
     },
     {
       "id": "VFS-57",
@@ -441,17 +442,20 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-56 Host CLI bridge for Claude Code and Codex"
+    "status": "active",
+    "id": "VFS-56",
+    "title": "Host CLI bridge for Claude Code and Codex",
+    "started": "2026-11-12T12:05:00Z",
+    "resume": "Branch vfs-56-cli-bridge on top of vfs-19-llm-adapter. Flags are confirmed against Claude Code 2.1.300 and Codex 0.144.1 (to be written into ADR 8). Next: tests with fake claude and codex programs under tools/cli_bridge/tests, then the bridge in tools/cli_bridge. Verify with: uv run pytest tools, make check."
   },
   "checklist": [
     {
       "item": "CI is green on main",
-      "status": "open"
+      "status": "done"
     },
     {
       "item": "Branch protection is on",
-      "status": "open"
+      "status": "done"
     },
     {
       "item": "docker compose up shows the board",
@@ -493,7 +497,7 @@
     },
     {
       "label": "Continuous integration",
-      "value": "Ten jobs written and checked locally. Not running yet: no remote repository (VFS-61)"
+      "value": "Twelve checks on every pull request, all required to merge into main. Green on main since 2026-11-12"
     },
     {
       "label": "Dependency audit",
@@ -505,6 +509,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The project has its public home on GitHub: 21 cards merged as pull requests, CI green on main, main protected, and the first container images published."
+    },
     {
       "date": "2026-11-12",
       "text": "The pipeline can talk to a language model: recorded answers in demo mode, Claude through the API when the owner switches it on, with cost recorded per call and the key proven absent from every log line."
