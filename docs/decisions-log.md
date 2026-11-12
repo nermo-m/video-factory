@@ -1160,3 +1160,28 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     so `make models` takes effect without a restart.
 - **Reverse:** move `LAST_BUILT_STATE` forward as later states get handlers, and set it to
   `None` when `done` is reachable. The paths are in `apps/worker/handlers/produce.py`.
+
+## D-039: Renders route, file serving and the resting flag
+
+- **Date:** 2026-11-12. **Card:** VFS-70.
+- **Problem:** The interface needs to find and play the video of an episode, and to tell a
+  rendered episode from one that is still working.
+- **Choice:**
+  - **`GET /episodes/{id}/renders`** lists the videos newest first, paged (24 by default),
+    each with the address of its video and contact sheet and the version of the plan it
+    was rendered from.
+  - **`GET /files/{path}`** serves only media files (mp4, jpg, png, webp, wav) from below
+    the data folder. Everything else answers 404 without saying whether it exists: `..`
+    or `.` in the path, an absolute path, a backslash, a drive letter, a link that leads
+    out of the folder, a folder, any other file type. The check is tested directly as
+    well, because a browser tidies `..` away before it sends an address.
+  - **Range requests** are answered by the framework's file response. A range that cannot
+    be read (400) or starts after the end (416) is refused before that, so these answers
+    have the common error shape too. This calls the response's own range parser, which is
+    not a public function of the framework. The framework version is pinned, and the
+    range tests fail if an update moves it.
+  - **`resting` on every episode**: true when the last built state has finished. Without
+    it the interface would show a rendered episode as still rendering.
+  - **No sign-in on `/files`**, like the rest of the API: it listens on 127.0.0.1 only.
+    Access from the network gets a password session in card VFS-63.
+- **Reverse:** the media types and the path check are in `apps/api/files.py`.

@@ -298,6 +298,11 @@
             "title": "Jobs",
             "type": "array"
           },
+          "resting": {
+            "description": "True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.",
+            "title": "Resting",
+            "type": "boolean"
+          },
           "spec_version": {
             "anyOf": [
               {
@@ -360,6 +365,7 @@
           "stale_scenes",
           "target_duration_s",
           "spec_version",
+          "resting",
           "created_at",
           "jobs"
         ],
@@ -429,6 +435,11 @@
             "title": "Idea",
             "type": "string"
           },
+          "resting": {
+            "description": "True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.",
+            "title": "Resting",
+            "type": "boolean"
+          },
           "spec_version": {
             "anyOf": [
               {
@@ -491,6 +502,7 @@
           "stale_scenes",
           "target_duration_s",
           "spec_version",
+          "resting",
           "created_at"
         ],
         "title": "EpisodeOut",
@@ -940,6 +952,120 @@
           "comment"
         ],
         "title": "RejectRequest",
+        "type": "object"
+      },
+      "RenderKind": {
+        "enum": [
+          "preview",
+          "draft",
+          "final"
+        ],
+        "title": "RenderKind",
+        "type": "string"
+      },
+      "RenderList": {
+        "properties": {
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "renders": {
+            "items": {
+              "$ref": "#/components/schemas/RenderOut"
+            },
+            "title": "Renders",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "renders",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "RenderList",
+        "type": "object"
+      },
+      "RenderOut": {
+        "properties": {
+          "contact_sheet_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Sheet Url"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RenderKind"
+          },
+          "spec_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The version of the plan this video was rendered from.",
+            "title": "Spec Version"
+          },
+          "video_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the video is served, below this API.",
+            "title": "Video Url"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "created_at",
+          "duration_s",
+          "video_url",
+          "contact_sheet_url",
+          "spec_version"
+        ],
+        "title": "RenderOut",
         "type": "object"
       },
       "RerunRequest": {
@@ -1842,6 +1968,93 @@
         ]
       }
     },
+    "/api/v1/episodes/{episode_id}/renders": {
+      "get": {
+        "operationId": "get_episode_renders",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 1000000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode, or what was asked of it, does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "The videos of an episode, newest first",
+        "tags": [
+          "episodes"
+        ]
+      }
+    },
     "/api/v1/episodes/{episode_id}/rerun": {
       "post": {
         "operationId": "post_episode_rerun",
@@ -2475,6 +2688,98 @@
         "summary": "Every version of the spec",
         "tags": [
           "episodes"
+        ]
+      }
+    },
+    "/api/v1/files/{path}": {
+      "get": {
+        "operationId": "get_file",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "audio/wav": {},
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {},
+              "video/mp4": {}
+            },
+            "description": "The file, or the part of it that was asked for."
+          },
+          "206": {
+            "content": {
+              "audio/wav": {},
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {},
+              "video/mp4": {}
+            },
+            "description": "The file, or the part of it that was asked for."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The Range header could not be read."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "There is no such media file."
+          },
+          "416": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The range starts after the end of the file."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "A stored video, picture or narration file",
+        "tags": [
+          "files"
         ]
       }
     },

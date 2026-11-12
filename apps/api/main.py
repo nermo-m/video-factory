@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from apps.api.episodes import DatabaseEpisodeService, EpisodeService
 from apps.api.episodes import router as episodes_router
 from apps.api.errors import COMMON_ERROR_RESPONSES, install_error_handlers
+from apps.api.files import router as files_router
 from apps.api.health import HealthChecks, default_checks
 from apps.api.health import router as health_router
 from apps.api.providers import DatabaseProviderService, ProviderService
@@ -86,4 +87,5 @@ def create_app(
     app.include_router(settings_router, prefix=API_PREFIX)
     app.include_router(providers_router, prefix=API_PREFIX)
     app.include_router(episodes_router, prefix=API_PREFIX)
+    app.include_router(files_router, prefix=API_PREFIX)
     return app

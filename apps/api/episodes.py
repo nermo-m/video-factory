@@ -14,6 +14,7 @@
     POST /episodes/{id}/revise             ask for a change in words. Queues the revise skill
     GET  /episodes/{id}/revisions/{job_id} the proposed patch and what it would change
     POST /episodes/{id}/revise/apply       apply a proposal the owner has seen
+    GET  /episodes/{id}/renders            its videos, newest first, paged
 
 A revision is a model call, so it runs as a job in the worker like every other one: it is
 counted, it waits when the provider is limited, and the API stays quick. The proposal is
@@ -32,9 +33,10 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.api.errors import BAD_BODY_RESPONSE, ApiError, ErrorResponse
-from packages.core import lengths, pipeline, queue, schemas, specs
-from packages.core.db.models import Channel, Episode, Job, SpecVersion
-from packages.core.enums import EpisodeState, JobStatus, JobTag, SpecAuthor
+from apps.api.files import file_url
+from packages.core import lengths, pipeline, queue, schemas, specs, stages
+from packages.core.db.models import Channel, Episode, Job, Render, SpecVersion
+from packages.core.enums import EpisodeState, JobStatus, JobTag, RenderKind, SpecAuthor
 from packages.core.stages import GATES
 from packages.render.theme import check_capabilities, load_theme
 
@@ -74,7 +76,30 @@ class EpisodeOut(BaseModel):
     stale_scenes: dict[str, list[str]]
     target_duration_s: int
     spec_version: int | None = Field(description="The current version of its spec, if it has one.")
+    resting: bool = Field(
+        description="True when everything that is built so far is done: the video is "
+        "rendered, and the states after the render do not exist yet."
+    )
     created_at: datetime
+
+
+class RenderOut(BaseModel):
+    id: uuid.UUID
+    kind: RenderKind
+    created_at: datetime
+    duration_s: float | None
+    video_url: str | None = Field(description="Where the video is served, below this API.")
+    contact_sheet_url: str | None
+    spec_version: int | None = Field(
+        description="The version of the plan this video was rendered from."
+    )
+
+
+class RenderList(BaseModel):
+    renders: list[RenderOut]
+    total: int
+    limit: int
+    offset: int
 
 
 class EpisodeDetail(EpisodeOut):
@@ -207,6 +232,7 @@ class EpisodeService(Protocol):
     def revise(self, episode_id: uuid.UUID, comment: str) -> RevisionOut: ...
     def revision(self, episode_id: uuid.UUID, job_id: uuid.UUID) -> RevisionOut: ...
     def apply(self, episode_id: uuid.UUID, job_id: uuid.UUID) -> SpecOut: ...
+    def renders(self, episode_id: uuid.UUID, limit: int, offset: int) -> RenderList: ...
 
 
 def _not_found() -> ApiError:
@@ -278,6 +304,8 @@ class DatabaseEpisodeService:
             "target_duration_s": episode.target_duration_s
             or (channel.target_duration_s if channel else 45),
             "spec_version": version.version if version else None,
+            "resting": episode.state is stages.LAST_BUILT_STATE
+            and pipeline.is_resting(episode, pipeline.current_jobs(session, episode)),
             "created_at": episode.created_at,
         }
 
@@ -559,6 +587,42 @@ class DatabaseEpisodeService:
                 raise _spec_error(error) from error
             return self._store(session, episode_id, body, SpecAuthor.MODEL)
 
+    # --- renders ---
+
+    def renders(self, episode_id: uuid.UUID, limit: int, offset: int) -> RenderList:
+        with self._sessions.begin() as session:
+            self._episode(session, episode_id)
+            of_episode = Render.episode_id == episode_id
+            total = session.scalar(select(func.count()).select_from(Render).where(of_episode)) or 0
+            resolved = SpecVersion.__table__.alias("resolved")
+            plan = SpecVersion.__table__.alias("plan")
+            found = session.execute(
+                select(Render, plan.c.version)
+                .join(resolved, resolved.c.id == Render.resolved_spec_id)
+                .outerjoin(plan, plan.c.id == resolved.c.parent_id)
+                .where(of_episode)
+                .order_by(Render.created_at.desc(), Render.id)
+                .limit(limit)
+                .offset(offset)
+            ).all()
+            return RenderList(
+                renders=[
+                    RenderOut(
+                        id=render.id,
+                        kind=render.kind,
+                        created_at=render.created_at,
+                        duration_s=render.duration_s,
+                        video_url=file_url(render.file_path),
+                        contact_sheet_url=file_url(render.contact_sheet_path),
+                        spec_version=plan_version,
+                    )
+                    for render, plan_version in found
+                ],
+                total=total,
+                limit=limit,
+                offset=offset,
+            )
+
 
 class MemoryEpisodeService:
     """Episodes without a database, for tests of the routes and for the OpenAPI export.
@@ -593,6 +657,7 @@ class MemoryEpisodeService:
             stale_scenes={},
             target_duration_s=body.target_duration_s,
             spec_version=None,
+            resting=False,
             created_at=datetime.now(UTC),
             jobs=[],
         )
@@ -608,7 +673,7 @@ class MemoryEpisodeService:
         raise _not_found()
 
     advance = approve = reject = rerun = spec = replace_spec = plan = _missing
-    versions = diff = revise = revision = apply = _missing
+    versions = diff = revise = revision = apply = renders = _missing
 
 
 # --- Routes ------------------------------------------------------------------------------
@@ -772,3 +837,17 @@ def post_episode_revise_apply(
     episode_id: uuid.UUID, body: ApplyRequest, request: Request
 ) -> SpecOut:
     return _service(request).apply(episode_id, body.job_id)
+
+
+@router.get(
+    "/episodes/{episode_id}/renders",
+    summary="The videos of an episode, newest first",
+    responses=NOT_FOUND,
+)
+def get_episode_renders(
+    episode_id: uuid.UUID,
+    request: Request,
+    limit: Annotated[int, Query(ge=1, le=100)] = 24,
+    offset: Annotated[int, Query(ge=0, le=1_000_000)] = 0,
+) -> RenderList:
+    return _service(request).renders(episode_id, limit, offset)
