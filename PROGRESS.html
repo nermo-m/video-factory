@@ -411,14 +411,15 @@
       "id": "VFS-20",
       "order": 220,
       "title": "Planner service and skills: brief, research, script",
-      "status": "review",
-      "note": "The planner service with one corrective retry, and the skills brief, research and script with schemas, examples, tests and demo recordings. A claim without a retrieved source is dropped, and a script must fit its word budget. Worker handlers for the three planning jobs. In review as a pull request."
+      "status": "done",
+      "note": "The planner service with one corrective retry, and the skills brief, research and script with schemas, examples, tests and demo recordings. A claim without a retrieved source is dropped, and a script must fit its word budget. Worker handlers for the three planning jobs. Merged in pull request #31."
     },
     {
       "id": "VFS-21",
       "order": 230,
       "title": "Skills: direct, assets, package, revise",
-      "status": "ready"
+      "status": "active",
+      "note": "In progress: the skills direct, assets, package and revise."
     },
     {
       "id": "VFS-66",
@@ -465,8 +466,11 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-21 Skills: direct, assets, package, revise"
+    "status": "active",
+    "id": "VFS-21",
+    "title": "Skills: direct, assets, package, revise",
+    "started": "2026-11-12T18:10:00Z",
+    "resume": "Branch vfs-21-more-skills from main after pull request #31. Plan is in the Started comment on the board card: rules in packages/skills/rules.py with tests, skill folders direct, assets, package and revise with recordings, packages/core/json_patch.py, worker handlers in apps/worker/handlers/plan.py (plan.direct stores a spec version). Verify with: make check, make coverage, then a live run of each skill. Then pull request with auto-merge."
   },
   "checklist": [
     {
