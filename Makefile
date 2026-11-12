@@ -1,5 +1,9 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update models voice-test
+# Git Bash on Windows rewrites arguments that look like Unix paths ("/export/demo" becomes
+# "C:/Program Files/Git/export/demo"). The paths in these recipes are meant for the inside
+# of containers, so that rewriting is switched off. Other systems ignore the variable.
+export MSYS_NO_PATHCONV := 1
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update models voice-test sample-voice demo-render
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -85,6 +89,13 @@ models: env ## Download the Kokoro voice model files into the models volume (abo
 voice-test: ## Run the real Kokoro voice inside the worker image (needs make models first)
 	docker build --quiet --target test --tag vfs-worker-test --file apps/worker/Dockerfile .
 	$(RENDER_IMAGE) --volume video-factory_models:/models:ro vfs-worker-test python -m pytest -m voice -p no:cacheprovider
+
+sample-voice: ## Record the sample episode's narration with the real voice (needs make models)
+	docker build --quiet --target test --tag vfs-worker-test --file apps/worker/Dockerfile .
+	$(RENDER_IMAGE) --volume video-factory_models:/models:ro vfs-worker-test python -m scripts.record_sample_voice
+
+demo-render: env ## Render the sample episode inside the worker image into export/demo
+	docker compose run --rm --no-deps --build --user 0 --volume "$(CURDIR)/export:/export" worker python -m apps.worker.demo_render --out /export/demo
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py

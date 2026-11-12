@@ -130,6 +130,17 @@ jobs:
         run: make noop-job
       - name: Browser tests with axe and screenshot comparison at 390, 820 and 1440 px
         run: make e2e
+      - name: Render the sample episode and check the finished file
+        # Uses the bundled narration: the voice model is not downloaded in CI.
+        run: make demo-render
+      - name: Upload the demo video and its contact sheet
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: demo-video
+          path: |
+            export/demo/video.mp4
+            export/demo/video_contact_sheet.jpg
+          if-no-files-found: error
       - name: Collect service logs
         if: always()
         run: docker compose logs --no-color > compose-logs.txt
@@ -143,8 +154,8 @@ jobs:
             apps/web/e2e/.results/
             compose-logs.txt
           include-hidden-files: true
-      # From milestone M2 this job also runs an idea through to the export pack and uploads
-      # the demo video and its contact sheet.
+      # From milestone M2 this job also runs an idea through to the export pack in the
+      # interface. Until then the demo video comes from the sample spec directly.
 
   secret-scan:
     name: secret-scan

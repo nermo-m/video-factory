@@ -42,6 +42,8 @@ COPY apps/__init__.py apps/__init__.py
 COPY apps/worker apps/worker
 COPY packages packages
 COPY schemas schemas
+# The sample episode: its spec, pictures and recorded narration (demo mode, FR-16).
+COPY samples samples
 # `make models` runs this inside the container to fill the models volume.
 COPY scripts/__init__.py scripts/download_models.py scripts/
 USER app

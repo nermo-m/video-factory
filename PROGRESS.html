@@ -348,12 +348,13 @@
       "id": "VFS-17",
       "order": 170,
       "title": "Original sample episode and make demo-render",
-      "status": "ready"
+      "status": "review",
+      "note": "The Lighthouse Keeper: original spec, four pictures drawn in code, narration recorded with the Kokoro voice. make demo-render produces a 44 second video in the worker image and checks its format. Rendered in 53 seconds with 4 workers. Waits for a pull request."
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-17 Original sample episode and make demo-render"
+    "next": "Milestone M2 (pipeline and planning): write docs/plan/M2.md, move the M2 cards from Backlog to Ready, take the lowest Order"
   },
   "checklist": [
     {
@@ -388,7 +389,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "563 unit, 36 render (14 golden frames, 22 with FFmpeg), 5 real-voice and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "600 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -400,7 +401,7 @@
     },
     {
       "label": "Third-party media in the repository",
-      "value": "Three OFL-1.1 fonts. All artwork, sounds and golden frames are original (32 registered asset files)"
+      "value": "Three OFL-1.1 fonts. All artwork, sounds, golden frames and the sample episode are original (44 registered asset files)"
     },
     {
       "label": "Continuous integration",
@@ -416,6 +417,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "Milestone M1 works end to end on this PC: make demo-render turns the sample spec into a correct 44 second video with voice, music and sound cues inside the worker image, in 53 seconds. It needs no keys, no GPU and no downloads."
+    },
     {
       "date": "2026-11-12",
       "text": "A resolved spec now becomes a real video file: scenes encoded on their own, joined frame-exact with sound, and a change to one scene re-encodes only that scene. The 23 second test episode renders in 27 seconds."

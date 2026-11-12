@@ -7,8 +7,42 @@ images, short clips and narration. A deterministic render engine assembles the v
 the spec. The owner approves the plan and the assets, reviews the result, and uploads the
 accepted video by hand. The app never posts anything itself.
 
-> **Status: early development (milestone M0, foundation).** Nothing here produces a video
-> yet. This README grows with each milestone and is finished in M8.
+> **Status: early development (milestone M1, spec and render).** The render engine works:
+> `make demo-render` turns the bundled sample spec into a finished video. The planning
+> pipeline and the interface for it come next. This README grows with each milestone and
+> is finished in M8.
+
+## Render the sample episode
+
+Prerequisite: Docker with Compose. No keys, no GPU, no accounts and no model download.
+
+```bash
+make demo-render   # writes export/demo/video.mp4 and export/demo/video_contact_sheet.jpg
+```
+
+The sample is "The Lighthouse Keeper", an original 45 second story with pictures drawn
+in code. Its narration is bundled as recordings. To hear it spoken live by the local
+Kokoro voice instead, run `make models` once (354 MB) and render again. Without `make`:
+copy `.env.example` to `.env`, then
+`docker compose run --rm --no-deps --build --user 0 --volume "$PWD/export:/export" worker python -m apps.worker.demo_render --out /export/demo`.
+
+The command checks the finished file: 1080 by 1920, 30 frames a second, H.264 yuv420p,
+AAC 192 kbps, index at the front, length within 2 seconds of 45. The sound is mixed to
+-14 LUFS with true peak under -1 dB.
+
+### Render time (RN-11)
+
+Target: a 45 second episode renders in under 6 minutes with 4 CPU workers. Measured on
+2026-11-12 inside the worker image, for the 44.2 second sample at full size, from
+the resolved spec to the finished file (frames, audio mix, encode, join, contact sheet):
+
+| Workers | Render time |
+| --- | --- |
+| 4 | 53 seconds |
+| 1 | 94 seconds |
+
+Machine: a desktop PC with 16 logical CPU cores and 16 GB of memory given to Docker
+Desktop on Windows. Rendering again after an edit encodes only the scenes that changed.
 
 ## Design in one paragraph
 
@@ -70,8 +104,10 @@ make up           # create .env if missing, build, start, wait until all four se
 make ps           # web on 127.0.0.1:3000, api on 127.0.0.1:8000, db on 127.0.0.1:5433
 curl http://127.0.0.1:8000/api/v1/health   # database, storage, ComfyUI, demo mode
 make noop-job     # send one no-op job through the queue and wait for the worker
+make demo-render  # render the sample episode into export/demo
 make models       # download the Kokoro voice model into the models volume (354 MB, once)
 make voice-test   # run the real voice inside the worker image (needs make models)
+make render-test  # golden frames, audio and encode tests with FFmpeg in the worker image
 make e2e          # browser tests (Playwright and axe) in the pinned Linux image
 make down         # stop (data volumes are kept)
 ```
