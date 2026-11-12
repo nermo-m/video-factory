@@ -66,7 +66,7 @@ schemas/             JSON Schemas for the pipeline documents
 samples/             original demo spec, assets, recorded model responses
 docs/                architecture, decision records, plans and questions
 scripts/             repository checks
-tools/               progress tracker server and sync
+tools/               progress tracker server and sync, host bridge to the command line tools
 ```
 
 ## How it is built
@@ -111,6 +111,12 @@ make render-test  # golden frames, audio and encode tests with FFmpeg in the wor
 make e2e          # browser tests (Playwright and axe) in the pinned Linux image
 make down         # stop (data volumes are kept)
 ```
+
+With `PROVIDER_MODE=subscription`, `make up` also starts the host bridge to the Claude
+Code and Codex command line tools on `127.0.0.1:8189`, and `make down` stops it. That
+mode needs uv on the host and both tools signed in with a plan.
+`make bridge-status` shows whether they are. The bridge and its contract are described
+in [tools/cli_bridge/README.md](tools/cli_bridge/README.md).
 
 Open http://localhost:3000 for the interface. Every published port binds to `127.0.0.1` only. Without `make`: copy `.env.example` to
 `.env`, then `docker compose up --build --detach --wait`.

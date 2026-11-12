@@ -1,0 +1,6 @@
+{"type": "thread.started", "thread_id": "00000000-0000-7000-8000-000000000001"}
+{"type": "turn.started"}
+{"type": "item.completed", "item": {"id": "item_0", "type": "reasoning", "text": "**Weighing the script**"}}
+{"type": "item.completed", "item": {"id": "item_1", "type": "agent_message", "text": "First thoughts."}}
+{"type": "item.completed", "item": {"id": "item_2", "type": "agent_message", "text": "The hook is strong, the ending is flat."}}
+{"type": "turn.completed", "usage": {"input_tokens": 2400, "cached_input_tokens": 1800, "output_tokens": 52, "reasoning_output_tokens": 20}}

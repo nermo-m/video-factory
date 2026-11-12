@@ -48,7 +48,7 @@ flowchart LR
 | `worker` | `apps/worker` | Claims jobs and runs them: planner calls, images, voice, render, QC, export, and the client side of ComfyUI | Job loops and a no-op job |
 | `db` | Postgres 16 | All state: episodes, specs, assets, jobs, renders, reviews, usage | All 15 tables |
 | ComfyUI | on the host | Wan 2.2 image-to-video inference, driven over HTTP by the worker | Reachability probe only (clip adapter in M3) |
-| CLI bridge | `tools/cli-bridge`, on the host | Lets the worker use the owner's Claude and ChatGPT plans through the official command line tools | Not yet (M2) |
+| CLI bridge | `tools/cli_bridge`, on the host | Lets the worker use the owner's Claude and ChatGPT plans through the official command line tools | Not yet. Built in M2: `/health`, `/claude` and `/codex` on `127.0.0.1:8189` ([ADR 8](adr/0008-host-bridge-for-the-command-line-tools.md)) |
 
 Shared code lives in `packages/`:
 

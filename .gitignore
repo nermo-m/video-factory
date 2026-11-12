@@ -5,6 +5,8 @@
 
 # Runtime data: the data volume, model files and exports never enter the repository
 /data/
+# The log of a host bridge started in the background
+/.run/
 /models/
 /export/
 /backups/

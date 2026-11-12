@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_ROOTS = ("apps", "packages", "scripts")
+SOURCE_ROOTS = ("apps", "packages", "scripts", "tools")
 
 # SDKs of the external providers this project talks to.
 VENDOR_SDKS = frozenset({"anthropic", "openai", "kokoro_onnx", "onnxruntime", "comfy", "comfyui"})

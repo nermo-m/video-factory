@@ -737,3 +737,43 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   budget is 0. Card VFS-64 holds the live check and lists what it must confirm, including
   the fallback beta header.
 - **Reverse:** another provider is another class behind `LLMAdapter`.
+
+## D-028: The host bridge to the command line tools
+
+- **Date:** 2026-11-12. **Card:** VFS-56.
+- **Problem:** Section 3.4 outlines the bridge but leaves open its language, the exact
+  flags, how a usage limit is recognised, how sign-in is trusted, and how a service on
+  127.0.0.1 is kept away from web pages.
+- **Choice:** The full reasoning and every flag are in
+  [ADR 8](adr/0008-host-bridge-for-the-command-line-tools.md). In short:
+  - **Plain Python, standard library only**, in `tools/cli_bridge/` (underscore, so it can
+    be imported). Same type checks, lint rules and coverage gate as the rest.
+  - **Flags confirmed against Claude Code 2.1.300 and Codex 0.144.1** by reading the help
+    and by running each full command line with an empty prompt, which makes no model call.
+    `make bridge-flags` repeats that.
+  - **Plan sign-in is checked before every call**, in the cleaned environment. Any other
+    sign-in means the tool is not started.
+  - **Whole variable prefixes are removed** from a tool's environment (`ANTHROPIC_`,
+    `OPENAI_`, `CLAUDE_`, `CODEX_`, and anything with `API_KEY`), with three harmless
+    exceptions by name.
+  - **A usage limit is read from the tool's own sentence**, with the reset time in the
+    PC's clock. The sentences come from the program text of the two versions.
+  - **Web pages are refused** by the `Host` header, by `Origin` and `Sec-Fetch-Site`, and
+    by accepting only `application/json`. No password between worker and bridge.
+  - **Start and stop:** `make up` and `make down` do it in subscription mode. A running
+    bridge is found by asking its port, not through a file with a process number, so
+    another program on the port is never stopped by mistake.
+  - **Contract `bridge/1`** with its error classes is in `tools/cli_bridge/README.md`.
+    Both tools answer in the same shape, with input tokens counted the same way.
+- **Found while building:** on Windows, Python's HTTP server sets an option that lets a
+  second program listen on a port that is already taken, so two bridges could have run
+  side by side. The option is off on Windows now, with a test. Asking a closed port takes
+  Windows two seconds, so start and stop first try to take the port, which answers at once.
+- **Not verified:** no model call has gone through the bridge. Card VFS-65 holds the live
+  check. The sample outputs the fake tools print were written by hand from the tools'
+  documented output.
+- **Not in this card:** `/codex/image` (card VFS-60 in M3), and letting the critic read
+  image files from one folder (M6). The bridge refuses fields it does not know, so neither
+  can be used by accident before it exists.
+- **Reverse:** the worker only knows the contract. Another implementation behind the same
+  contract replaces this one.
