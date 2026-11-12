@@ -5,9 +5,10 @@ FROM python:3.12-slim-bookworm AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
-# espeak-ng turns narration text into phonemes for the Kokoro voice. It is GPL-3.0, so it
-# is installed as a separate program and run as one, never imported as a library.
-RUN apt-get update     && apt-get install --yes --no-install-recommends "espeak-ng=1.51*"     && rm -rf /var/lib/apt/lists/*
+# Two programs the worker starts as separate processes, never imports as libraries:
+# espeak-ng turns narration text into phonemes for the Kokoro voice (GPL-3.0), and FFmpeg
+# encodes video and measures audio (GPL in Debian's build, which includes x264).
+RUN apt-get update     && apt-get install --yes --no-install-recommends "espeak-ng=1.51*" "ffmpeg=7:5.1*"     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 FROM base AS deps

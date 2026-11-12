@@ -32,6 +32,10 @@
     "smoke": "assets/sounds/smoke.wav",
     "slam": "assets/sounds/slam.wav"
   },
+  "music": {
+    "notes_hz": [110.0, 164.81, 220.0, 261.63, 329.63],
+    "brightness": 0.3
+  },
   "text_styles": {
     "slam": { "font": "display", "color": "text", "size": 150 },
     "slam_accent": { "font": "display", "color": "accent", "size": 150 }

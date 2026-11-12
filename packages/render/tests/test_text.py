@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from PIL import ImageFont
 
 from packages.render import text
 from packages.render.theme import load_theme
@@ -107,3 +108,12 @@ def test_the_body_font_can_be_made_bold() -> None:
     bold = text.load_font(font_path, 80, weight=800)
 
     assert bold.getlength("Caption") > regular.getlength("Caption")
+
+
+def test_fr11_text_is_laid_out_the_same_way_on_every_machine() -> None:
+    # Pillow switches to a different text layout (Raqm) by itself as soon as the FriBiDi
+    # library is installed, and FFmpeg's packages install it. Letter positions then move
+    # by a pixel or two, which is enough to change a frame. The engine is pinned.
+    font = text.load_font(load_theme("night_scrolls").fonts["display"], 64)
+
+    assert font.layout_engine == ImageFont.Layout.BASIC

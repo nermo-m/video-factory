@@ -13,5 +13,10 @@ absolute times, and reports every problem it finds with its location. `theme/` h
 `compositor.py` draws frame N of scene S from the resolved spec, using the drawing functions
 in `primitives.py` and the caption grouping and font fitting in `text.py`.
 
-Tests: `make test` runs the unit tests. `make render-test` compares golden frames inside
-the worker image, and `make render-golden-update` approves the frames as drawn now.
+`timeline.py` puts everything that happens into one time-ordered list. `audio.py` mixes
+narration, the theme's sound cues and a synthesised music bed, ducks the music under the
+voice and brings the result to -14 LUFS with true peak under -1 dB. `loudness.py` measures
+that (ITU-R BS.1770) and `wav.py` reads and writes the files.
+
+Tests: `make test` runs the unit tests. `make render-test` compares golden frames and
+checks the audio mix with FFmpeg's loudness meter inside the worker image, and `make render-golden-update` approves the frames as drawn now.

@@ -69,7 +69,10 @@ def active_caption(
 @lru_cache(maxsize=256)
 def load_font(path: Path, size: int, weight: int | None = None) -> ImageFont.FreeTypeFont:
     """Load a bundled font by path. `weight` selects a weight of a variable font."""
-    font = ImageFont.truetype(str(path), size)
+    # The basic layout engine is asked for by name. Left to itself Pillow uses Raqm
+    # whenever the FriBiDi library happens to be installed, and the same text then lands
+    # on slightly different pixels from one machine or image to the next.
+    font = ImageFont.truetype(str(path), size, layout_engine=ImageFont.Layout.BASIC)
     if weight is not None:
         axes = font.get_variation_axes()
         values = [

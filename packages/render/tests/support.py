@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import wave
 from pathlib import Path
 from typing import Any
 
@@ -107,3 +108,32 @@ def assert_matches_golden(image: Image.Image, name: str) -> None:
             f"{CHANGED_SHARE_TOLERANCE:.2%}). The rendered frame was saved to "
             f"packages/render/tests/failed/{name}.png."
         )
+
+
+def sample_voices(folder: Path, resolved: dict[str, Any]) -> None:
+    """Write a stand-in narration file for every spoken scene: speech-like noise, 24 kHz mono.
+
+    Not a voice, but it has what the mix cares about: the band of speech, syllables that
+    rise and fall, and the length the resolved spec says the narration has.
+    """
+    rate = 24000
+    for index, scene in enumerate(resolved["scenes"]):
+        narration = scene["narration"]
+        if not narration["audio_file"]:
+            continue
+        count = round(narration["duration_s"] * rate)
+        steps = np.arange(count) / rate
+        spectrum = np.fft.rfft(np.random.default_rng(100 + index).standard_normal(count))
+        frequencies = np.fft.rfftfreq(count, 1 / rate)
+        spectrum[(frequencies < 150) | (frequencies > 3500)] = 0
+        noise = np.fft.irfft(spectrum, count)
+        syllables = np.abs(np.sin(2 * np.pi * 2 * steps)) ** 0.7
+        speech = noise * syllables
+        speech = speech / np.abs(speech).max() * 0.5
+        path = folder / narration["audio_file"]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with wave.open(str(path), "wb") as sound:
+            sound.setnchannels(1)
+            sound.setsampwidth(2)
+            sound.setframerate(rate)
+            sound.writeframes(np.round(speech * 32767).astype("<i2").tobytes())

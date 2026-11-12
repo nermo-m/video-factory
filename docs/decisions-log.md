@@ -484,3 +484,49 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     voices are phonemised as British English.
 - **Reverse:** The adapter is behind `TTSAdapter`. Another engine, or forced alignment for
   timings, replaces one module and keeps the `Narration` it returns.
+
+## D-022: The audio mix
+
+- **Date:** 2026-11-12. **Card:** VFS-15.
+- **Problem:** RN-09 gives three limits (voice at least 10 dB above music while speaking,
+  about -14 LUFS, true peak under -1 dB). The design does not say where the music comes
+  from, what format the mix has, how levels are set, or how loudness is measured.
+- **Choice:**
+  - **Format.** 48 kHz stereo, exactly as long as the video. Narration (24 kHz) and the
+    theme's sound cues (44.1 kHz) are converted when they are placed. Loudness is measured
+    on the final stereo signal, because that is what a platform measures.
+  - **Three stems that add up to the mix:** voice, effects and music. The tests measure
+    the limits on the stems and the mix themselves, not on the mix's own report.
+  - **Music bed.** The theme had no music and nothing third-party may be added. The bed is
+    a soft sustained chord synthesised at mix time from two settings in `theme.json`
+    (`notes_hz` and `brightness`), with slow swells decided by the spec's seed. It adds no
+    file to the repository, has no loop seam and is as long as the video.
+  - **Levels follow the voice.** Music under speech sits 14 dB below the quietest scene's
+    voice, which leaves 4 dB of room over the 10 dB of RN-09. Between narrations it comes
+    up by 6 dB, over half a second, and is down again 50 ms before the next word. Pauses
+    shorter than about a second do not bring it up. A sound cue peaks 6 dB above the
+    voice's average level, moved by its `gain_db`.
+  - **Loudness.** Measured in NumPy after ITU-R BS.1770-4 (K-weighting, 400 ms blocks,
+    absolute and relative gates), checked against the EBU Tech 3341 reference signals. True
+    peak is found by oversampling four times. The mix is brought to -14 LUFS, then a
+    look-ahead limiter keeps peaks down, and both are measured again and corrected until
+    the mix is inside both limits.
+  - **A second opinion.** A render test writes the mix to a file and has FFmpeg's
+    `ebur128` meter measure it inside the worker image. FFmpeg and this project's meter
+    agree within 0.2 LU, so FFmpeg is now in the worker image. That adds about 600 MB to
+    the image. A slimmer FFmpeg build is possible later if image size matters.
+  - **Timeline.** `packages/render/timeline.py` is the flat, time-ordered event list of
+    section 7.1. The mix reads narration and sound events from it. The contact sheet
+    (VFS-16) will use it to find a scene's busiest moment.
+- **Found on the way:** installing FFmpeg changed ten golden frames. FFmpeg's packages
+  bring the FriBiDi library, and Pillow then switches its text layout to Raqm without being
+  asked, which moves letters by a pixel or two. `text.load_font` now asks for the basic
+  layout engine by name, with a test, and every golden frame passes unchanged. Without
+  this, the same spec would have rendered differently depending on what else was installed.
+- **Measured:** mixing a 23 second video takes about 4 seconds. Result on the test episode:
+  -14.0 LUFS, true peak -3.2 dB, voice 13 dB above the music.
+- **Taste decision for the owner:** the music bed is a plain synthesised chord (A minor),
+  chosen because it is original by construction. Listen to it in the demo video once
+  VFS-17 is done. Changing the notes is one line in `theme.json`. A composed track needs a
+  file with a licence and a small extension of the mix.
+- **Reverse:** all levels and times are constants at the top of `packages/render/audio.py`.
