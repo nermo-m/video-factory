@@ -15,6 +15,7 @@
     GET  /episodes/{id}/revisions/{job_id} the proposed patch and what it would change
     POST /episodes/{id}/revise/apply       apply a proposal the owner has seen
     GET  /episodes/{id}/renders            its videos, newest first, paged
+    GET  /episodes/{id}/assets             its pictures: where each comes from and its file
 
 A revision is a model call, so it runs as a job in the worker like every other one: it is
 counted, it waits when the provider is limited, and the API stays quick. The proposal is
@@ -34,9 +35,18 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from apps.api.errors import BAD_BODY_RESPONSE, ApiError, ErrorResponse
 from apps.api.files import file_url
-from packages.core import lengths, pipeline, queue, schemas, specs, stages
+from packages.core import assets, lengths, pipeline, queue, schemas, specs, stages
 from packages.core.db.models import Channel, Episode, Job, Render, SpecVersion
-from packages.core.enums import EpisodeState, JobStatus, JobTag, RenderKind, SpecAuthor
+from packages.core.enums import (
+    AssetKind,
+    AssetOrigin,
+    EpisodeState,
+    JobStatus,
+    JobTag,
+    RenderKind,
+    RightsStatus,
+    SpecAuthor,
+)
 from packages.core.stages import GATES
 from packages.render.theme import check_capabilities, load_theme
 
@@ -100,6 +110,31 @@ class RenderList(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class AssetOut(BaseModel):
+    id: str = Field(description="The picture's id in the spec, for example a_harbour.")
+    kind: AssetKind
+    origin: AssetOrigin
+    used_in: list[str] = Field(description="The scenes that show it.")
+    becomes_clip: bool
+    prompt: str | None = Field(description="The prompt of a picture that is generated.")
+    filename: str | None = Field(description="The file name asked for, when it is uploaded.")
+    resolved: bool = Field(description="True when it has a file. A render needs all of them.")
+    image_url: str | None = Field(description="Where its active file is served.")
+    model: str | None = Field(description="What made the active file, when it was generated.")
+    versions: int = Field(description="How many files it has had.")
+    licence: str | None
+    rights_status: RightsStatus | None = Field(description="Null while it has no asset row.")
+    contains_third_party_ip: bool | None
+
+
+class AssetList(BaseModel):
+    assets: list[AssetOut]
+    unresolved: int = Field(description="How many pictures have no file yet.")
+    rights_problems: list[str] = Field(
+        description="What would stop Finish and export, one line per picture (FR-08)."
+    )
 
 
 class EpisodeDetail(EpisodeOut):
@@ -233,6 +268,7 @@ class EpisodeService(Protocol):
     def revision(self, episode_id: uuid.UUID, job_id: uuid.UUID) -> RevisionOut: ...
     def apply(self, episode_id: uuid.UUID, job_id: uuid.UUID) -> SpecOut: ...
     def renders(self, episode_id: uuid.UUID, limit: int, offset: int) -> RenderList: ...
+    def assets(self, episode_id: uuid.UUID) -> AssetList: ...
 
 
 def _not_found() -> ApiError:
@@ -587,6 +623,44 @@ class DatabaseEpisodeService:
                 raise _spec_error(error) from error
             return self._store(session, episode_id, body, SpecAuthor.MODEL)
 
+    # --- assets ---
+
+    def assets(self, episode_id: uuid.UUID) -> AssetList:
+        with self._sessions.begin() as session:
+            episode = self._episode(session, episode_id)
+            spec = self._current(session, episode_id).body
+            pictures = assets.resolve(session, episode, spec)
+            counts = {
+                picture.asset.id: len(assets.versions(session, picture.asset))
+                for picture in pictures
+                if picture.asset is not None
+            }
+            return AssetList(
+                assets=[
+                    AssetOut(
+                        id=picture.id,
+                        kind=AssetKind(picture.kind),
+                        origin=AssetOrigin(picture.origin),
+                        used_in=list(picture.used_in),
+                        becomes_clip=picture.becomes_clip,
+                        prompt=picture.prompt,
+                        filename=picture.filename,
+                        resolved=picture.file is not None,
+                        image_url=file_url(picture.file),
+                        model=picture.version.model if picture.version else None,
+                        versions=counts.get(picture.asset.id, 0) if picture.asset else 0,
+                        licence=picture.asset.licence if picture.asset else None,
+                        rights_status=picture.asset.rights_status if picture.asset else None,
+                        contains_third_party_ip=picture.asset.contains_third_party_ip
+                        if picture.asset
+                        else None,
+                    )
+                    for picture in pictures
+                ],
+                unresolved=len(assets.files(pictures)[1]),
+                rights_problems=assets.rights_problems(pictures),
+            )
+
     # --- renders ---
 
     def renders(self, episode_id: uuid.UUID, limit: int, offset: int) -> RenderList:
@@ -673,7 +747,7 @@ class MemoryEpisodeService:
         raise _not_found()
 
     advance = approve = reject = rerun = spec = replace_spec = plan = _missing
-    versions = diff = revise = revision = apply = renders = _missing
+    versions = diff = revise = revision = apply = renders = assets = _missing
 
 
 # --- Routes ------------------------------------------------------------------------------
@@ -851,3 +925,12 @@ def get_episode_renders(
     offset: Annotated[int, Query(ge=0, le=1_000_000)] = 0,
 ) -> RenderList:
     return _service(request).renders(episode_id, limit, offset)
+
+
+@router.get(
+    "/episodes/{episode_id}/assets",
+    summary="The pictures of an episode: where each comes from and its file",
+    responses=NOT_FOUND,
+)
+def get_episode_assets(episode_id: uuid.UUID, request: Request) -> AssetList:
+    return _service(request).assets(episode_id)

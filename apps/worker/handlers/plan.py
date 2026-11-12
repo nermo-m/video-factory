@@ -24,11 +24,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from apps.worker.runner import Handler, JobContext
 from packages.adapters.llm.base import LLMAdapter
-from packages.core import usage
+from packages.core import assets, usage
 from packages.core.db.models import Channel, Episode, Job, SpecVersion
 from packages.core.enums import ErrorClass, JobStatus, SpecAuthor
 from packages.core.queue import JobError
 from packages.core.specs import store_spec
+from packages.core.storage import StorageAdapter
 from packages.render.theme import load_theme
 from packages.skills import rules
 from packages.skills.planner import Check, Repair, SkillResult, load_skill, run_skill
@@ -240,12 +241,15 @@ _JOBS: dict[str, tuple[str, Prepare]] = {
 
 
 def plan_handlers(
-    sessions: sessionmaker[Session], llm: Callable[[], LLMAdapter]
+    sessions: sessionmaker[Session],
+    llm: Callable[[], LLMAdapter],
+    storage: StorageAdapter | None = None,
 ) -> dict[str, Handler]:
     """The handlers, for a worker that has a database and a way to get the mode's model.
 
     `llm` is called for every job, so the owner's "Use paid APIs" switch is read as it is
-    at that moment.
+    at that moment. With a `storage`, `plan.assets` also stores what it resolved: the
+    channel's library and a row for every picture the episode has to get (FR-05).
     """
 
     def handler(job_type: str) -> Handler:
@@ -280,6 +284,12 @@ def plan_handlers(
                         skill_version=result.skill_version,
                     )
                     output["spec_version"] = stored.version
+            if job_type == ASSETS_JOB and storage is not None:
+                with sessions.begin() as session:
+                    episode, _channel_row = _episode(session, episode_id)
+                    assets.ensure_library(session, storage, episode.channel_id)
+                    manifest = {entry["id"]: entry for entry in result.output["assets"]}
+                    assets.sync(session, episode, current_spec(session, episode), manifest)
             return output
 
         return run

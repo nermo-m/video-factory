@@ -15,6 +15,110 @@ export type ApplyRequest = {
 };
 
 /**
+ * AssetKind
+ */
+export type AssetKind = 'image' | 'clip' | 'audio' | 'sprite';
+
+/**
+ * AssetList
+ */
+export type AssetList = {
+    /**
+     * Assets
+     */
+    assets: Array<AssetOut>;
+    /**
+     * Rights Problems
+     *
+     * What would stop Finish and export, one line per picture (FR-08).
+     */
+    rights_problems: Array<string>;
+    /**
+     * Unresolved
+     *
+     * How many pictures have no file yet.
+     */
+    unresolved: number;
+};
+
+/**
+ * AssetOrigin
+ */
+export type AssetOrigin = 'generated' | 'uploaded' | 'library';
+
+/**
+ * AssetOut
+ */
+export type AssetOut = {
+    /**
+     * Becomes Clip
+     */
+    becomes_clip: boolean;
+    /**
+     * Contains Third Party Ip
+     */
+    contains_third_party_ip: boolean | null;
+    /**
+     * Filename
+     *
+     * The file name asked for, when it is uploaded.
+     */
+    filename: string | null;
+    /**
+     * Id
+     *
+     * The picture's id in the spec, for example a_harbour.
+     */
+    id: string;
+    /**
+     * Image Url
+     *
+     * Where its active file is served.
+     */
+    image_url: string | null;
+    kind: AssetKind;
+    /**
+     * Licence
+     */
+    licence: string | null;
+    /**
+     * Model
+     *
+     * What made the active file, when it was generated.
+     */
+    model: string | null;
+    origin: AssetOrigin;
+    /**
+     * Prompt
+     *
+     * The prompt of a picture that is generated.
+     */
+    prompt: string | null;
+    /**
+     * Resolved
+     *
+     * True when it has a file. A render needs all of them.
+     */
+    resolved: boolean;
+    /**
+     * Null while it has no asset row.
+     */
+    rights_status: RightsStatus | null;
+    /**
+     * Used In
+     *
+     * The scenes that show it.
+     */
+    used_in: Array<string>;
+    /**
+     * Versions
+     *
+     * How many files it has had.
+     */
+    versions: number;
+};
+
+/**
  * Billing
  */
 export type Billing = 'demo' | 'plan' | 'api';
@@ -674,6 +778,11 @@ export type RevisionOut = {
 };
 
 /**
+ * RightsStatus
+ */
+export type RightsStatus = 'cleared' | 'needs_review' | 'blocked';
+
+/**
  * ScenePlan
  */
 export type ScenePlan = {
@@ -1059,6 +1168,44 @@ export type PostEpisodeApproveResponses = {
 };
 
 export type PostEpisodeApproveResponse = PostEpisodeApproveResponses[keyof PostEpisodeApproveResponses];
+
+export type GetEpisodeAssetsData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/assets';
+};
+
+export type GetEpisodeAssetsErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodeAssetsError = GetEpisodeAssetsErrors[keyof GetEpisodeAssetsErrors];
+
+export type GetEpisodeAssetsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssetList;
+};
+
+export type GetEpisodeAssetsResponse = GetEpisodeAssetsResponses[keyof GetEpisodeAssetsResponses];
 
 export type GetEpisodePlanData = {
     body?: never;

@@ -9,8 +9,8 @@ The two render jobs resolve the episode's current authored spec themselves, from
 voice that was spoken for the narration as it is now and from the stored pictures. The
 resolver gives the same answer every time, so every scene job and the join agree.
 
-Until the asset library of milestone M3 exists, the only pictures are the ones bundled
-with the sample episode. They are copied into the storage the first time they are needed.
+The pictures are the active versions of the episode's assets (`packages/core/assets.py`).
+A render does not start while one of them has no file (FR-05).
 
 Paths: narration goes through the storage adapter, into the job's own folder. FFmpeg
 writes below the same data folder: scene files into `episodes/<id>/scenes`, where the
@@ -34,6 +34,7 @@ from apps.worker.handlers.plan import current_spec
 from apps.worker.runner import Handler, JobContext
 from packages.adapters.tts import TTSAdapter, VoiceError
 from packages.adapters.tts.samples import SampleVoice, sample_key
+from packages.core import assets
 from packages.core.db.models import Channel, Episode, Job, Render, SpecVersion
 from packages.core.enums import ErrorClass, JobStatus, RenderKind, SpecAuthor, SpecKind
 from packages.core.queue import JobError, NeedsOwnerError
@@ -44,7 +45,6 @@ from packages.render.resolver import AssetFile, NarrationTiming, ResolveError, W
 from packages.render.theme import load_theme
 
 VOICE_JOB, SCENE_JOB, JOIN_JOB = "gen.voice", "render.scene", "render.join"
-_SAMPLE_PICTURES = Path(__file__).resolve().parents[3] / "samples" / "lighthouse_keeper" / "assets"
 
 
 @dataclass(frozen=True)
@@ -111,27 +111,20 @@ def speak(
     }
 
 
-def stored_pictures(storage: StorageAdapter, authored: Mapping[str, Any]) -> dict[str, AssetFile]:
-    """Where each picture of the spec is stored, copying the bundled ones in when needed."""
-    files: dict[str, AssetFile] = {}
-    missing: list[str] = []
-    for asset in authored["assets"]:
-        bundled = _SAMPLE_PICTURES / f"{asset['id']}.png"
-        if not bundled.is_file():
-            missing.append(asset["id"])
-            continue
-        stored = f"library/{asset['id']}/v1.png"
-        if not storage.exists(stored):
-            storage.write_bytes(stored, bundled.read_bytes())
-        files[asset["id"]] = AssetFile(file=stored, licence=asset.get("licence"))
-    if missing:
-        known = ", ".join(sorted(path.stem for path in _SAMPLE_PICTURES.glob("*.png")))
-        raise NeedsOwnerError(
-            f"These pictures do not exist yet: {', '.join(missing)}. Making and uploading "
-            "pictures arrives with the asset library. Until then a plan can use the "
-            f"pictures of the sample episode: {known}."
-        )
-    return files
+def asset_files(stored: Mapping[str, assets.StoredFile]) -> dict[str, AssetFile]:
+    """The stored pictures in the form the resolver takes."""
+    return {key: AssetFile(file=file.file, licence=file.licence) for key, file in stored.items()}
+
+
+def stored_pictures(
+    session: Session, episode: Episode, authored: Mapping[str, Any]
+) -> dict[str, AssetFile]:
+    """The active file of every picture of the spec, or an owner task that names the
+    pictures that have none (FR-05)."""
+    stored, unresolved = assets.files(assets.resolve(session, episode, authored))
+    if unresolved:
+        raise NeedsOwnerError(assets.unresolved_text(unresolved))
+    return asset_files(stored)
 
 
 def resolve_with(
@@ -341,7 +334,7 @@ def produce_handlers(
         return resolve_with(
             authored,
             _voices(session, episode.id),
-            stored_pictures(storage, authored),
+            stored_pictures(session, episode, authored),
             dict(channel.pronunciation or {}),
         )
 

@@ -16,6 +16,192 @@
         "title": "ApplyRequest",
         "type": "object"
       },
+      "AssetKind": {
+        "enum": [
+          "image",
+          "clip",
+          "audio",
+          "sprite"
+        ],
+        "title": "AssetKind",
+        "type": "string"
+      },
+      "AssetList": {
+        "properties": {
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/AssetOut"
+            },
+            "title": "Assets",
+            "type": "array"
+          },
+          "rights_problems": {
+            "description": "What would stop Finish and export, one line per picture (FR-08).",
+            "items": {
+              "type": "string"
+            },
+            "title": "Rights Problems",
+            "type": "array"
+          },
+          "unresolved": {
+            "description": "How many pictures have no file yet.",
+            "title": "Unresolved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assets",
+          "unresolved",
+          "rights_problems"
+        ],
+        "title": "AssetList",
+        "type": "object"
+      },
+      "AssetOrigin": {
+        "enum": [
+          "generated",
+          "uploaded",
+          "library"
+        ],
+        "title": "AssetOrigin",
+        "type": "string"
+      },
+      "AssetOut": {
+        "properties": {
+          "becomes_clip": {
+            "title": "Becomes Clip",
+            "type": "boolean"
+          },
+          "contains_third_party_ip": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contains Third Party Ip"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The file name asked for, when it is uploaded.",
+            "title": "Filename"
+          },
+          "id": {
+            "description": "The picture's id in the spec, for example a_harbour.",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where its active file is served.",
+            "title": "Image Url"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AssetKind"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What made the active file, when it was generated.",
+            "title": "Model"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/AssetOrigin"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The prompt of a picture that is generated.",
+            "title": "Prompt"
+          },
+          "resolved": {
+            "description": "True when it has a file. A render needs all of them.",
+            "title": "Resolved",
+            "type": "boolean"
+          },
+          "rights_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RightsStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null while it has no asset row."
+          },
+          "used_in": {
+            "description": "The scenes that show it.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Used In",
+            "type": "array"
+          },
+          "versions": {
+            "description": "How many files it has had.",
+            "title": "Versions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "origin",
+          "used_in",
+          "becomes_clip",
+          "prompt",
+          "filename",
+          "resolved",
+          "image_url",
+          "model",
+          "versions",
+          "licence",
+          "rights_status",
+          "contains_third_party_ip"
+        ],
+        "title": "AssetOut",
+        "type": "object"
+      },
       "Billing": {
         "enum": [
           "demo",
@@ -1191,6 +1377,15 @@
         "title": "RevisionOut",
         "type": "object"
       },
+      "RightsStatus": {
+        "enum": [
+          "cleared",
+          "needs_review",
+          "blocked"
+        ],
+        "title": "RightsStatus",
+        "type": "string"
+      },
       "ScenePlan": {
         "properties": {
           "estimated_s": {
@@ -1807,6 +2002,69 @@
           }
         },
         "summary": "Pass the gate the episode waits at",
+        "tags": [
+          "episodes"
+        ]
+      }
+    },
+    "/api/v1/episodes/{episode_id}/assets": {
+      "get": {
+        "operationId": "get_episode_assets",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode, or what was asked of it, does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "The pictures of an episode: where each comes from and its file",
         "tags": [
           "episodes"
         ]

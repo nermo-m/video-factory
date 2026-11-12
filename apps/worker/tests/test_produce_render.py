@@ -19,6 +19,7 @@ from apps.worker.handlers import produce
 from apps.worker.main import build_handlers
 from packages.adapters.storage import LocalStorage
 from packages.adapters.tts.samples import SampleVoice
+from packages.core import assets
 from packages.core.settings import Settings
 from packages.core.stages import LAST_BUILT_STATE, STATES, index_of, plan_stage, stage_count
 from packages.render.encode import for_preview, render_scene
@@ -62,7 +63,9 @@ def chain(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
         if scene["narration"].strip()
     ]
     resolved = for_preview(
-        produce.resolve_with(authored, voices, produce.stored_pictures(storage, authored), {})
+        produce.resolve_with(
+            authored, voices, produce.asset_files(assets.store_bundled(storage)), {}
+        )
     )
     scenes_folder = data_dir / "episodes" / "one" / "scenes"
     theme = load_theme(resolved["theme"])

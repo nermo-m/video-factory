@@ -48,7 +48,7 @@ def build_handlers(settings: Settings, sessions: sessionmaker[Session]) -> dict[
     local = Adapters(settings)
     return {
         **HANDLERS,
-        **plan_handlers(sessions, language_model),
+        **plan_handlers(sessions, language_model, local.storage()),
         **produce_handlers(
             sessions,
             storage=local.storage(),
