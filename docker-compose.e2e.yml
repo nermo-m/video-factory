@@ -22,3 +22,5 @@ services:
       # repository. Failure traces land in a folder that git ignores.
       - ./apps/web/e2e/__screenshots__:/repo/apps/web/e2e/__screenshots__
       - ./apps/web/e2e/.results:/repo/apps/web/e2e/.results
+      # The video the end to end demo test made, for CI to upload (demo.spec.ts).
+      - ./apps/web/e2e/.demo:/repo/apps/web/e2e/.demo

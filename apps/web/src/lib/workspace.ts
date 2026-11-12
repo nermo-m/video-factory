@@ -1,9 +1,9 @@
 // How the episode workspace words things (design doc sections 11.2 and 11.5, and the
 // workspace mockups): the eight steps of the pipeline, what a scene shows, and how a
 // proposed change reads. No React and no requests here.
-import type { ChangeOut, EpisodeOut, EpisodeState } from "@/api/client";
+import type { ChangeOut, EpisodeDetail, EpisodeOut, EpisodeState, JobOut, RenderOut } from "@/api/client";
 
-import { statusOf } from "./episodes";
+import { jobsOfState, statusOf, stoppedOf, workingOn } from "./episodes";
 
 /** The spec as the API sends it. Only what the Plan tab reads is named. */
 export interface Scene {
@@ -71,7 +71,7 @@ export function pipelineOf(episode: EpisodeOut): { label: string; state: StepSta
     state:
       current === -1 || index > current
         ? "todo"
-        : index < current
+        : index < current || episode.resting
           ? "done"
           : episode.awaiting_approval
             ? "waiting"
@@ -85,12 +85,80 @@ const NEEDS_YOU: Record<string, string> = {
   review: "Video needs you",
 };
 
+export type ChipTone = "waiting" | "working" | "finished" | "stopped";
+
 /** The chip beside the title. */
-export function chipOf(episode: EpisodeOut): { waiting: boolean; label: string } {
+export function chipOf(episode: EpisodeDetail): { tone: ChipTone; label: string } {
   if (episode.awaiting_approval) {
-    return { waiting: true, label: NEEDS_YOU[episode.gate ?? ""] ?? "Needs you" };
+    return { tone: "waiting", label: NEEDS_YOU[episode.gate ?? ""] ?? "Needs you" };
   }
-  return { waiting: false, label: statusOf(episode).label };
+  if (stoppedOf(episode)) {
+    const step = PIPELINE.find((candidate) => candidate.states.includes(episode.state));
+    return { tone: "stopped", label: `${step?.label ?? "Step"} stopped` };
+  }
+  const status = statusOf(episode);
+  return { tone: status.tone === "finished" ? "finished" : "working", label: status.label };
+}
+
+/** How far a step that makes one thing per scene has come: "3 of 7 scenes". */
+export interface SceneProgress {
+  heading: string;
+  /** Null while the step does something that is not counted in scenes. */
+  done: number | null;
+  total: number | null;
+  text: string;
+}
+
+const count = (jobs: JobOut[], type: string, status?: string) =>
+  jobs.filter((job) => job.type === type && (status === undefined || job.status === status)).length;
+
+/**
+ * What the Render tab says while the video is being made: null before the voice starts
+ * and once the video is there.
+ */
+export function makingOf(episode: EpisodeDetail): SceneProgress | null {
+  if (episode.resting || episode.awaiting_approval) {
+    return null;
+  }
+  if (episode.state !== "voice" && episode.state !== "render") {
+    return null;
+  }
+  const jobs = jobsOfState(episode);
+  const heading = workingOn(episode.state);
+  const type = episode.state === "voice" ? "gen.voice" : "render.scene";
+  const total = count(jobs, type);
+  const done = count(jobs, type, "succeeded");
+  if (episode.state === "render" && count(jobs, "render.join") > 0) {
+    return { heading, done: null, total: null, text: "Joining the scenes and mixing the sound." };
+  }
+  if (total === 0) {
+    return { heading, done: null, total: null, text: "Starting." };
+  }
+  return { heading, done, total, text: `${done} of ${total} ${total === 1 ? "scene" : "scenes"}` };
+}
+
+function plural(amount: number, unit: string): string {
+  return `${amount} ${unit}${amount === 1 ? "" : "s"}`;
+}
+
+/** A length for people: "44 seconds", "1 minute 1 second". */
+export function lengthOf(seconds: number): string {
+  const whole = Math.round(seconds);
+  if (whole < 60) {
+    return plural(whole, "second");
+  }
+  const rest = whole % 60;
+  return rest === 0
+    ? plural(Math.floor(whole / 60), "minute")
+    : `${plural(Math.floor(whole / 60), "minute")} ${plural(rest, "second")}`;
+}
+
+/** The line under a video: what it is, how long, and which plan it was made from. */
+export function renderCaption(render: RenderOut): string {
+  const kind = { draft: "Draft video", preview: "Preview", final: "Final video" }[render.kind];
+  const length = render.duration_s === null ? "" : `, ${lengthOf(render.duration_s)}`;
+  const plan = render.spec_version === null ? "" : `, from version ${render.spec_version} of the plan`;
+  return `${kind}${length}${plan}`;
 }
 
 function capital(word: string): string {

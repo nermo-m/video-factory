@@ -336,19 +336,20 @@
       "id": "VFS-70",
       "order": 268,
       "title": "Renders route and file serving",
-      "status": "review",
-      "note": "The API lists the videos of an episode and serves stored media with range requests, only from below the data folder. In review as a pull request."
+      "status": "done",
+      "note": "The API lists the videos of an episode and serves stored media with range requests, only from below the data folder. Merged in pull request #38."
     },
     {
       "id": "VFS-25",
       "order": 270,
       "title": "End to end demo test: idea to rendered video",
-      "status": "ready"
+      "status": "review",
+      "note": "One browser test runs an idea through the real API and worker to a rendered video, and the interface passes the pictures gate, shows the video and says why a step stopped. In review as a pull request."
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-25 End to end demo test: idea to rendered video"
+    "next": "VFS-66 Planner skills pass their recorded tests through the bridge, then VFS-68"
   },
   "checklist": [
     {
@@ -383,7 +384,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1435 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 225 integration (Python), 19 Node, 146 browser tests with axe and screenshots"
+      "value": "1435 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 225 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -411,6 +412,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "Milestone M2's goal works in the browser: type an idea, edit the plan, approve it and the pictures, and about two minutes later the Render tab plays the video. One browser test does exactly that through the real API and worker on every pull request."
+    },
     {
       "date": "2026-11-12",
       "text": "An approved plan now becomes a video by itself: the worker speaks every scene, encodes every scene and joins them as queued jobs. The sample story rendered through the running stack in about two minutes."

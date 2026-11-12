@@ -1185,3 +1185,34 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - **No sign-in on `/files`**, like the rest of the API: it listens on 127.0.0.1 only.
     Access from the network gets a password session in card VFS-63.
 - **Reverse:** the media types and the path check are in `apps/api/files.py`.
+
+## D-040: The end to end demo, and what the interface shows after the plan gate
+
+- **Date:** 2026-11-12. **Card:** VFS-25.
+- **Problem:** The card asks for one browser test from an idea to a rendered video. The
+  interface stopped at the plan gate: it could not pass the pictures gate, show a video,
+  tell a rendered episode from a working one, or show why a step failed.
+- **Choice:**
+  - **The pictures gate has Approve pictures and nothing else.** The Assets tab, where each
+    picture is looked at and sent back, is milestone M3. Until then a plan uses library
+    pictures, so there is nothing new to compare, and the bar says so.
+  - **Render tab:** while the voice and the scenes are made it counts scenes ("3 of 7
+    scenes") from the episode's jobs. Then it shows the newest video: always 9 by 16, at
+    most 70 percent of the screen high, loaded only when played, with its length, the
+    plan version it came from and a link to the contact sheet. It uses the browser's own
+    player. The player with scene marks is part of the Videos screen (M5).
+  - **A rendered episode reads as finished:** "Video rendered" on its chip and its Board
+    card, under Finished, with the Render step ticked. It follows the API's `resting`.
+  - **A step that stopped shows its reason above the tabs** with Run this step again
+    (section 4.4). A step has stopped when one of its jobs failed and none is waiting or
+    running. Without this, an edited narration in demo mode left the episode on
+    "Recording the voice" for ever.
+  - **The test edits a title, not the narration,** because CI has no voice model and the
+    bundled voice only knows the sample's words (`docs/plan/M2.md`).
+  - **The test checks the video through the API,** not by playing it: the test browser has
+    no H.264 decoder. It asks for a range (206), reads the whole file, checks that it is an
+    MP4 with its index at the front, and that the render belongs to the edited plan. The
+    format itself (RN-01) is checked by the worker before a render is stored.
+  - **CI:** the uploaded demo video is the one this test made. `make demo-render` still
+    runs in the same job, as before.
+- **Reverse:** the wording is in `apps/web/src/lib/episodes.ts` and `lib/workspace.ts`.

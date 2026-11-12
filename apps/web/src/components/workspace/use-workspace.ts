@@ -5,20 +5,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type EpisodeDetail,
   type PlanOut,
+  type RenderOut,
   type SpecOut,
   getEpisode,
   getEpisodePlan,
+  getEpisodeRenders,
   getEpisodeSpec,
 } from "@/api/client";
 import { ApiFailure, failureOf, unwrap } from "@/lib/api-error";
 
 const POLL_MS = 3_000;
+const PLANNING: readonly string[] = ["idea", "brief", "research", "script", "direction"];
 
 export interface WorkspaceData {
   episode: EpisodeDetail;
   /** Null until the plan has written the spec. */
   spec: SpecOut | null;
   plan: PlanOut | null;
+  /** The newest video. Null until the episode has one. */
+  render: RenderOut | null;
 }
 
 export type WorkspaceState =
@@ -37,7 +42,14 @@ async function load(episodeId: string): Promise<WorkspaceData> {
       ? null
       : unwrap(specAnswer, "The plan could not be loaded. Try again.");
   const plan = unwrap(planAnswer, "The plan could not be loaded. Try again.");
-  return { episode, spec, plan };
+  // Before the plan is approved there cannot be a video, so nothing is asked.
+  const renders = PLANNING.includes(episode.state)
+    ? null
+    : unwrap(
+        await getEpisodeRenders({ path, query: { limit: 1 } }),
+        "The video could not be loaded. Try again.",
+      );
+  return { episode, spec, plan, render: renders?.renders[0] ?? null };
 }
 
 /**
