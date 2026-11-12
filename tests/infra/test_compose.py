@@ -90,3 +90,11 @@ def test_nfr01_compose_holds_no_password_default(compose: dict[str, Any]) -> Non
 def test_provider_mode_defaults_to_demo(compose: dict[str, Any]) -> None:
     for name in ("api", "worker"):
         assert compose["services"][name]["environment"]["PROVIDER_MODE"] == "${PROVIDER_MODE:-demo}"
+
+
+def test_fr27_the_worker_is_told_where_the_host_bridge_is(compose: dict[str, Any]) -> None:
+    environment = compose["services"]["worker"]["environment"]
+
+    assert environment["CLI_BRIDGE_URL"] == "${CLI_BRIDGE_URL:-http://host.docker.internal:8189}"
+    assert environment["CLAUDE_CLI_MODEL"] == "${CLAUDE_CLI_MODEL:-}"
+    assert environment["CODEX_CLI_MODEL"] == "${CODEX_CLI_MODEL:-}"

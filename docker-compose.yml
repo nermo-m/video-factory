@@ -74,6 +74,11 @@ services:
       # Used only when PROVIDER_MODE is api and the owner has switched paid APIs on.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+      # Used only when PROVIDER_MODE is subscription: the bridge on the host that runs
+      # the Claude Code and Codex command line tools, and the models they are asked for.
+      CLI_BRIDGE_URL: ${CLI_BRIDGE_URL:-http://host.docker.internal:8189}
+      CLAUDE_CLI_MODEL: ${CLAUDE_CLI_MODEL:-}
+      CODEX_CLI_MODEL: ${CODEX_CLI_MODEL:-}
       KOKORO_MODEL_PATH: /models/kokoro/kokoro.onnx
       KOKORO_VOICES_PATH: /models/kokoro/voices.bin
     volumes:

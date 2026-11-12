@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 
 from packages.core.enums import Billing, Provider
 from packages.core.providers import (
     PaidApiRefusedError,
     billing_of,
+    cost_text,
     ensure_paid_apis_allowed,
     providers_for,
 )
@@ -83,3 +86,14 @@ def test_fr28_with_both_missing_the_refusal_names_both() -> None:
     assert "PROVIDER_MODE is 'subscription'" in str(refused.value)
     assert "switch in Settings is off" in str(refused.value)
     assert "never switches to a paid API by itself" in str(refused.value)
+
+
+def test_fr29_a_plan_call_is_shown_as_covered_by_plan_whatever_number_is_stored() -> None:
+    assert cost_text(Billing.PLAN, Decimal("0")) == "covered by plan"
+    assert cost_text(Billing.PLAN, Decimal("0.42")) == "covered by plan"
+
+
+def test_fr29_a_paid_call_is_shown_with_its_cost_and_a_demo_call_with_none() -> None:
+    assert cost_text(Billing.API, Decimal("0.0123")) == "$0.0123"
+    assert cost_text(Billing.API, Decimal("1.5")) == "$1.5000"
+    assert cost_text(Billing.DEMO, Decimal("0")) == "no cost (demo)"

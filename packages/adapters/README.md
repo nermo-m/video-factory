@@ -27,12 +27,23 @@ cost, latency and, for research, the passages the model really retrieved.
 | `base.py` | `LLMAdapter`, `LLMRequest`, `LLMResponse`, and the JSON parsing of an answer |
 | `recorded.py` | The twin for demo mode: replays `samples/recordings/<skill>.json` and checks it against the skill's schema and version |
 | `anthropic_api.py` | Claude through the paid API, with web search for research. Builds on `PaidApiAdapter` |
+| `cli_bridge.py` | Subscription mode: `ClaudeCliLLM` and `CodexCliLLM` ask the host bridge (`tools/cli_bridge`) to run the Claude Code and Codex command line tools on the owner's plans |
 
-`Adapters.llm()` picks by mode: recordings in `demo`, the Anthropic API in `api` (only
-with the owner's switch on), and in `subscription` an error that says the adapters for
-the host bridge (`tools/cli_bridge`) are not built yet. Failures come back in the error classes the job queue acts on. The
-Anthropic adapter is tested through the real SDK with a mock transport, so no test can
-reach the network. Its check against the live API is card VFS-64.
+`Adapters.llm()` picks by mode: recordings in `demo`, Claude Code through the host bridge
+in `subscription`, and the Anthropic API in `api` (only with the owner's switch on).
+`Adapters.second_opinion()` gives the model for the independent second review: recordings
+in `demo`, Codex through the bridge in `subscription`, and nothing yet in `api`. Failures
+come back in the error classes the job queue acts on.
+
+In subscription mode a call costs nothing (`covered by plan`), a usage limit becomes
+`PlanLimitError` with the reset time, and a bridge that does not answer is an owner task
+that says how to start it. The two adapters refuse to be built in any other mode. A
+research answer has no `sources` in this mode: the command line tool does not report
+the pages it retrieved (card VFS-67).
+
+No test can reach the network or a real tool. The Anthropic adapter is tested through
+the real SDK with a mock transport, the bridge adapters through a real bridge with fake
+tools. The live checks are cards VFS-64 and VFS-65.
 
 ## Voice (`tts/`)
 
