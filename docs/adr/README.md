@@ -16,6 +16,7 @@ decided, why, what follows from it and what was turned down. Smaller choices are
 | 7 | [The Kokoro voice runs on ONNX Runtime, with espeak-ng as a separate program](0007-kokoro-without-gpl-dependencies.md) |
 | 8 | [A host bridge runs the Claude Code and Codex command line tools](0008-host-bridge-for-the-command-line-tools.md) |
 | 9 | [The bridge reads Claude Code's streaming output](0009-the-bridge-reads-claude-codes-streaming-output.md) |
+| 10 | [Pictures through the Codex image tool](0010-pictures-through-the-codex-image-tool.md) |
 
 ## Adding a record
 

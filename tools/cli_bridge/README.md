@@ -162,3 +162,17 @@ The files in `tests/recorded/live/` were captured from the real tools on 2026-11
 session numbers and everything about the PC removed. The other files in `tests/recorded/`
 are hand-written in the same form, for cases that cannot be produced on purpose: a
 usage limit, a crash, an answer that ignores its schema.
+
+### `POST /codex/image`
+
+One picture from Codex's image tool, on the ChatGPT plan (FR-30, ADR 10).
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `prompt` | text, required, at most 20 000 characters | What the picture shows |
+| `model` | text | The model Codex is asked for. Left out, the tool chooses |
+| `timeout_s` | number | Seconds the call may take |
+
+The answer has `image_base64` (a complete PNG file), `media_type` (`image/png`), `bytes`,
+`usage`, `turns`, `duration_ms` and `billing` (`plan`). What the model wrote is not passed
+on. The picture is removed from the tool's own folder once it has been read.

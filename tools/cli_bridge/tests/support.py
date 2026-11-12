@@ -32,6 +32,9 @@ def fake(
     stderr: str = "",
     sleep: float = 0.0,
     status_sleep: float = 0.0,
+    image: Path | None = None,
+    image_home: Path | None = None,
+    announce: bool = False,
 ) -> tuple[str, ...]:
     """The command line of a fake tool. The bridge appends its own arguments after `--`."""
     command = [sys.executable, str(FAKE), "--tool", tool, "--sign-in", sign_in]
@@ -47,6 +50,12 @@ def fake(
         command += ["--sleep", str(sleep)]
     if status_sleep:
         command += ["--status-sleep", str(status_sleep)]
+    if image is not None:
+        command += ["--image", str(image)]
+    if image_home is not None:
+        command += ["--image-home", str(image_home)]
+    if announce:
+        command += ["--announce"]
     return (*command, "--")
 
 

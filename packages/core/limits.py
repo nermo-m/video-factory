@@ -82,7 +82,11 @@ class Budget:
 
 
 # "Defaults are deliberately low": the owner raises them once he sees his own usage.
-_PLAN_DEFAULT = Budget(calls_5h=20, calls_7d=150, images_5h=5, images_7d=30)
+# Deliberately low (section 3.5): the owner uses the same plans for other work. One
+# episode needs about eight planning calls and four to eight pictures, so these let one
+# episode through with room to make some pictures again, and three episodes' planning,
+# in five hours. The owner raises them on the Usage page (Q-045).
+_PLAN_DEFAULT = Budget(calls_5h=30, calls_7d=200, images_5h=12, images_7d=60)
 _API_DEFAULT = Budget(usd_5h=Decimal("1"), usd_7d=Decimal("5"))
 
 

@@ -1,0 +1,4 @@
+{"type": "thread.started", "thread_id": "00000000-0000-7000-8000-0000000000a2"}
+{"type": "turn.started"}
+{"type": "item.completed", "item": {"id": "item_0", "type": "agent_message", "text": "I can't create that image because it asks for a real company's logo."}}
+{"type": "turn.completed", "usage": {"input_tokens": 3000, "cached_input_tokens": 0, "output_tokens": 30, "reasoning_output_tokens": 0}}

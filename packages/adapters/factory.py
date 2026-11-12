@@ -14,7 +14,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from packages.adapters.image import ImageAdapter, SampleImages
+from packages.adapters.image import CodexImages, ImageAdapter, SampleImages
 from packages.adapters.llm import (
     AnthropicLLM,
     ClaudeCliLLM,
@@ -100,9 +100,11 @@ class Adapters:
         if mode == "demo":
             return SampleImages()
         if mode == "subscription":
-            raise NeedsOwnerError(
-                "Subscription mode cannot make pictures yet: creating them through the Codex "
-                "command line tool arrives with card VFS-60."
+            # The owner's ChatGPT plan, through the host bridge (FR-30).
+            return CodexImages(
+                mode=mode,
+                bridge_url=self.settings.cli_bridge_url,
+                model=self.settings.codex_cli_model or None,
             )
         raise NeedsOwnerError(
             "API mode cannot make pictures yet: the OpenAI image adapter is not built. Use "

@@ -1273,3 +1273,27 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - **Departure from the build rules:** the adapter and the job were written before their
     tests in this card.
 - **Reverse:** `apps/worker/handlers/pictures.py`, `packages/adapters/image/`.
+
+## D-043: Pictures on the ChatGPT plan, and the default budgets
+
+- **Date:** 2026-11-13. **Card:** VFS-60.
+- **Choice:**
+  - **How Codex makes and hands over a picture is ADR 10**, with one deviation from
+    section 3.4: the bridge returns the picture instead of moving it into the app's
+    storage, which it cannot reach.
+  - **The bridge finds the saved file without naming the tool's home folder.** The first
+    version looked into that folder directly and the bridge's guard test refused it. The
+    guard stayed as it is: the file is found through `CODEX_HOME` when that is set, else
+    through the path the tool reports, accepted only in one exact shape.
+  - **`CodexImages` shares its transport with the two language model adapters**
+    (`BridgeClient`), so the bridge's error classes reach the job queue the same way: a
+    limit waits, a missing sign-in is an owner task, a failed run is tried again.
+  - **Checked live:** one picture through the running bridge on the owner's plan, 38
+    seconds, 2.4 MB, and the tool's session folder was gone afterwards. Three pictures
+    were made on the plan in all while building this card.
+  - **Default plan budgets:** 30 calls and 12 pictures in 5 hours, 200 calls and 60
+    pictures in 7 days (before: 20, 5, 150, 30). With 5 pictures the app paused in the
+    middle of one episode's pictures. The test that keeps the defaults low is unchanged
+    and passes. Q-045 stays open: the owner sets the real numbers on the Usage page.
+- **Reverse:** `tools/cli_bridge/codex.py`, `packages/adapters/image/codex_cli.py`, and
+  `_PLAN_DEFAULT` in `packages/core/limits.py`.

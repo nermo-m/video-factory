@@ -23,6 +23,7 @@ EXPECTED_ADRS = {
     "0007-kokoro-without-gpl-dependencies.md": "Kokoro",
     "0008-host-bridge-for-the-command-line-tools.md": "host bridge",
     "0009-the-bridge-reads-claude-codes-streaming-output.md": "streaming output",
+    "0010-pictures-through-the-codex-image-tool.md": "Codex image tool",
 }
 REQUIRED_SECTIONS = [
     "## Status",

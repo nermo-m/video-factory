@@ -52,6 +52,15 @@ def options(arguments: list[str]) -> argparse.Namespace:
     parser.add_argument("--sleep", type=float, default=0.0)
     parser.add_argument("--status-sleep", type=float, default=0.0)
     parser.add_argument("--record", default=None, help="file that gets one line per call")
+    parser.add_argument(
+        "--image",
+        default=None,
+        help="file saved as a created picture, in the folder of the session the output names",
+    )
+    parser.add_argument("--image-home", default=None, help="the tool's home, when not CODEX_HOME")
+    parser.add_argument(
+        "--announce", action="store_true", help="say the saved path in a message, as the tool does"
+    )
     return parser.parse_args(arguments)
 
 
@@ -73,6 +82,24 @@ def record(chosen: argparse.Namespace, kind: str, given: list[str], stdin: str) 
     }
     with Path(chosen.record).open("a", encoding="utf-8") as lines:
         lines.write(json.dumps(entry) + "\n")
+
+
+def save_picture(picture: Path, output: Path, home: Path) -> Path:
+    """Do what the real tool's image tool does: save the picture below the tool's home
+    folder, in a folder named after the session."""
+    thread_id = "no-session"
+    for line in output.read_text(encoding="utf-8").splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict) and event.get("type") == "thread.started":
+            thread_id = str(event.get("thread_id"))
+    folder = home / "generated_images" / thread_id
+    folder.mkdir(parents=True, exist_ok=True)
+    saved = folder / "exec-00000000-0000-4000-8000-00000000cafe.png"
+    saved.write_bytes(picture.read_bytes())
+    return saved
 
 
 def main(argv: list[str]) -> int:
@@ -97,6 +124,16 @@ def main(argv: list[str]) -> int:
     stdin = sys.stdin.buffer.read().decode("utf-8")
     record(chosen, "run", given, stdin)
     time.sleep(chosen.sleep)
+    if chosen.image is not None and chosen.output is not None:
+        home = Path(chosen.image_home or os.environ["CODEX_HOME"])
+        saved = save_picture(Path(chosen.image), Path(chosen.output), home)
+        if chosen.announce:
+            event = {
+                "type": "item.completed",
+                "item": {"id": "item_9", "type": "agent_message", "text": str(saved)},
+            }
+            sys.stdout.write(json.dumps(event) + "\n")
+            sys.stdout.flush()
     if chosen.output is not None:
         sys.stdout.buffer.write(Path(chosen.output).read_bytes())
         sys.stdout.buffer.flush()

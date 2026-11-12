@@ -1,0 +1,5 @@
+{"type": "thread.started", "thread_id": "00000000-0000-7000-8000-0000000000a1"}
+{"type": "turn.started"}
+{"type": "item.completed", "item": {"id": "item_0", "type": "agent_message", "text": "I'm using the image-generation skill to create the requested illustration."}}
+{"type": "item.completed", "item": {"id": "item_1", "type": "agent_message", "text": "done"}}
+{"type": "turn.completed", "usage": {"input_tokens": 49442, "cached_input_tokens": 41088, "output_tokens": 401, "reasoning_output_tokens": 58}}

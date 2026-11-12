@@ -55,11 +55,13 @@ _RETRYABLE = frozenset({"busy", "timeout", "tool_failed", "internal"})
 _NEEDS_OWNER = frozenset({"not_installed", "not_signed_in", "not_plan_sign_in"})
 
 
-class _BridgeLLM:
-    """What the two adapters share: one request to the bridge and the reading of its answer."""
+class BridgeClient:
+    """One request to the host bridge, and its failures as the job queue's error classes.
 
-    provider: ClassVar[Provider]
-    tool: ClassVar[str]
+    Shared by everything that reaches a command line tool through the bridge: the two
+    language model adapters here and the picture adapter.
+    """
+
     title: ClassVar[str]
 
     def __init__(
@@ -77,6 +79,7 @@ class _BridgeLLM:
                 f"{self.title} is used in subscription mode only, and PROVIDER_MODE is "
                 f"'{mode}'. The app never changes the mode by itself."
             )
+        self.mode = mode
         address = urlsplit(bridge_url)
         if address.scheme not in {"http", "https"} or not address.hostname:
             raise NeedsOwnerError(
@@ -91,9 +94,67 @@ class _BridgeLLM:
         self.http_timeout_s = timeout_s + queue_s + grace_s
         self._address = address
 
+    def _post(self, route: str, body: Mapping[str, Any]) -> dict[str, Any]:
+        payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
+        connect = (
+            http.client.HTTPSConnection
+            if self._address.scheme == "https"
+            else http.client.HTTPConnection
+        )
+        connection = connect(
+            self._address.hostname or "", self._address.port, timeout=self.http_timeout_s
+        )
+        try:
+            connection.request(
+                "POST",
+                f"{self._address.path.rstrip('/')}/{route}",
+                body=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            response = connection.getresponse()
+            status, raw = response.status, response.read()
+        except TimeoutError:
+            raise RetryableError(
+                f"The host bridge at {self.bridge_url} did not answer within "
+                f"{self.http_timeout_s:g} seconds."
+            ) from None
+        except (OSError, http.client.HTTPException):
+            raise NeedsOwnerError(
+                f"The host bridge does not answer at {self.bridge_url}. Start it on the PC "
+                "with `make bridge-start` (`make up` does it in subscription mode)."
+            ) from None
+        finally:
+            connection.close()
+
+        try:
+            answer = json.loads(raw)
+        except ValueError:
+            raise self._not_the_bridge() from None
+        if not isinstance(answer, dict):
+            raise self._not_the_bridge()
+        if status == 200:
+            return answer
+        error = answer.get("error")
+        if not isinstance(error, dict) or not isinstance(error.get("code"), str):
+            raise self._not_the_bridge()
+        raise _failure(error)
+
+    def _not_the_bridge(self) -> NeedsOwnerError:
+        return NeedsOwnerError(
+            f"What answers at {self.bridge_url} is not the bridge. Check CLI_BRIDGE_URL and "
+            "CLI_BRIDGE_PORT, and that nothing else uses that port."
+        )
+
+
+class _BridgeLLM(BridgeClient):
+    """What the two adapters share: one request to the bridge and the reading of its answer."""
+
+    provider: ClassVar[Provider]
+    tool: ClassVar[str]
+
     def complete(self, request: LLMRequest) -> LLMResponse:
         started = time.perf_counter()
-        answer = self._post(self._body(request))
+        answer = self._post(self.tool, self._body(request))
         text = answer.get("text")
         usage = answer.get("usage")
         if not isinstance(text, str) or not isinstance(usage, dict):
@@ -149,57 +210,6 @@ class _BridgeLLM:
         if effort is not None:
             body["effort"] = effort
         return body
-
-    def _post(self, body: Mapping[str, Any]) -> dict[str, Any]:
-        payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
-        connect = (
-            http.client.HTTPSConnection
-            if self._address.scheme == "https"
-            else http.client.HTTPConnection
-        )
-        connection = connect(
-            self._address.hostname or "", self._address.port, timeout=self.http_timeout_s
-        )
-        try:
-            connection.request(
-                "POST",
-                f"{self._address.path.rstrip('/')}/{self.tool}",
-                body=payload,
-                headers={"Content-Type": "application/json"},
-            )
-            response = connection.getresponse()
-            status, raw = response.status, response.read()
-        except TimeoutError:
-            raise RetryableError(
-                f"The host bridge at {self.bridge_url} did not answer within "
-                f"{self.http_timeout_s:g} seconds."
-            ) from None
-        except (OSError, http.client.HTTPException):
-            raise NeedsOwnerError(
-                f"The host bridge does not answer at {self.bridge_url}. Start it on the PC "
-                "with `make bridge-start` (`make up` does it in subscription mode)."
-            ) from None
-        finally:
-            connection.close()
-
-        try:
-            answer = json.loads(raw)
-        except ValueError:
-            raise self._not_the_bridge() from None
-        if not isinstance(answer, dict):
-            raise self._not_the_bridge()
-        if status == 200:
-            return answer
-        error = answer.get("error")
-        if not isinstance(error, dict) or not isinstance(error.get("code"), str):
-            raise self._not_the_bridge()
-        raise _failure(error)
-
-    def _not_the_bridge(self) -> NeedsOwnerError:
-        return NeedsOwnerError(
-            f"What answers at {self.bridge_url} is not the bridge. Check CLI_BRIDGE_URL and "
-            "CLI_BRIDGE_PORT, and that nothing else uses that port."
-        )
 
 
 class ClaudeCliLLM(_BridgeLLM):
