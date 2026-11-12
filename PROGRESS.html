@@ -438,14 +438,15 @@
       "id": "VFS-22",
       "order": 240,
       "title": "Episode API: lifecycle, spec versions and diff",
-      "status": "review",
-      "note": "The episode routes: list and create, read, advance, approve, reject, rerun, spec read and replace, versions, diff, revise and apply. Every spec change is a new version. A revision runs as a job and is applied only to the version it was written for. In review as a pull request."
+      "status": "done",
+      "note": "The episode routes: list and create, read, advance, approve, reject, rerun, spec read and replace, versions, diff, revise and apply. Every spec change is a new version. A revision runs as a job and is applied only to the version it was written for. Merged in pull request #33."
     },
     {
       "id": "VFS-23",
       "order": 250,
       "title": "Board and New episode screens",
-      "status": "ready"
+      "status": "active",
+      "note": "The Board shows the episodes in the groups of the mockups, and New episode starts one from an idea."
     },
     {
       "id": "VFS-24",
@@ -467,8 +468,11 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-23 Board and New episode screens"
+    "status": "active",
+    "id": "VFS-23",
+    "title": "Board and New episode screens",
+    "started": "2026-11-12T10:30:00+02:00",
+    "resume": "Branch vfs-23-board-screens. Next: browser tests in apps/web/e2e/board.spec.ts, then the Board in apps/web/src/components/board and the New episode dialog. Verify with make e2e, then make lint types test."
   },
   "checklist": [
     {
