@@ -32,7 +32,7 @@ def probe(url: str, mode: str = "subscription") -> ProviderProbe:
 def test_fr34_the_free_check_starts_no_model_call(tmp_path: Path) -> None:
     record = tmp_path / "record.jsonl"
     tools = {
-        "claude": fake("claude", output="claude_text.json", record=record),
+        "claude": fake("claude", output="claude_text.jsonl", record=record),
         "codex": fake("codex", output="codex_text.jsonl", record=record),
     }
     with bridge_with(**tools) as url:
@@ -67,7 +67,7 @@ def test_fr34_a_bridge_that_is_not_running_is_reported_with_how_to_start_it() ->
 def test_fr34_the_tiny_call_is_one_small_call_to_the_right_tool(tmp_path: Path) -> None:
     record = tmp_path / "record.jsonl"
     tools = {
-        "claude": fake("claude", output="claude_text.json", record=record),
+        "claude": fake("claude", output="claude_text.jsonl", record=record),
         "codex": fake("codex", output="codex_text.jsonl", record=record),
     }
     with bridge_with(**tools) as url:
@@ -79,7 +79,7 @@ def test_fr34_the_tiny_call_is_one_small_call_to_the_right_tool(tmp_path: Path) 
 
 
 def test_fr34_the_tiny_call_reports_a_limit_that_still_holds() -> None:
-    tool = fake("claude", output="claude_limit_session.json", exit_code=1)
+    tool = fake("claude", output="claude_limit_session.jsonl", exit_code=1)
     with bridge_with(claude=tool) as url, pytest.raises(PlanLimitError) as raised:
         probe(url).tiny_call(CLAUDE)
 

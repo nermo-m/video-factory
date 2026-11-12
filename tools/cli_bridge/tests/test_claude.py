@@ -71,13 +71,13 @@ def call(tmp_path: Path, request: ClaudeRequest, output: str) -> Exchange:
 @pytest.fixture(scope="module")
 def plain(tmp_path_factory: pytest.TempPathFactory) -> Exchange:
     """The smallest call: a prompt, nothing else."""
-    return call(tmp_path_factory.mktemp("plain"), ask(PROMPT), "claude_text.json")
+    return call(tmp_path_factory.mktemp("plain"), ask(PROMPT), "claude_text.jsonl")
 
 
 @pytest.fixture(scope="module")
 def research(tmp_path_factory: pytest.TempPathFactory) -> Exchange:
     """A call that may search the web."""
-    return call(tmp_path_factory.mktemp("research"), ask(web_search=True), "claude_search.json")
+    return call(tmp_path_factory.mktemp("research"), ask(web_search=True), "claude_search.jsonl")
 
 
 @pytest.fixture(scope="module")
@@ -86,7 +86,7 @@ def structured(tmp_path_factory: pytest.TempPathFactory) -> Exchange:
     request = ask(
         system=SYSTEM, schema=SCHEMA, model="claude-sonnet-5-5", effort="low", max_turns=2
     )
-    return call(tmp_path_factory.mktemp("structured"), request, "claude_structured.json")
+    return call(tmp_path_factory.mktemp("structured"), request, "claude_structured.jsonl")
 
 
 def test_a_call_returns_the_answer_with_its_numbers(plain: Exchange) -> None:
@@ -126,7 +126,8 @@ def test_the_tool_is_asked_for_one_json_result_without_a_session(plain: Exchange
     argv = plain.run["argv"]
 
     assert argv[0] == "-p"
-    assert after(argv, "--output-format") == "json"
+    assert after(argv, "--output-format") == "stream-json"
+    assert "--verbose" in argv
     assert "--no-session-persistence" in argv
 
 
@@ -189,7 +190,7 @@ def test_a_schema_is_passed_on_and_the_structured_answer_comes_back(
 
 
 def test_a_structured_answer_given_as_text_is_still_read() -> None:
-    tool = fake("claude", output="claude_schema_as_text.json")
+    tool = fake("claude", output="claude_schema_as_text.jsonl")
 
     answer = bridge(claude=tool).claude(ask(schema=SCHEMA))
 
@@ -197,7 +198,7 @@ def test_a_structured_answer_given_as_text_is_still_read() -> None:
 
 
 def test_an_answer_that_ignores_the_schema_is_invalid_output() -> None:
-    tool = fake("claude", output="claude_schema_missing.json")
+    tool = fake("claude", output="claude_schema_missing.jsonl")
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool).claude(ask(schema=SCHEMA))
@@ -256,7 +257,7 @@ def test_fr27_the_sign_in_is_checked_before_every_call(plain: Exchange) -> None:
 
 
 def test_fr29_a_session_limit_becomes_plan_limit_with_the_reset_time() -> None:
-    tool = fake("claude", output="claude_limit_session.json", exit_code=1)
+    tool = fake("claude", output="claude_limit_session.jsonl", exit_code=1)
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool).claude(ask())
@@ -268,7 +269,7 @@ def test_fr29_a_session_limit_becomes_plan_limit_with_the_reset_time() -> None:
 
 
 def test_fr29_a_weekly_limit_becomes_plan_limit_with_its_date() -> None:
-    tool = fake("claude", output="claude_limit_weekly.json", exit_code=1)
+    tool = fake("claude", output="claude_limit_weekly.jsonl", exit_code=1)
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool).claude(ask())
@@ -292,13 +293,13 @@ def test_fr29_a_limit_printed_as_plain_text_is_still_recognised() -> None:
 
 
 def test_an_answer_that_talks_about_limits_is_an_answer() -> None:
-    answer = bridge(claude=fake("claude", output="claude_about_limits.json")).claude(ask())
+    answer = bridge(claude=fake("claude", output="claude_about_limits.jsonl")).claude(ask())
 
     assert "weekly limit" in answer["text"]
 
 
 def test_running_out_of_turns_is_a_tool_failure_that_says_so() -> None:
-    tool = fake("claude", output="claude_max_turns.json", exit_code=1)
+    tool = fake("claude", output="claude_max_turns.jsonl", exit_code=1)
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool).claude(ask())
@@ -308,7 +309,7 @@ def test_running_out_of_turns_is_a_tool_failure_that_says_so() -> None:
 
 
 def test_an_error_from_the_tool_is_a_tool_failure_with_its_words() -> None:
-    tool = fake("claude", output="claude_error.json", exit_code=1)
+    tool = fake("claude", output="claude_error.jsonl", exit_code=1)
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool).claude(ask())
@@ -336,7 +337,7 @@ def test_a_crash_is_a_tool_failure_with_the_end_of_its_error_output() -> None:
 
 
 def test_a_call_that_takes_too_long_is_stopped() -> None:
-    tool = fake("claude", output="claude_text.json", sleep=30)
+    tool = fake("claude", output="claude_text.jsonl", sleep=30)
     started = time.monotonic()
 
     with pytest.raises(BridgeError) as raised:
@@ -347,7 +348,7 @@ def test_a_call_that_takes_too_long_is_stopped() -> None:
 
 
 def test_a_request_cannot_ask_for_more_time_than_the_bridge_allows() -> None:
-    tool = fake("claude", output="claude_text.json", sleep=30)
+    tool = fake("claude", output="claude_text.jsonl", sleep=30)
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool, max_timeout_seconds=0.5).claude(ask(timeout_s=600))
@@ -365,7 +366,7 @@ def test_a_tool_that_is_not_installed_is_reported_as_such() -> None:
 
 def test_a_tool_that_is_not_signed_in_is_not_started(tmp_path: Path) -> None:
     record = tmp_path / "record.jsonl"
-    tool = fake("claude", output="claude_text.json", record=record, sign_in="none")
+    tool = fake("claude", output="claude_text.jsonl", record=record, sign_in="none")
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool).claude(ask())
@@ -377,7 +378,7 @@ def test_a_tool_that_is_not_signed_in_is_not_started(tmp_path: Path) -> None:
 
 def test_fr28_a_tool_signed_in_with_an_api_key_is_not_started(tmp_path: Path) -> None:
     record = tmp_path / "record.jsonl"
-    tool = fake("claude", output="claude_text.json", record=record, sign_in="api")
+    tool = fake("claude", output="claude_text.jsonl", record=record, sign_in="api")
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool).claude(ask())
@@ -388,7 +389,7 @@ def test_fr28_a_tool_signed_in_with_an_api_key_is_not_started(tmp_path: Path) ->
 
 def test_a_tool_whose_status_check_hangs_is_not_started(tmp_path: Path) -> None:
     record = tmp_path / "record.jsonl"
-    tool = fake("claude", output="claude_text.json", record=record, status_sleep=30)
+    tool = fake("claude", output="claude_text.jsonl", record=record, status_sleep=30)
 
     with pytest.raises(BridgeError) as raised:
         bridge(claude=tool, status_timeout_seconds=0.5).claude(ask())
@@ -406,7 +407,7 @@ def wait_until_started(record: Path) -> None:
 def test_one_call_at_a_time_and_the_second_one_waits_its_turn(tmp_path: Path) -> None:
     record = tmp_path / "record.jsonl"
     studio = bridge(
-        claude=fake("claude", output="claude_text.json", record=record, sleep=0.6),
+        claude=fake("claude", output="claude_text.jsonl", record=record, sleep=0.6),
         queue_seconds=30,
     )
     answers: list[dict[str, Any]] = []
@@ -429,7 +430,7 @@ def test_a_busy_tool_turns_away_a_call_that_waited_too_long_and_leaves_codex_fre
 ) -> None:
     record = tmp_path / "record.jsonl"
     studio = bridge(
-        claude=fake("claude", output="claude_text.json", record=record, sleep=2.5),
+        claude=fake("claude", output="claude_text.jsonl", record=record, sleep=2.5),
         codex=fake("codex", output="codex_text.jsonl"),
         queue_seconds=0.1,
     )
@@ -459,7 +460,7 @@ def logged() -> Iterator[io.StringIO]:
 
 
 def test_nfr01_a_call_is_logged_with_numbers_and_without_its_text(logged: io.StringIO) -> None:
-    studio = bridge(claude=fake("claude", output="claude_text.json"), environ=ENVIRON)
+    studio = bridge(claude=fake("claude", output="claude_text.jsonl"), environ=ENVIRON)
 
     studio.claude(ask("A secret idea about habits.", system=SYSTEM))
 
@@ -476,7 +477,7 @@ def test_nfr01_a_call_is_logged_with_numbers_and_without_its_text(logged: io.Str
 
 
 def test_nfr01_a_failed_call_is_logged_with_its_error_class_only(logged: io.StringIO) -> None:
-    tool = fake("claude", output="claude_limit_session.json", exit_code=1)
+    tool = fake("claude", output="claude_limit_session.jsonl", exit_code=1)
 
     with pytest.raises(BridgeError):
         bridge(claude=tool).claude(ask("A secret idea about habits."))

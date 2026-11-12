@@ -7,7 +7,7 @@ checks them again against the installed version without making a model call.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +15,7 @@ from tools.cli_bridge.answers import count, json_object
 from tools.cli_bridge.contract import ClaudeRequest, compact
 from tools.cli_bridge.errors import (
     INVALID_OUTPUT,
+    NOT_PLAN_SIGN_IN,
     PLAN_LIMIT,
     TOOL_FAILED,
     BridgeError,
@@ -31,11 +32,18 @@ SEARCH_TOOLS = "WebSearch,WebFetch"
 # A structured answer takes a second turn, and the tool may ask for a correction.
 TURNS = 4
 SEARCH_TURNS = 16
+# Characters of a page or search summary that are passed on with a source.
+MAX_SOURCE_TEXT = 4000
 
 ALWAYS = (
     "-p",
+    # Every message of the run, one JSON object per line. The last one is the result. The
+    # ones before it say which model the session uses, whether an API key was used, which
+    # pages a search returned and how much of the plan is used. The single-result form
+    # holds none of that.
     "--output-format",
-    "json",
+    "stream-json",
+    "--verbose",
     # No CLAUDE.md, skills, plugins, hooks, MCP servers or settings files of the owner.
     "--safe-mode",
     "--setting-sources",
@@ -90,7 +98,23 @@ def arguments(request: ClaudeRequest, *, inputs: Path) -> list[str]:
 
 def read(finished: Finished, request: ClaudeRequest, *, now: datetime) -> dict[str, Any]:
     """Turn what the tool printed into the bridge's answer, or raise what went wrong."""
-    result = _result(finished.stdout)
+    events = _events(finished.stdout)
+    result = _last(events, "result")
+    session = _last(events, "system") or {}
+    key_source = session.get("apiKeySource")
+    if isinstance(key_source, str) and key_source != "none":
+        # The sign-in check before the call should have stopped this. If a key was used
+        # all the same, the call must not be counted as covered by the plan.
+        raise BridgeError(
+            NOT_PLAN_SIGN_IN,
+            f"Claude Code used an API key for this call ({brief(key_source, 60)}), not the "
+            "plan. Remove the key from the tool's settings and sign in with your plan.",
+            status=503,
+            tool=NAME,
+        )
+    limits = _last(events, "rate_limit_event") or {}
+    report = limits.get("rate_limit_info")
+    report = report if isinstance(report, dict) else {}
     if result is None:
         raise _failure(finished.stderr or finished.stdout, finished, now)
     said = result.get("result")
@@ -109,7 +133,12 @@ def read(finished: Finished, request: ClaudeRequest, *, now: datetime) -> dict[s
                 status=502,
                 tool=NAME,
             )
-        raise _failure(f"{text}\n{finished.stderr}", finished, now)
+        failure = _failure(f"{text}\n{finished.stderr}", finished, now)
+        resets = report.get("resetsAt")
+        if failure.code == PLAN_LIMIT and report.get("status") == "rejected" and count(resets):
+            # The tool's own number, which does not depend on reading its sentence.
+            failure.retry_at = datetime.fromtimestamp(count(resets), UTC)
+        raise failure
 
     output = None
     if request.schema is not None:
@@ -126,13 +155,12 @@ def read(finished: Finished, request: ClaudeRequest, *, now: datetime) -> dict[s
     usage: dict[str, Any] = reported if isinstance(reported, dict) else {}
     cached = count(usage.get("cache_read_input_tokens"))
     written = count(usage.get("cache_creation_input_tokens"))
-    server_tools = usage.get("server_tool_use")
-    searches = server_tools.get("web_search_requests") if isinstance(server_tools, dict) else 0
+    sources, searches = _sources(events)
     return {
         "tool": NAME,
         "output": output,
         "text": text,
-        "model": _model(result.get("modelUsage")),
+        "model": _session_model(session) or _model(result.get("modelUsage")),
         "usage": {
             # Everything the model read: new input, and what was written to or read from
             # the cache.
@@ -140,24 +168,103 @@ def read(finished: Finished, request: ClaudeRequest, *, now: datetime) -> dict[s
             "cached_input_tokens": cached,
             "output_tokens": count(usage.get("output_tokens")),
         },
-        "searches": count(searches),
+        "searches": searches,
+        # The pages a search returned or a fetch read, for checking claims (FR-02).
+        "sources": sources,
+        # Reported by the tool, not counted by this app. None when it reported nothing.
+        "plan_usage": _plan_usage(report),
         "turns": count(result.get("num_turns")),
         "tool_duration_ms": count(result.get("duration_ms")),
     }
 
 
-def _result(stdout: str) -> dict[str, Any] | None:
-    """The result object in the tool's output, which is one JSON document."""
+def _events(stdout: str) -> list[dict[str, Any]]:
+    """The messages the tool printed: one JSON object per line.
+
+    Older versions and the single-result form print one JSON document, or a list of them.
+    Those are read too.
+    """
     try:
-        printed = json.loads(stdout)
+        whole = json.loads(stdout)
     except ValueError:
+        whole = None
+    if isinstance(whole, dict):
+        return [whole]
+    if isinstance(whole, list):
+        return [event for event in whole if isinstance(event, dict)]
+    events = []
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict):
+            events.append(event)
+    return events
+
+
+def _last(events: list[dict[str, Any]], kind: str) -> dict[str, Any] | None:
+    return next((event for event in reversed(events) if event.get("type") == kind), None)
+
+
+def _session_model(session: dict[str, Any]) -> str | None:
+    model = session.get("model")
+    return model if isinstance(model, str) and model else None
+
+
+def _sources(events: list[dict[str, Any]]) -> tuple[list[dict[str, str]], int]:
+    """The pages the tools brought back, and how many searches were made.
+
+    A search result holds a list of links and, after it, what the search said about them.
+    A fetch result holds one address and what was read from that page.
+    """
+    sources: dict[str, dict[str, str]] = {}
+    searches = 0
+    for event in events:
+        outcome = event.get("tool_use_result")
+        if not isinstance(outcome, dict):
+            continue
+        results = outcome.get("results")
+        if isinstance(results, list):
+            searches += count(outcome.get("searchCount")) or 1
+            said = " ".join(item for item in results if isinstance(item, str))
+            for item in results:
+                links = item.get("content") if isinstance(item, dict) else None
+                for link in links if isinstance(links, list) else []:
+                    if isinstance(link, dict) and isinstance(link.get("url"), str):
+                        sources.setdefault(
+                            link["url"],
+                            {
+                                "url": link["url"],
+                                "title": str(link.get("title") or ""),
+                                "text": said[:MAX_SOURCE_TEXT],
+                            },
+                        )
+        elif isinstance(outcome.get("url"), str) and isinstance(outcome.get("result"), str):
+            # What was read from the page itself is better than a search's summary of it.
+            sources[outcome["url"]] = {
+                "url": outcome["url"],
+                "title": sources.get(outcome["url"], {}).get("title", ""),
+                "text": outcome["result"][:MAX_SOURCE_TEXT],
+            }
+    return list(sources.values()), searches
+
+
+def _plan_usage(report: dict[str, Any]) -> dict[str, Any] | None:
+    """How much of each window of the plan is used, as the tool reports it."""
+    windows = report.get("unifiedWindows")
+    if not isinstance(windows, dict):
         return None
-    # With --verbose the tool prints every message in a list. The result is the last one.
-    candidates = printed if isinstance(printed, list) else [printed]
-    for candidate in reversed(candidates):
-        if isinstance(candidate, dict) and candidate.get("type") == "result":
-            return candidate
-    return None
+    usage = {}
+    for name, window in windows.items():
+        if not isinstance(window, dict) or not isinstance(window.get("utilization"), int | float):
+            continue
+        resets = count(window.get("resetsAt"))
+        usage[str(name)] = {
+            "used": float(window["utilization"]),
+            "resets_at": datetime.fromtimestamp(resets, UTC).isoformat() if resets else None,
+        }
+    return usage or None
 
 
 def _model(usage: object) -> str | None:

@@ -14,8 +14,9 @@ instead and parse the answer here: a research call, because web search and an en
 schema are not combined in API mode either, and every Codex call, because Codex only
 takes schemas written in OpenAI's strict form, which this project's schemas are not.
 
-Not available through the command line tools: the passages a web search retrieved. A
-research answer therefore comes back without `sources` in this mode.
+A research answer carries `sources`: the pages Claude Code's search returned or its fetch
+read, as the bridge reports them. The passage of a page is what the tool read from it, or
+what the search said about its results.
 """
 
 from __future__ import annotations
@@ -30,7 +31,7 @@ from decimal import Decimal
 from typing import Any, ClassVar
 from urllib.parse import urlsplit
 
-from packages.adapters.llm.base import LLMRequest, LLMResponse, parse_json_answer
+from packages.adapters.llm.base import LLMRequest, LLMResponse, Source, parse_json_answer
 from packages.core.enums import ErrorClass, Provider
 from packages.core.queue import (
     InvalidOutputError,
@@ -112,6 +113,7 @@ class _BridgeLLM:
             # Covered by the owner's plan.
             cost_usd=Decimal("0"),
             latency_ms=round((time.perf_counter() - started) * 1000),
+            sources=_sources(answer.get("sources")),
             searches=_count(answer.get("searches")),
         )
         # Numbers only: never the prompt or the answer.
@@ -254,6 +256,21 @@ def _with_schema(prompt: str, schema: Mapping[str, Any]) -> str:
         "Answer with one JSON document and nothing else. It must follow this JSON Schema:\n"
         f"{written}"
     )
+
+
+def _sources(reported: object) -> tuple[Source, ...]:
+    """The pages the tool retrieved (FR-02). Anything that is not one is left out."""
+    found = []
+    for item in reported if isinstance(reported, list) else []:
+        if isinstance(item, dict) and isinstance(item.get("url"), str) and item["url"]:
+            found.append(
+                Source(
+                    url=item["url"],
+                    title=str(item.get("title") or ""),
+                    cited_text=str(item.get("text") or ""),
+                )
+            )
+    return tuple(found)
 
 
 def _count(value: object) -> int:

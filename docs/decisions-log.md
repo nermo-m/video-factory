@@ -870,3 +870,27 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **Not in this card:** the screens (VFS-59), counting images (the image card in M3), and
   budgets per model. The tables hold the model of every use, so that can be added.
 - **Reverse:** budgets are settings rows and can be changed or deleted at any time.
+
+## D-031: What the first live calls through the bridge showed
+
+- **Date:** 2026-11-12. **Cards:** VFS-65 and VFS-67. The owner gave the go-ahead in the
+  chat: "I approve everything, continue until we are ready for first videos".
+- **What was run:** nine short calls on the owner's plans, with the bridge's own command
+  lines: a plain and a structured call to each tool, three research calls to Claude Code,
+  and one call through each adapter from inside the worker container. No API key, no money.
+- **What held:** every flag, both output shapes, structured answers from both tools, the
+  sign-in check, and the path worker container to bridge to tool.
+- **What changed:** the bridge now asks Claude Code for its streaming output. The reasons
+  and the details are in [ADR 9](adr/0009-the-bridge-reads-claude-codes-streaming-output.md).
+  In short: the session's model is read from the session, not guessed. Searches are
+  counted from the search results. Retrieved pages come back as `sources`, which is what
+  VFS-67 asked for. A call that used an API key fails instead of counting as a plan call.
+  The tool's own usage report comes back as `plan_usage`.
+- **Corrects Q-044:** Claude Code does report how much of the plan is used, in a form a
+  program can read, with every call. Codex does not. The usage tracker does not store the
+  report yet. Showing it as "reported by the tool" belongs to the Usage page (VFS-59).
+- **Still not seen:** a real usage limit. The turn limits of ADR 8 (4, and 16 with search)
+  were enough: a structured answer took 2 turns, a research call 2.
+- **VFS-67 is closed with this.** Its third line, the research skill applying FR-02 in
+  subscription mode, is the research skill's own work in VFS-20, which now gets sources in
+  every mode that has them.

@@ -94,7 +94,7 @@ def record(tmp_path: Path) -> Path:
 def bridge(record: Path) -> Iterator[str]:
     """A bridge whose tools answer with a plain text."""
     with bridge_with(
-        claude=fake("claude", output="claude_text.json", record=record),
+        claude=fake("claude", output="claude_text.jsonl", record=record),
         codex=fake("codex", output="codex_text.jsonl", record=record),
     ) as url:
         yield url
@@ -104,7 +104,7 @@ def bridge(record: Path) -> Iterator[str]:
 def structured_bridge(record: Path) -> Iterator[str]:
     """A bridge whose tools answer with a JSON document."""
     with bridge_with(
-        claude=fake("claude", output="claude_structured.json", record=record),
+        claude=fake("claude", output="claude_structured.jsonl", record=record),
         codex=fake("codex", output="codex_structured.jsonl", record=record),
     ) as url:
         yield url
@@ -169,7 +169,7 @@ def test_without_a_chosen_model_the_tool_uses_its_own(bridge: str, record: Path)
 
 
 def test_a_research_call_may_search_and_its_answer_is_parsed_here(record: Path) -> None:
-    tool = fake("claude", output="claude_search.json", record=record)
+    tool = fake("claude", output="claude_search.jsonl", record=record)
     with bridge_with(claude=tool) as url:
         answer = claude(url).complete(ask(web_search=True, output_schema={"type": "object"}))
 
@@ -183,6 +183,14 @@ def test_a_research_call_may_search_and_its_answer_is_parsed_here(record: Path) 
         "claims": [{"id": "c1", "text": "The first lighthouse stood at Alexandria."}]
     }
     assert answer.searches == 3
+    # FR-02: the pages the search returned come back with the answer.
+    assert [source.url for source in answer.sources] == [
+        "https://example.org/pharos-0",
+        "https://example.org/pharos-1",
+        "https://example.org/pharos-2",
+    ]
+    assert answer.sources[0].title == "Lighthouse of Alexandria"
+    assert "first lighthouse" in answer.sources[0].cited_text
 
 
 def test_fr27_a_codex_call_goes_through_the_bridge_to_the_tool(bridge: str, record: Path) -> None:
@@ -237,7 +245,7 @@ def test_codex_cannot_search_the_web(bridge: str, record: Path) -> None:
 
 
 def test_fr29_a_usage_limit_pauses_the_job_until_the_reset_time() -> None:
-    tool = fake("claude", output="claude_limit_session.json", exit_code=1)
+    tool = fake("claude", output="claude_limit_session.jsonl", exit_code=1)
     with bridge_with(claude=tool) as url, pytest.raises(PlanLimitError) as raised:
         claude(url).complete(ask())
 
@@ -252,7 +260,7 @@ def test_fr29_a_usage_limit_pauses_the_job_until_the_reset_time() -> None:
 def test_fr28_a_tool_without_a_plan_sign_in_is_an_owner_task(
     record: Path, sign_in: str, words: str
 ) -> None:
-    tool = fake("claude", output="claude_text.json", record=record, sign_in=sign_in)
+    tool = fake("claude", output="claude_text.jsonl", record=record, sign_in=sign_in)
     with bridge_with(claude=tool) as url, pytest.raises(NeedsOwnerError, match=words):
         claude(url).complete(ask())
 
@@ -265,7 +273,7 @@ def test_a_tool_that_is_not_installed_is_an_owner_task() -> None:
 
 
 def test_an_answer_that_ignores_the_schema_is_invalid_output() -> None:
-    tool = fake("claude", output="claude_schema_missing.json")
+    tool = fake("claude", output="claude_schema_missing.jsonl")
     with bridge_with(claude=tool) as url, pytest.raises(InvalidOutputError):
         claude(url).complete(ask(output_schema=SCHEMA))
 
@@ -286,7 +294,7 @@ def test_a_failing_tool_is_retried() -> None:
 
 
 def test_a_call_that_takes_too_long_is_stopped_by_the_bridge_and_retried(record: Path) -> None:
-    tool = fake("claude", output="claude_text.json", record=record, sleep=30)
+    tool = fake("claude", output="claude_text.jsonl", record=record, sleep=30)
     started = time.monotonic()
     with bridge_with(claude=tool) as url, pytest.raises(RetryableError):
         claude(url, timeout_s=0.5).complete(ask())

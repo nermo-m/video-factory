@@ -13,6 +13,7 @@ import json
 import threading
 import time
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -79,7 +80,7 @@ def start(config: BridgeConfig, record: Path) -> Iterator[Running]:
 def running(tmp_path: Path) -> Iterator[Running]:
     record = tmp_path / "record.jsonl"
     config = BridgeConfig(
-        claude_command=fake("claude", output="claude_text.json", record=record),
+        claude_command=fake("claude", output="claude_text.jsonl", record=record),
         codex_command=fake("codex", output="codex_text.jsonl", record=record),
     )
     yield from start(config, record)
@@ -89,7 +90,7 @@ def running(tmp_path: Path) -> Iterator[Running]:
 def limited(tmp_path: Path) -> Iterator[Running]:
     record = tmp_path / "record.jsonl"
     config = BridgeConfig(
-        claude_command=fake("claude", output="claude_limit_session.json", exit_code=1),
+        claude_command=fake("claude", output="claude_limit_session.jsonl", exit_code=1),
         codex_command=MISSING,
     )
     yield from start(config, record)
@@ -179,7 +180,10 @@ def test_fr29_a_plan_limit_answers_with_its_error_class_and_reset_time(limited: 
     assert status == 429
     assert body["error"]["code"] == "plan_limit"
     assert body["error"]["tool"] == "claude"
-    assert body["error"]["retry_at"] == "2026-11-12T15:00:00+02:00"
+    # 15:00 at two hours ahead of UTC, from the tool's own number.
+    assert datetime.fromisoformat(body["error"]["retry_at"]) == datetime(
+        2026, 11, 12, 13, 0, tzinfo=UTC
+    )
     assert "session limit" in body["error"]["message"]
 
 

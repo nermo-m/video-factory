@@ -22,6 +22,7 @@ EXPECTED_ADRS = {
     "0006-python-packaging.md": "Python",
     "0007-kokoro-without-gpl-dependencies.md": "Kokoro",
     "0008-host-bridge-for-the-command-line-tools.md": "host bridge",
+    "0009-the-bridge-reads-claude-codes-streaming-output.md": "streaming output",
 }
 REQUIRED_SECTIONS = [
     "## Status",

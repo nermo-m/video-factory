@@ -247,8 +247,8 @@
       "id": "VFS-65",
       "order": 213,
       "title": "Live check of the host bridge with the signed-in tools",
-      "status": "blocked",
-      "note": "Needs owner: the go-ahead for a handful of short live calls through the bridge, which spend a little plan allowance and no money."
+      "status": "review",
+      "note": "Nine short live calls on the owner's plans, with his go-ahead. Everything held. The bridge now reads Claude Code's streaming output: the session's model, the pages a search retrieved, and the tool's own usage report (ADR 9). Captured outputs are test fixtures. In review as a pull request."
     },
     {
       "id": "VFS-57",
@@ -261,8 +261,8 @@
       "id": "VFS-58",
       "order": 216,
       "title": "Usage and limits tracker with owner budgets",
-      "status": "review",
-      "note": "The usage and limits tracker: 5 hour and 7 day counts, budgets that warn at 80 percent and pause at 100, Continue anyway for one episode, limit events with reset time, the automatic and on-demand check, and the four /providers routes. A waiting job stays queued with its reason. In review as a pull request."
+      "status": "done",
+      "note": "The usage and limits tracker: 5 hour and 7 day counts, budgets that warn at 80 percent and pause at 100, Continue anyway for one episode, limit events with reset time, the automatic and on-demand check, and the four /providers routes. A waiting job stays queued with its reason. Merged in pull request #29."
     },
     {
       "id": "VFS-20",
@@ -286,7 +286,8 @@
       "id": "VFS-67",
       "order": 233,
       "title": "Research sources in subscription mode",
-      "status": "backlog"
+      "status": "review",
+      "note": "Research answers in subscription mode carry the pages the tool retrieved. Built together with VFS-65, in the same pull request."
     },
     {
       "id": "VFS-22",
@@ -356,7 +357,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1161 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 155 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1174 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 155 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -380,10 +381,14 @@
     },
     {
       "label": "Architecture records",
-      "value": "docs/architecture.md and ADRs 1 to 8, with tests that keep diagrams and code in step"
+      "value": "docs/architecture.md and ADRs 1 to 9, with tests that keep diagrams and code in step"
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "First live calls: from the worker container through the bridge to Claude Code and Codex on the owner's plans, at no cost, with the pages of a web search coming back as sources."
+    },
     {
       "date": "2026-11-12",
       "text": "The app now knows when to hold back: it counts its own use of each plan, pauses at the owner's budget, waits out a usage limit until the reset time, and checks the providers without spending anything on healthy ones."
