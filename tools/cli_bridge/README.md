@@ -6,7 +6,9 @@ service runs on the PC, starts a tool for one model call at a time, and hands th
 back. The worker reaches it at `http://host.docker.internal:8189`.
 
 Why it is built the way it is, and every flag it passes to the tools, is in
-[ADR 8](../../docs/adr/0008-host-bridge-for-the-command-line-tools.md).
+[ADR 8](../../docs/adr/0008-host-bridge-for-the-command-line-tools.md). What the first
+live calls showed and changed is in
+[ADR 9](../../docs/adr/0009-the-bridge-reads-claude-codes-streaming-output.md).
 
 ## Run it
 
@@ -100,6 +102,8 @@ The answer has the same shape for both tools:
   "model": "claude-opus-5-5",
   "usage": {"input_tokens": 412, "cached_input_tokens": 100, "output_tokens": 18},
   "searches": 0,
+  "sources": [],
+  "plan_usage": null,
   "turns": 1,
   "duration_ms": 2400,
   "tool_duration_ms": 2310,
@@ -110,6 +114,13 @@ The answer has the same shape for both tools:
 `input_tokens` counts everything the model read, cached or not. `model` is the model that
 wrote the answer for Claude, and for Codex the model that was asked for, or null.
 `duration_ms` is measured by the bridge, `tool_duration_ms` is the tool's own figure.
+
+Two fields come from Claude Code only. `sources` lists the pages a research call
+retrieved: `{"url", "title", "text"}`, where `text` is what was read from a fetched
+page, or what the search said about its results. `plan_usage` is the tool's own report
+of how much of the plan is used, for example
+`{"five_hour": {"used": 0.61, "resets_at": "..."}, "seven_day": {...}}`, or null
+when it reported nothing. Codex reports neither, and its answer leaves both out.
 
 ### Errors
 
@@ -147,5 +158,7 @@ wrote the answer for Claude, and for Codex the model that was asked for, or null
 | `cli.py` | `run`, `start`, `stop`, `status` |
 | `tests/fake_tool.py` | A stand-in for both tools that prints the files in `tests/recorded/` |
 
-The files in `tests/recorded/` are samples written from the tools' documented output and
-program text. They were not captured from a live call. Card VFS-65 replaces them.
+The files in `tests/recorded/live/` were captured from the real tools on 2026-11-12, with
+session numbers and everything about the PC removed. The other files in `tests/recorded/`
+are hand-written in the same form, for cases that cannot be produced on purpose: a
+usage limit, a crash, an answer that ignores its schema.

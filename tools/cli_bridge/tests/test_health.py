@@ -96,7 +96,7 @@ def test_the_status_commands_are_the_documented_ones(tmp_path: Path) -> None:
 
 def test_health_shows_a_tool_that_is_in_the_middle_of_a_call(tmp_path: Path) -> None:
     record = tmp_path / "record.jsonl"
-    studio = bridge(claude=fake("claude", output="claude_text.json", record=record, sleep=2))
+    studio = bridge(claude=fake("claude", output="claude_text.jsonl", record=record, sleep=2))
     call = threading.Thread(target=lambda: studio.claude(ClaudeRequest(prompt="An idea.")))
     call.start()
     deadline = time.monotonic() + 15

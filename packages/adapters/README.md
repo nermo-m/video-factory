@@ -38,12 +38,12 @@ come back in the error classes the job queue acts on.
 In subscription mode a call costs nothing (`covered by plan`), a usage limit becomes
 `PlanLimitError` with the reset time, and a bridge that does not answer is an owner task
 that says how to start it. The two adapters refuse to be built in any other mode. A
-research answer has no `sources` in this mode: the command line tool does not report
-the pages it retrieved (card VFS-67).
+research answer carries the pages Claude Code retrieved as `sources` (ADR 9).
 
 No test can reach the network or a real tool. The Anthropic adapter is tested through
 the real SDK with a mock transport, the bridge adapters through a real bridge with fake
-tools. The live checks are cards VFS-64 and VFS-65.
+tools. The bridge adapters were also run live on 2026-11-12 (card VFS-65). The live
+check of the Anthropic adapter is card VFS-64.
 
 ## Voice (`tts/`)
 
