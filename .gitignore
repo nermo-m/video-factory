@@ -49,3 +49,6 @@ apps/web/e2e/.results/
 
 # Dependency audit input
 .audit-requirements.txt
+
+# Frames that failed a golden comparison, kept for inspection
+packages/render/tests/failed/

@@ -17,6 +17,15 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --only-group worker
 
+# Test image for the golden-frame tests: the same Python, Pillow and fonts as the worker,
+# plus the test tools. The repository is mounted at /src when it runs (make render-test).
+FROM deps AS test
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
+WORKDIR /src
+ENV PYTHONPATH=/src
+CMD ["python", "-m", "pytest", "-m", "render", "-p", "no:cacheprovider"]
+
 FROM base AS runtime
 RUN useradd --system --uid 10001 --create-home app \
     && mkdir -p /data \

@@ -408,3 +408,35 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   deliberately simple and can be redrawn by editing one script. Look at the files under
   `packages/render/theme/night_scrolls/assets/` and say what should change.
 - **Reverse:** Edit the script and run it, or replace any file and its `ASSETS.md` row.
+
+## D-020: How the compositor draws and how golden frames are compared
+
+- **Date:** 2026-11-12. **Card:** VFS-13.
+- **Problem:** Section 7.1 names the primitives and says the compositor "draws frame N of
+  scene S", but not the layout coordinates, the animation lengths, how a frame is made
+  smaller for preview mode, or how strict a golden-frame comparison is.
+- **Choice:**
+  - Every frame is drawn on a 1080 by 1920 canvas and scaled to the spec's frame size at
+    the end. Preview mode (RN-12) therefore shows the same layout, only smaller.
+  - The compositor has no clock and no unseeded randomness. Every random effect (drifting
+    motes, shake, smoke) takes the spec's `seed` plus a fixed key, so a frame depends only
+    on the resolved spec, the theme and the asset files (FR-11). A test renders twice and
+    compares.
+  - Animation lengths are constants in the code: scroll unroll 0.6 s, smoke 0.35 s at each
+    end of a scene, slam 0.14 s, shake 0.3 s. Smoke is drawn inside the outgoing and the
+    incoming scene from the same seeded cloud, so the two files meet fully covered (RN-03).
+  - Text and key art report where they were drawn, and a test fails when any of it enters
+    the bottom 15 percent or the right 12 percent (RN-07). Background artwork is exempt.
+  - Caption groups also end where a sentence ends, on top of the 3 word and 14 character
+    limits of RN-06, and a caption stays for 0.35 s after its last word.
+  - A clip is passed in as decoded frames. After its last frame it freezes, or loops when
+    asked (RN-08). Decoding a clip file with FFmpeg belongs to the encode card (VFS-16).
+  - Golden frames are stored at 270 by 480. A frame passes when the mean difference is at
+    most 1.2 levels and at most 0.4 percent of pixels differ by more than 24 levels. A
+    failed frame is written to `packages/render/tests/failed/` and uploaded by CI.
+  - Golden tests carry the pytest marker `render` and run only inside the `test` stage of
+    the worker image (`make render-test`), which the CI `render` job now calls.
+- **Measured:** 29 to 95 ms per full-size frame on the owner's PC, one process. A 45 second
+  episode is 1350 frames, so drawing is well inside the RN-11 budget before encoding.
+- **Reverse:** The constants sit at the top of `compositor.py`, `primitives.py` and
+  `text.py`. After a visual change run `make render-golden-update` and review the frames.

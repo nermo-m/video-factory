@@ -10,3 +10,8 @@ So far: `resolver.py` turns an authored spec plus voice timings into a resolved 
 absolute times, and reports every problem it finds with its location. `theme/` holds the
 `night_scrolls` theme: its artwork, sounds and fonts, what it can draw
 (`capabilities.json`) and where things go (`theme.json`).
+`compositor.py` draws frame N of scene S from the resolved spec, using the drawing functions
+in `primitives.py` and the caption grouping and font fitting in `text.py`.
+
+Tests: `make test` runs the unit tests. `make render-test` compares golden frames inside
+the worker image, and `make render-golden-update` approves the frames as drawn now.

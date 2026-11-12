@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -68,6 +68,16 @@ audit: ## Fail on known vulnerabilities: any in Python packages, high or worse i
 
 secret-scan: ## Scan every commit for secrets with gitleaks (design doc section 13, rule 1)
 	docker run --rm --volume "$(CURDIR):/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --redact --no-banner
+
+RENDER_IMAGE = docker run --rm --volume "$(CURDIR):/src"
+
+render-test: ## Golden-frame tests inside the pinned worker image
+	docker build --quiet --target test --tag vfs-worker-test --file apps/worker/Dockerfile .
+	$(RENDER_IMAGE) vfs-worker-test
+
+render-golden-update: ## Approve the frames as they are drawn now (review them before committing)
+	docker build --quiet --target test --tag vfs-worker-test --file apps/worker/Dockerfile .
+	$(RENDER_IMAGE) --env UPDATE_GOLDEN=1 vfs-worker-test
 
 check-assets: ## Fail when a sample or media file has no ASSETS.md row
 	uv run python scripts/check_assets.py

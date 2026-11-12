@@ -24,6 +24,7 @@ no file.
 | Path | Origin | Licence | Source |
 | --- | --- | --- | --- |
 | `apps/web/e2e/__screenshots__/*.png` | original | MIT | Playwright screenshots of this app, made by `make e2e-update` |
+| `packages/render/tests/golden/*.png` | original | MIT | Frames drawn by this project's render engine, made by `make render-golden-update` |
 | `packages/render/theme/night_scrolls/assets/backgrounds/*.png` | original | MIT | Drawn in code by `packages/render/theme/night_scrolls/build_assets.py` for this project |
 | `packages/render/theme/night_scrolls/assets/scroll/*.png` | original | MIT | Drawn in code by `packages/render/theme/night_scrolls/build_assets.py` for this project |
 | `packages/render/theme/night_scrolls/assets/sprites/*.png` | original | MIT | Drawn in code by `packages/render/theme/night_scrolls/build_assets.py` for this project |

@@ -108,18 +108,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Build the worker image that render tests run in
-        run: docker build --file apps/worker/Dockerfile --tag vfs-worker:ci .
-      - name: Golden-frame and audio tests
-        run: |
-          # Golden-frame and audio tests carry the pytest marker "render". Plain unit tests of
-          # the render package, such as the resolver tests, run in the unit job.
-          if ! grep --recursive --quiet --include='test_*.py' "pytest.mark.render" packages apps; then
-            echo "::notice title=render::No tests are marked render yet. The compositor and its golden-frame tests arrive later in milestone M1, and this job runs them inside the worker image from then on."
-            exit 0
-          fi
-          echo "::error title=render::Tests marked render exist, but this job does not run them yet. Wire them up in the same pull request that adds them."
-          exit 1
+      - name: Golden-frame tests inside the pinned worker image
+        run: make render-test
+      - name: Upload the frames that differ
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: render-failed-frames
+          path: packages/render/tests/failed/
+          if-no-files-found: ignore
 
   e2e-demo:
     name: e2e-demo

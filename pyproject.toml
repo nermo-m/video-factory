@@ -107,7 +107,7 @@ exclude_also = [
 
 [tool.pytest.ini_options]
 minversion = "9.0"
-addopts = "-ra --strict-markers --strict-config -m \"not integration\""
+addopts = "-ra --strict-markers --strict-config -m \"not integration and not render\""
 markers = [
     "integration: needs a real Postgres. Run with make test-integration",
     "render: golden-frame and audio tests that run inside the worker image",
