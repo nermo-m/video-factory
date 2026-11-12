@@ -34,6 +34,22 @@ class RenderError(Exception):
     """A frame cannot be drawn. The message says what is missing."""
 
 
+def scene_frame_counts(resolved: Mapping[str, Any]) -> list[int]:
+    """How many frames each scene has.
+
+    A scene starts and ends on the frame nearest to its start and end time. Rounding each
+    scene's length on its own would add up to a video that is longer or shorter than its
+    sound. This way the total is exact and no scene is more than half a frame off.
+    """
+    fps: int = resolved["format"]["fps"]
+    counts: list[int] = []
+    for scene in resolved["scenes"]:
+        first = round(scene["start_s"] * fps)
+        after_last = round((scene["start_s"] + scene["duration_s"]) * fps)
+        counts.append(max(1, after_last - first))
+    return counts
+
+
 @dataclass(frozen=True)
 class TextBox:
     """Where a piece of text or key art was drawn, for the safe-area check (RN-07)."""
@@ -70,8 +86,7 @@ class Compositor:
 
     def frame_count(self, scene_index: int) -> int:
         """How many frames a scene has."""
-        duration: float = self.resolved["scenes"][scene_index]["duration_s"]
-        return max(1, round(duration * self.fps))
+        return scene_frame_counts(self.resolved)[scene_index]
 
     def render(
         self, scene_index: int, frame: int, *, record: list[TextBox] | None = None

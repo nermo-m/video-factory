@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from packages.render.compositor import Compositor, RenderError, TextBox
+from packages.render.compositor import Compositor, RenderError, TextBox, scene_frame_counts
 from packages.render.tests import support
 from packages.render.theme import Theme, load_theme
 
@@ -59,14 +59,34 @@ def test_rn12_a_smaller_format_gives_smaller_frames(
     small = Compositor(preview, theme, storage_root=storage)
 
     assert small.render(0, 3).size == (540, 960)
-    assert small.frame_count(0) == round(preview["scenes"][0]["duration_s"] * 15)
+    assert abs(small.frame_count(0) - preview["scenes"][0]["duration_s"] * 15) <= 1
 
 
-def test_a_scene_has_duration_times_fps_frames(
+def test_a_scene_has_about_duration_times_fps_frames(
     compositor: Compositor, resolved: dict[str, Any]
 ) -> None:
     for index, scene in enumerate(resolved["scenes"]):
-        assert compositor.frame_count(index) == round(scene["duration_s"] * 30)
+        assert abs(compositor.frame_count(index) - scene["duration_s"] * 30) <= 1
+
+
+@pytest.mark.parametrize("fps", [30, 15, 24])
+def test_the_scenes_frames_add_up_to_the_length_of_the_video(
+    resolved: dict[str, Any], storage: Path, fps: int
+) -> None:
+    # Rounding every scene on its own would let the picture run ahead of the sound, up to
+    # half a frame per scene. Scenes start and end on the frame nearest to their time
+    # instead, so the total is right whatever the scene lengths are.
+    spec = dict(resolved, format={**resolved["format"], "fps": fps})
+    drawing = Compositor(spec, load_theme("night_scrolls"), storage_root=storage)
+    last = resolved["scenes"][-1]
+
+    counts = [drawing.frame_count(index) for index in range(len(resolved["scenes"]))]
+
+    assert sum(counts) == round((last["start_s"] + last["duration_s"]) * fps)
+    assert counts == scene_frame_counts(spec)
+    for index, scene in enumerate(resolved["scenes"]):
+        first_frame = sum(counts[:index])
+        assert abs(first_frame / fps - scene["start_s"]) <= 0.5 / fps + 1e-9
 
 
 def test_fr11_the_same_resolved_spec_renders_identical_frames_twice(

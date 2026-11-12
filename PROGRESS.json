@@ -198,7 +198,8 @@
       "id": "VFS-16",
       "order": 160,
       "title": "Scene encode, join, contact sheet and preview mode",
-      "status": "ready"
+      "status": "review",
+      "note": "One H.264 file per scene, joined by copying with AAC sound and faststart. Only changed scenes are encoded again, files appear only when complete, preview mode, clip decoding and the contact sheet. 22 unit tests and 17 FFmpeg tests. Waits for a pull request."
     },
     {
       "id": "VFS-17",
@@ -209,7 +210,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-16 Scene encode, join, contact sheet and preview mode"
+    "next": "VFS-17 Original sample episode and make demo-render"
   },
   "checklist": [
     {
@@ -244,7 +245,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "541 unit, 19 render (14 golden frames, 5 FFmpeg audio), 5 real-voice and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "563 unit, 36 render (14 golden frames, 22 with FFmpeg), 5 real-voice and 44 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -272,6 +273,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "A resolved spec now becomes a real video file: scenes encoded on their own, joined frame-exact with sound, and a change to one scene re-encodes only that scene. The 23 second test episode renders in 27 seconds."
+    },
     {
       "date": "2026-11-12",
       "text": "The video has sound: narration, sound cues and an original music bed that steps back under the voice, mixed to -14 LUFS. FFmpeg's own meter confirms the numbers."

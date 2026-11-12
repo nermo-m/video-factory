@@ -530,3 +530,47 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   VFS-17 is done. Changing the notes is one line in `theme.json`. A composed track needs a
   file with a licence and a small extension of the mix.
 - **Reverse:** all levels and times are constants at the top of `packages/render/audio.py`.
+
+## D-023: Scene files, joining, preview and the contact sheet
+
+- **Date:** 2026-11-12. **Card:** VFS-16.
+- **Problem:** RN-02 to RN-05 and FR-12 say what must hold (one file per scene, joined by
+  copying, only changed scenes encoded again, temporary names) but not how a changed scene
+  is recognised, which encoder settings are used, or what "busiest moment" means.
+- **Choice:**
+  - **Scene key.** A scene file is named `scene_<index>_<id>_<key>.mp4`. The key is a hash
+    of everything that can change the scene's pixels: the scene, the transition coming in
+    from the scene before, format, seed, the picture or clip file's contents, the claim
+    behind a statistic, every file of the theme and the drawing code itself. A file that
+    exists under its final name is finished, so "is the file there" is the whole check.
+    Nothing has to be remembered between renders.
+  - **What counts as changed.** Times in the resolved spec are absolute. When a scene gets
+    longer, the scenes after it start later and have new keys, because their drifting
+    background is at a different point. An edit that keeps the timing (text, an overlay, a
+    picture) re-encodes one scene. Changing a transition re-encodes the two scenes it is
+    drawn in (RN-03).
+  - **Encoder.** `libx264`, preset medium, CRF 18, yuv420p, tagged and converted as BT.709.
+    Scene files have no sound. The join uses FFmpeg's concat demuxer with stream copy and
+    gives every scene's exact length, which keeps frames evenly spaced across joins. The
+    audio mix is encoded once, as AAC 192 kbps, and the index is moved to the front
+    (faststart). Checked against FFmpeg 5.1 in the worker image (build rule 10).
+  - **Temporary names.** Scene files, the audio mix, the video and the contact sheet are
+    all written as `<name>.partial.<ext>` and renamed when complete (RN-05).
+  - **Preview** is the same spec with the format replaced by 540 by 960 at 15 fps. Its
+    scene files have their own keys, so previews and full renders never mix.
+  - **Parallel scenes.** `render_scenes(workers=N)` encodes scenes in separate processes
+    (spawned, not forked). In the pipeline the worker's `render.scene` jobs do the same
+    through the queue.
+  - **Contact sheet.** One 270 by 480 tile per scene, JPEG. A scene's busiest moment is
+    0.6 seconds after its last element arrived, never inside the smoke of a transition,
+    and never while something is still landing: if the last element arrives too late to
+    settle, the moment just before it is used.
+  - **Clips.** A clip file is decoded with FFmpeg into frames (at most 600) and handed to
+    the compositor, which scales, crops and freezes it as built in VFS-13 (RN-08).
+- **Found on the way:** each scene's frame count was `round(duration x fps)`. Rounded
+  scene by scene, the picture ran up to half a frame per scene ahead of or behind the
+  sound, a full frame on the test episode at 15 fps. Scenes now start and end on the frame
+  nearest to their time (`scene_frame_counts`), so the total is exact.
+- **Measured** in the worker image on the owner's PC: the 23 second test episode at full
+  size with 4 workers takes 27 seconds including the audio mix and the contact sheet.
+- **Reverse:** encoder settings are one list at the top of `packages/render/encode.py`.
