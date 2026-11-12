@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Direct input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "script",
+    "brief",
+    "claims",
+    "capabilities",
+    "library",
+    "channel"
+  ],
+  "properties": {
+    "script": {
+      "type": "object",
+      "required": [
+        "scenes"
+      ]
+    },
+    "brief": {
+      "type": "object"
+    },
+    "claims": {
+      "type": "object",
+      "required": [
+        "claims"
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "theme",
+        "scene_kinds"
+      ]
+    },
+    "library": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "kind"
+        ]
+      }
+    },
+    "channel": {
+      "type": "object",
+      "required": [
+        "name",
+        "target_duration_s"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "target_duration_s": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

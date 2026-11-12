@@ -87,16 +87,22 @@ def test_every_skills_example_fits_its_own_schemas(name: str) -> None:
 
 
 def test_the_shared_schemas_are_the_skills_output_schemas() -> None:
-    assert load_skill("brief").output_schema == schemas.load_schema("brief")
-    assert load_skill("research").output_schema == schemas.load_schema("claims")
+    shared = {name: load_skill(name).shared_output for name in SKILL_NAMES}
+
+    assert shared == {
+        "brief": "brief",
+        "research": "claims",
+        "script": None,
+        "direct": "episode_spec",
+        "assets": "asset_manifest",
+        "package": "package",
+        "revise": None,
+    }
+    assert load_skill("brief").output_schema == schemas.bundled_schema("brief")
 
 
 def test_only_research_searches_the_web() -> None:
-    assert {name: load_skill(name).web_search for name in SKILL_NAMES} == {
-        "brief": False,
-        "research": True,
-        "script": False,
-    }
+    assert [name for name in SKILL_NAMES if load_skill(name).web_search] == ["research"]
 
 
 def test_an_unknown_skill_is_refused() -> None:

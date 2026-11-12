@@ -28,7 +28,21 @@ the caller can store them all.
   which is 96 words for 45 seconds in 7 scenes. A script more than 5 percent over is sent
   back. It may also only use claims that research returned.
 
-So far: `brief`, `research`, `script`. Changing a skill's instructions in a way that
-changes its answers means raising its version and recording
-`samples/recordings/<skill>.json` again: demo mode refuses a recording made for another
-version.
+- **direct:** the spec may only use what the theme's `capabilities.json` declares, it keeps
+  the script's scenes and narration word for word, and every picture a scene shows is
+  declared. What the app knows better than the model (the episode's id, format, theme,
+  voice, seed and the claims) is written into the spec as it is.
+- **assets:** the manifest lists exactly the pictures the spec shows, says where each is
+  used, and a generated picture's prompt carries the channel's style block.
+- **package:** the cover frame lies inside the video.
+- **revise:** the patch applies, leaves a valid spec the theme can draw, has at most 20
+  operations, and does not touch the episode's id, format or theme.
+
+The seven skills: `brief`, `research`, `script`, `direct`, `assets`, `package`, `revise`.
+A skill whose answer is one of the shared schemas in `schemas/` sends the model that
+schema as one self-contained document (`schemas.bundled_schema`), because a model
+provider cannot follow a reference into another file.
+
+Changing a skill's instructions in a way that changes its answers means raising its
+version and recording `samples/recordings/<skill>.json` again: demo mode refuses a
+recording made for another version.

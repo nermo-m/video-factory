@@ -609,7 +609,7 @@ def test_a_reference_inside_the_same_schema_is_kept() -> None:
 
 
 @pytest.mark.host_tools
-@pytest.mark.parametrize("name", ["brief", "script"])
+@pytest.mark.parametrize("name", ["brief", "script", "direct", "assets", "package", "revise"])
 def test_the_installed_claude_code_accepts_the_skills_schemas_as_they_are_sent(name: str) -> None:
     """No model call: the tool reads its options first and stops at the missing prompt."""
     import os

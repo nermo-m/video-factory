@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Assets input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec",
+    "library",
+    "style_block"
+  ],
+  "properties": {
+    "spec": {
+      "type": "object",
+      "required": [
+        "episode_id",
+        "scenes",
+        "assets"
+      ]
+    },
+    "library": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "kind"
+        ]
+      }
+    },
+    "style_block": {
+      "type": "string"
+    }
+  }
+}

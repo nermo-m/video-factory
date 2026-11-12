@@ -68,11 +68,15 @@ class Spy:
 
 
 def run_job(
-    sessions: sessionmaker[Session], llm: Spy, job_type: str, episode_id: uuid.UUID | None
+    sessions: sessionmaker[Session],
+    llm: Spy,
+    job_type: str,
+    episode_id: uuid.UUID | None,
+    payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Queue one job, run its handler as the worker would, and store the result."""
     with sessions.begin() as session:
-        job = queue.enqueue(session, job_type=job_type, tag=JobTag.CPU)
+        job = queue.enqueue(session, job_type=job_type, tag=JobTag.CPU, payload=payload or {})
         job.episode_id = episode_id
     with sessions.begin() as session:
         claim = queue.claim_next(session, JobTag.CPU)
@@ -151,3 +155,106 @@ def test_the_newest_result_of_a_rerun_state_is_the_one_that_counts(
     run_job(sessions, llm, "plan.research", episode_id)
 
     assert "An old lesson." not in llm.requests[-1].prompt
+
+
+def plan(sessions: sessionmaker[Session], llm: Spy, episode_id: uuid.UUID) -> dict[str, Any]:
+    """Run the planning jobs up to the direction and return the direction's result."""
+    for job_type in ("plan.brief", "plan.research", "plan.script"):
+        run_job(sessions, llm, job_type, episode_id)
+    return run_job(sessions, llm, "plan.direct", episode_id)
+
+
+def test_fr03_the_direction_is_stored_as_the_episodes_first_spec_version(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    directed = plan(sessions, Spy(), episode_id)
+
+    with sessions() as session:
+        episode = session.get(models.Episode, episode_id)
+        assert episode is not None
+        version = session.scalars(select(models.SpecVersion)).one()
+    assert episode.current_spec_id == version.id
+    assert (version.version, version.kind.value, version.author.value) == (1, "authored", "model")
+    assert (version.skill_version, version.parent_id) == ("1.0", None)
+    assert version.body == directed["document"]
+    assert directed["spec_version"] == 1
+
+
+def test_the_spec_carries_what_the_app_knows_and_the_models_direction(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    spec = plan(sessions, Spy(), episode_id)["document"]
+    sample = example("direct")
+
+    assert spec["episode_id"] == str(episode_id)
+    assert spec["format"] == {"width": 1080, "height": 1920, "fps": 30, "target_duration_s": 45}
+    assert spec["voice"] == {"voice_id": "bm_george", "speed": 1.0}
+    assert (spec["theme"], spec["spec_version"]) == ("night_scrolls", "2.0")
+    assert spec["seed"] == episode_id.int % 2**32
+    assert spec["scenes"] == sample["scenes"], "the direction itself is the model's"
+
+
+def test_directing_again_adds_a_version_that_points_at_the_one_before(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    llm = Spy()
+    plan(sessions, llm, episode_id)
+    run_job(sessions, llm, "plan.direct", episode_id)
+
+    with sessions() as session:
+        first, second = session.scalars(
+            select(models.SpecVersion).order_by(models.SpecVersion.version)
+        ).all()
+        episode = session.get(models.Episode, episode_id)
+    assert episode is not None
+    assert (second.version, second.parent_id, episode.current_spec_id) == (2, first.id, second.id)
+
+
+def test_fr16_assets_and_package_follow_from_the_stored_spec(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    llm = Spy()
+    plan(sessions, llm, episode_id)
+
+    manifest = run_job(sessions, llm, "plan.assets", episode_id)["document"]
+    package = run_job(sessions, llm, "plan.package", episode_id)["document"]
+
+    assert manifest["episode_id"] == str(episode_id)
+    assert [entry["id"] for entry in manifest["assets"]] == [
+        entry["id"] for entry in example("assets")["assets"]
+    ]
+    assert package == example("package")
+    assert f'"episode_id": "{episode_id}"' in llm.requests[-1].prompt
+
+
+def test_fr03_a_revision_answers_with_a_patch_and_changes_nothing(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    llm = Spy()
+    plan(sessions, llm, episode_id)
+
+    revision = run_job(
+        sessions, llm, "plan.revise", episode_id, {"comment": "End the hook with a hard cut."}
+    )
+
+    assert revision["document"] == example("revise")
+    assert "End the hook with a hard cut." in llm.requests[-1].prompt
+    with sessions() as session:
+        assert len(session.scalars(select(models.SpecVersion)).all()) == 1, "nothing is applied"
+
+
+def test_a_revision_without_a_comment_is_a_bug(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    llm = Spy()
+    plan(sessions, llm, episode_id)
+
+    with pytest.raises(JobError, match="comment"):
+        run_job(sessions, llm, "plan.revise", episode_id)
+
+
+def test_a_job_that_needs_the_spec_says_so_when_there_is_none(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    with pytest.raises(JobError, match="spec"):
+        run_job(sessions, Spy(), "plan.assets", episode_id)

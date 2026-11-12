@@ -931,3 +931,37 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   skip the skill's rules). Each made tests fail.
 - **Reverse:** a skill is a folder. Its instructions and schemas change without touching
   the service.
+
+## D-033: The skills direct, assets, package and revise
+
+- **Date:** 2026-11-12. **Card:** VFS-21.
+- **Problem:** Section 6 gives each skill one line. It leaves open how the director is
+  held to the theme and the script, who fills the fields a model should not decide, what a
+  revision looks like, and how a schema that refers to other files reaches a model.
+- **Choice:**
+  - **The director directs, it does not rewrite.** The spec must keep the script's scenes,
+    their order and their narration word for word, so the word budget that the script
+    passed still holds. It may only use what the theme declares, checked with the same
+    `check_capabilities` the render engine has. An undeclared overlay sends the answer
+    back, and fails the job the second time.
+  - **The app fills what it knows.** Episode id, format, theme, voice, seed and the claims
+    are written into the spec after the model answers. The seed comes from the episode's
+    id, so the same episode always draws the same frames.
+  - **The spec is stored when it is directed**: a new `spec_version` row, authored by the
+    model, pointing at the version before it, and made the episode's current spec. That is
+    what the plan gate shows.
+  - **A revision is `{summary, patch}`**, a JSON Patch with add, remove and replace. It is
+    checked by applying it to a copy: the result must be a valid spec the theme can draw.
+    The job returns the patch and applies nothing. Applying it after the owner has seen
+    the diff is the episode API's work (VFS-22).
+  - **`packages/core/json_patch.py`** is 90 lines of the project's own, so no patch
+    library is added.
+  - **One self-contained schema per answer.** The shared schemas refer to each other.
+    `schemas.bundled_schema` copies what a schema uses from other files into it. Claude
+    Code accepts all six that way, which `make bridge-flags` checks without a model call.
+  - **The library of reusable pictures** is, until milestone M3 builds the real one, the
+    four pictures bundled with the sample episode.
+- **Tried live** on the owner's Claude plan: all seven skills in a row for a new idea, each
+  accepted on the first try, 110 seconds in all. The directed spec was valid for the
+  theme. Its four pictures were planned as generated, which milestone M3 will make.
+- **Reverse:** each skill is a folder, each rule one function in `rules.py`.

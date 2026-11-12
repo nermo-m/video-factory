@@ -1,0 +1,146 @@
+{
+  "script": {
+    "scenes": [
+      {
+        "id": "s01_hook",
+        "beat": "hook",
+        "narration": "To everyone who keeps putting it off. Small steps still count."
+      },
+      {
+        "id": "s02_climb",
+        "beat": "setup",
+        "narration": "The keeper climbed the same hill every morning. Nobody asked him to."
+      },
+      {
+        "id": "s03_lamp",
+        "beat": "story",
+        "narration": "He trimmed the wick, cleaned the glass, and wrote one line in the log. Then he did it all again."
+      },
+      {
+        "id": "s04_storm",
+        "beat": "story",
+        "narration": "Years passed. Then one night a storm took the stars, and a ship lost its way."
+      },
+      {
+        "id": "s05_light",
+        "beat": "story",
+        "narration": "The lamp was burning, as it had every night before. Because of one small habit, the ship came home."
+      },
+      {
+        "id": "s06_steps",
+        "beat": "takeaway",
+        "narration": "So pick one small thing. Do it today. Do it again tomorrow."
+      },
+      {
+        "id": "s07_outro",
+        "beat": "closing",
+        "narration": "Nobody may see it. It still counts."
+      }
+    ]
+  },
+  "brief": {
+    "angle": "A lighthouse keeper climbs the same hill every morning to trim the wick and clean the glass, with nobody watching. Years later a storm hides the stars and a lost ship finds its way home by his light. The small habit nobody saw is what saved it.",
+    "lesson": "Small steps still count, even when nobody sees them.",
+    "audience": "Someone who keeps putting off a thing because one small step feels too small to matter.",
+    "titles": [
+      "The Lighthouse Keeper Nobody Watched",
+      "Small Steps Still Count",
+      "One Small Habit, One Stormy Night"
+    ]
+  },
+  "claims": {
+    "claims": [],
+    "note": "The video tells a made-up story about a made-up keeper and states no fact that needs a source."
+  },
+  "capabilities": {
+    "theme": "night_scrolls",
+    "scene_kinds": [
+      "title",
+      "scroll",
+      "stat",
+      "steps",
+      "outro"
+    ],
+    "text_styles": [
+      "slam",
+      "slam_accent"
+    ],
+    "overlay_types": [
+      "tag",
+      "stamp",
+      "sprite"
+    ],
+    "stamp_colors": [
+      "ink",
+      "red"
+    ],
+    "sprites": {
+      "lantern": [
+        "sway",
+        "rise"
+      ],
+      "moon": [
+        "rise",
+        "glow"
+      ]
+    },
+    "sound_cues": [
+      "paper_unroll",
+      "stamp",
+      "pin_hit",
+      "smoke",
+      "slam"
+    ],
+    "transitions": [
+      "smoke",
+      "cut"
+    ]
+  },
+  "library": [
+    {
+      "key": "a_hill_dawn",
+      "kind": "image",
+      "tags": [
+        "hill",
+        "dawn",
+        "lighthouse"
+      ],
+      "licence": "MIT"
+    },
+    {
+      "key": "a_lamp_room",
+      "kind": "image",
+      "tags": [
+        "lamp",
+        "room",
+        "logbook"
+      ],
+      "licence": "MIT"
+    },
+    {
+      "key": "a_storm_sea",
+      "kind": "image",
+      "tags": [
+        "storm",
+        "sea",
+        "ship"
+      ],
+      "licence": "MIT"
+    },
+    {
+      "key": "a_lighthouse_beam",
+      "kind": "image",
+      "tags": [
+        "lighthouse",
+        "beam",
+        "ship"
+      ],
+      "licence": "MIT"
+    }
+  ],
+  "channel": {
+    "name": "Small Steps",
+    "motto": "Small steps still count.",
+    "target_duration_s": 45
+  }
+}

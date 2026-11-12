@@ -1,0 +1,367 @@
+{
+  "spec": {
+    "spec_version": "2.0",
+    "episode_id": "ep_lighthouse_keeper",
+    "format": {
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "target_duration_s": 45
+    },
+    "theme": "night_scrolls",
+    "voice": {
+      "voice_id": "bm_george",
+      "speed": 1
+    },
+    "seed": 7,
+    "scenes": [
+      {
+        "id": "s01_hook",
+        "kind": "title",
+        "narration": "To everyone who keeps putting it off. Small steps still count.",
+        "text": [
+          {
+            "content": "SMALL STEPS",
+            "style": "slam",
+            "cue": {
+              "word": 7
+            }
+          },
+          {
+            "content": "STILL COUNT.",
+            "style": "slam_accent",
+            "cue": {
+              "word": 9
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "slam",
+            "cue": {
+              "word": 7
+            }
+          },
+          {
+            "cue_id": "slam",
+            "cue": {
+              "word": 9
+            },
+            "gain_db": -2
+          }
+        ],
+        "retention_device": "Count for what?",
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s02_climb",
+        "kind": "scroll",
+        "title": "THE CLIMB",
+        "label": "DAY ONE",
+        "sublabel": "nobody was watching",
+        "visual": {
+          "asset_id": "a_hill_dawn"
+        },
+        "narration": "The keeper climbed the same hill every morning. Nobody asked him to.",
+        "overlays": [
+          {
+            "type": "tag",
+            "lines": [
+              "EVERY",
+              "MORNING"
+            ],
+            "side": "left",
+            "cue": {
+              "word": 6
+            }
+          },
+          {
+            "type": "sprite",
+            "name": "moon",
+            "action": "glow",
+            "cue": {
+              "scene_start_s": 0
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "paper_unroll",
+            "cue": {
+              "scene_start_s": 0.1
+            },
+            "gain_db": -3
+          },
+          {
+            "cue_id": "pin_hit",
+            "cue": {
+              "word": 6
+            },
+            "gain_db": -4
+          }
+        ],
+        "retention_device": "Why would anyone do this unseen?",
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s03_lamp",
+        "kind": "scroll",
+        "title": "THE LAMP",
+        "label": "EVERY DAY",
+        "sublabel": "the same three things",
+        "visual": {
+          "asset_id": "a_lamp_room"
+        },
+        "narration": "He trimmed the wick, cleaned the glass, and wrote one line in the log. Then he did it all again.",
+        "overlays": [
+          {
+            "type": "tag",
+            "lines": [
+              "ONE LINE"
+            ],
+            "side": "right",
+            "cue": {
+              "word": 9
+            }
+          },
+          {
+            "type": "sprite",
+            "name": "lantern",
+            "action": "sway",
+            "cue": {
+              "scene_start_s": 0.4
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "paper_unroll",
+            "cue": {
+              "scene_start_s": 0.1
+            },
+            "gain_db": -3
+          },
+          {
+            "cue_id": "pin_hit",
+            "cue": {
+              "word": 9
+            },
+            "gain_db": -4
+          }
+        ],
+        "retention_device": "What is all this for?",
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s04_storm",
+        "kind": "scroll",
+        "title": "THE STORM",
+        "label": "YEAR NINE",
+        "sublabel": "no stars that night",
+        "visual": {
+          "asset_id": "a_storm_sea"
+        },
+        "narration": "Years passed. Then one night a storm took the stars, and a ship lost its way.",
+        "overlays": [
+          {
+            "type": "stamp",
+            "content": "LOST",
+            "color": "red",
+            "cue": {
+              "word": 13
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "paper_unroll",
+            "cue": {
+              "scene_start_s": 0.1
+            },
+            "gain_db": -3
+          },
+          {
+            "cue_id": "stamp",
+            "cue": {
+              "word": 13
+            }
+          }
+        ],
+        "retention_device": "Does the ship make it?",
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s05_light",
+        "kind": "scroll",
+        "title": "THE LIGHT",
+        "label": "THAT NIGHT",
+        "sublabel": "like every night before",
+        "visual": {
+          "asset_id": "a_lighthouse_beam"
+        },
+        "narration": "The lamp was burning, as it had every night before. Because of one small habit, the ship came home.",
+        "overlays": [
+          {
+            "type": "stamp",
+            "content": "HOME",
+            "color": "red",
+            "cue": {
+              "word": 18
+            }
+          },
+          {
+            "type": "sprite",
+            "name": "lantern",
+            "action": "sway",
+            "cue": {
+              "scene_start_s": 0.4
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "paper_unroll",
+            "cue": {
+              "scene_start_s": 0.1
+            },
+            "gain_db": -3
+          },
+          {
+            "cue_id": "stamp",
+            "cue": {
+              "word": 18
+            }
+          }
+        ],
+        "pad_after_s": 0.9,
+        "retention_device": "So what do I do with this?",
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s06_steps",
+        "kind": "steps",
+        "title": "TRY THIS",
+        "narration": "So pick one small thing. Do it today. Do it again tomorrow.",
+        "steps": [
+          {
+            "text": "Pick one small thing",
+            "cue": {
+              "word": 1
+            }
+          },
+          {
+            "text": "Do it today",
+            "cue": {
+              "word": 5
+            }
+          },
+          {
+            "text": "Do it again tomorrow",
+            "cue": {
+              "word": 8
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "paper_unroll",
+            "cue": {
+              "scene_start_s": 0.1
+            },
+            "gain_db": -3
+          }
+        ],
+        "pad_after_s": 0.7,
+        "transition_out": "smoke"
+      },
+      {
+        "id": "s07_outro",
+        "kind": "outro",
+        "narration": "Nobody may see it. It still counts.",
+        "text": [
+          {
+            "content": "IT STILL COUNTS.",
+            "style": "slam_accent",
+            "cue": {
+              "word": 4
+            }
+          }
+        ],
+        "sound": [
+          {
+            "cue_id": "slam",
+            "cue": {
+              "word": 4
+            }
+          }
+        ],
+        "hold_s": 2
+      }
+    ],
+    "claims": [],
+    "assets": [
+      {
+        "id": "a_hill_dawn",
+        "kind": "image",
+        "origin": "library",
+        "licence": "MIT",
+        "contains_third_party_ip": false,
+        "rights_status": "cleared",
+        "tags": [
+          "hill",
+          "dawn",
+          "lighthouse"
+        ]
+      },
+      {
+        "id": "a_lamp_room",
+        "kind": "image",
+        "origin": "library",
+        "licence": "MIT",
+        "contains_third_party_ip": false,
+        "rights_status": "cleared",
+        "tags": [
+          "lamp",
+          "room",
+          "logbook"
+        ]
+      },
+      {
+        "id": "a_storm_sea",
+        "kind": "image",
+        "origin": "library",
+        "licence": "MIT",
+        "contains_third_party_ip": false,
+        "rights_status": "cleared",
+        "tags": [
+          "storm",
+          "sea",
+          "ship"
+        ]
+      },
+      {
+        "id": "a_lighthouse_beam",
+        "kind": "image",
+        "origin": "library",
+        "licence": "MIT",
+        "contains_third_party_ip": false,
+        "rights_status": "cleared",
+        "tags": [
+          "lighthouse",
+          "beam",
+          "ship"
+        ]
+      }
+    ]
+  },
+  "brief": {
+    "angle": "A lighthouse keeper climbs the same hill every morning to trim the wick and clean the glass, with nobody watching. Years later a storm hides the stars and a lost ship finds its way home by his light. The small habit nobody saw is what saved it.",
+    "lesson": "Small steps still count, even when nobody sees them.",
+    "audience": "Someone who keeps putting off a thing because one small step feels too small to matter.",
+    "titles": [
+      "The Lighthouse Keeper Nobody Watched",
+      "Small Steps Still Count",
+      "One Small Habit, One Stormy Night"
+    ]
+  }
+}
