@@ -33,7 +33,7 @@ from packages.core.enums import ErrorClass
 from packages.core.queue import InvalidOutputError, JobError
 
 SKILLS_DIR = Path(__file__).resolve().parent
-SKILL_NAMES = ("brief", "research", "script")
+SKILL_NAMES = ("brief", "research", "script", "direct", "assets", "package", "revise")
 MAX_PROBLEMS_SHOWN = 12
 
 # A skill's own rules: problems with an answer that the schema cannot express.
@@ -52,6 +52,8 @@ class Skill:
     output_schema: dict[str, Any]
     web_search: bool = False
     effort: str | None = None
+    # Set when the answer is one of the shared schemas in `schemas/`.
+    shared_output: str | None = None
 
 
 @dataclass(frozen=True)
@@ -65,13 +67,18 @@ class SkillResult:
     removed: tuple[str, ...] = ()
 
 
-def _schema(path: Path) -> dict[str, Any]:
-    """A skill's schema file. `{"$ref": "brief.schema.json"}` stands for a shared schema."""
+def _schema(path: Path) -> tuple[dict[str, Any], str | None]:
+    """A skill's schema file, and the name of the shared schema it stands for, if any.
+
+    `{"$ref": "brief.schema.json"}` stands for a shared schema. The model is sent that
+    schema as one self-contained document.
+    """
     loaded: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
     reference = loaded.get("$ref")
     if isinstance(reference, str) and reference.endswith(".schema.json"):
-        return schemas.load_schema(reference.removesuffix(".schema.json"))
-    return loaded
+        name = reference.removesuffix(".schema.json")
+        return schemas.bundled_schema(name), name
+    return loaded, None
 
 
 @cache
@@ -88,12 +95,14 @@ def load_skill(name: str) -> Skill:
     fields = {key.strip(): value.strip().strip('"') for key, value in fields.items()}
     if fields.get("name") != name or not fields.get("version"):
         raise ValueError(f"{name}/SKILL.md must name the skill '{name}' and give its version.")
+    output_schema, shared = _schema(folder / "output.schema.json")
     return Skill(
         name=name,
         version=fields["version"],
         instructions=instructions.strip(),
-        input_schema=_schema(folder / "input.schema.json"),
-        output_schema=_schema(folder / "output.schema.json"),
+        input_schema=_schema(folder / "input.schema.json")[0],
+        output_schema=output_schema,
+        shared_output=shared,
         web_search=fields.get("web_search") == "true",
         effort=fields.get("effort") or None,
     )
@@ -163,7 +172,10 @@ def run_skill(
         removed: list[str] = []
         if repair is not None:
             output, removed = repair(output, response)
-        problems = _problems(skill.output_schema, output)
+        if skill.shared_output is not None:
+            problems = [str(found) for found in schemas.validate(skill.shared_output, output)]
+        else:
+            problems = _problems(skill.output_schema, output)
         if not problems and check is not None:
             problems = check(inputs, output, response)
         if not problems:

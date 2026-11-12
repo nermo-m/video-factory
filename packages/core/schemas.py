@@ -7,6 +7,7 @@ properties are rejected, so a drifting model cannot slip a typo past the rendere
 
 from __future__ import annotations
 
+import copy
 import json
 from dataclasses import dataclass
 from functools import cache
@@ -99,3 +100,49 @@ def validate_or_raise(name: str, document: Any) -> None:
     problems = validate(name, document)
     if problems:
         raise SchemaValidationError(name, problems)
+
+
+@cache
+def _bundled(name: str) -> dict[str, Any]:
+    definitions: dict[str, Any] = {}
+
+    def local(file: str, key: str) -> str:
+        """The name a definition of another file gets inside the bundled schema."""
+        return key if file == name else f"{file}__{key}"
+
+    def convert(node: Any, file: str) -> Any:
+        if isinstance(node, list):
+            return [convert(item, file) for item in node]
+        if not isinstance(node, dict):
+            return node
+        converted = {}
+        for key, value in node.items():
+            if key == "$ref" and isinstance(value, str):
+                target, _, pointer = value.partition("#/$defs/")
+                source = target.removesuffix(".schema.json") if target else file
+                wanted = local(source, pointer)
+                if wanted not in definitions:
+                    definitions[wanted] = None  # reserved, so a loop of references ends
+                    definitions[wanted] = convert(load_schema(source)["$defs"][pointer], source)
+                converted[key] = f"#/$defs/{wanted}"
+            elif key != "$defs":
+                converted[key] = convert(value, file)
+        return converted
+
+    schema = load_schema(name)
+    bundled: dict[str, Any] = convert(schema, name)
+    for key in schema.get("$defs", {}):
+        if key not in definitions:
+            definitions[key] = convert(schema["$defs"][key], name)
+    if definitions:
+        bundled["$defs"] = definitions
+    return bundled
+
+
+def bundled_schema(name: str) -> dict[str, Any]:
+    """The schema with every definition it uses from another file copied into it.
+
+    The shared schemas refer to each other. A model provider is sent one document, so it
+    gets this form, which says the same thing without pointing anywhere else.
+    """
+    return copy.deepcopy(_bundled(name))

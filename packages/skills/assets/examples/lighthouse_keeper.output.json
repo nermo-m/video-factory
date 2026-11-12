@@ -1,0 +1,77 @@
+{
+  "episode_id": "ep_lighthouse_keeper",
+  "assets": [
+    {
+      "id": "a_hill_dawn",
+      "kind": "image",
+      "origin": "library",
+      "used_in": [
+        "s02_climb"
+      ],
+      "becomes_clip": false,
+      "library_key": "a_hill_dawn",
+      "licence": "MIT",
+      "contains_third_party_ip": false,
+      "rights_status": "cleared",
+      "tags": [
+        "hill",
+        "dawn",
+        "lighthouse"
+      ]
+    },
+    {
+      "id": "a_lamp_room",
+      "kind": "image",
+      "origin": "library",
+      "used_in": [
+        "s03_lamp"
+      ],
+      "becomes_clip": false,
+      "library_key": "a_lamp_room",
+      "licence": "MIT",
+      "contains_third_party_ip": false,
+      "rights_status": "cleared",
+      "tags": [
+        "lamp",
+        "room",
+        "logbook"
+      ]
+    },
+    {
+      "id": "a_storm_sea",
+      "kind": "image",
+      "origin": "library",
+      "used_in": [
+        "s04_storm"
+      ],
+      "becomes_clip": false,
+      "library_key": "a_storm_sea",
+      "licence": "MIT",
+      "contains_third_party_ip": false,
+      "rights_status": "cleared",
+      "tags": [
+        "storm",
+        "sea",
+        "ship"
+      ]
+    },
+    {
+      "id": "a_lighthouse_beam",
+      "kind": "image",
+      "origin": "library",
+      "used_in": [
+        "s05_light"
+      ],
+      "becomes_clip": false,
+      "library_key": "a_lighthouse_beam",
+      "licence": "MIT",
+      "contains_third_party_ip": false,
+      "rights_status": "cleared",
+      "tags": [
+        "lighthouse",
+        "beam",
+        "ship"
+      ]
+    }
+  ]
+}

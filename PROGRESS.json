@@ -268,14 +268,15 @@
       "id": "VFS-20",
       "order": 220,
       "title": "Planner service and skills: brief, research, script",
-      "status": "review",
-      "note": "The planner service with one corrective retry, and the skills brief, research and script with schemas, examples, tests and demo recordings. A claim without a retrieved source is dropped, and a script must fit its word budget. Worker handlers for the three planning jobs. In review as a pull request."
+      "status": "done",
+      "note": "The planner service with one corrective retry, and the skills brief, research and script with schemas, examples, tests and demo recordings. A claim without a retrieved source is dropped, and a script must fit its word budget. Worker handlers for the three planning jobs. Merged in pull request #31."
     },
     {
       "id": "VFS-21",
       "order": 230,
       "title": "Skills: direct, assets, package, revise",
-      "status": "ready"
+      "status": "review",
+      "note": "The skills direct, assets, package and revise, with schemas, examples, tests and demo recordings. A spec may only use what the theme declares and keeps the script's words. The direction is stored as a spec version. A revision is a checked JSON Patch. All seven skills ran live in a row. In review as a pull request."
     },
     {
       "id": "VFS-66",
@@ -323,7 +324,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-21 Skills: direct, assets, package, revise"
+    "next": "VFS-22 Episode API: lifecycle, spec versions and diff"
   },
   "checklist": [
     {
@@ -358,7 +359,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1233 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 160 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1319 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 167 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -370,7 +371,7 @@
     },
     {
       "label": "Third-party media in the repository",
-      "value": "Three OFL-1.1 fonts. All artwork, sounds, golden frames and the sample episode are original (47 registered asset files)"
+      "value": "Three OFL-1.1 fonts. All artwork, sounds, golden frames and the sample episode are original (51 registered asset files)"
     },
     {
       "label": "Continuous integration",
@@ -386,6 +387,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "All seven planner skills ran live in a row on the owner's plan: one idea became a brief, research, a script, a directed spec the theme can draw, a picture plan and an upload package in under two minutes."
+    },
     {
       "date": "2026-11-12",
       "text": "The planner can think: an idea becomes a brief, checked facts and a script that fits its length, with one corrective retry and every claim tied to a page that was really retrieved."

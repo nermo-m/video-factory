@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Package input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec",
+    "brief"
+  ],
+  "properties": {
+    "spec": {
+      "type": "object",
+      "required": [
+        "format",
+        "scenes"
+      ]
+    },
+    "brief": {
+      "type": "object"
+    }
+  }
+}

@@ -16,6 +16,9 @@ from typing import Any
 from urllib.parse import unquote, urlsplit
 
 from packages.adapters.llm.base import LLMResponse
+from packages.core import json_patch, schemas
+from packages.render.theme import check_capabilities
+from packages.skills.planner import Repair
 
 WORDS_PER_SECOND = 2.3
 # The silence around each scene's narration (section 5.2: pad_before_s and pad_after_s).
@@ -97,4 +100,133 @@ def script_fits(
                 problems.append(
                     f"Scene {scene['id']} uses the claim {claim_id}, which research did not return."
                 )
+    return problems
+
+
+# --- direct -----------------------------------------------------------------------------
+
+
+def complete_spec(fixed: Mapping[str, Any]) -> Repair:
+    """What the app knows better than the model is written into the spec as it is: the
+    episode's id, its format, theme, voice and seed, and the claims research returned."""
+
+    def repair(output: dict[str, Any], _response: LLMResponse) -> tuple[dict[str, Any], list[str]]:
+        return {**output, **fixed}, []
+
+    return repair
+
+
+def spec_follows_the_plan(
+    inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
+) -> list[str]:
+    """Problems with a spec: something the theme cannot draw, narration that is not the
+    script's, or a picture that is not declared."""
+    problems = [str(found) for found in check_capabilities(output, inputs["capabilities"])]
+    wanted = [(scene["id"], scene["narration"]) for scene in inputs["script"]["scenes"]]
+    written = [(scene["id"], scene["narration"]) for scene in output["scenes"]]
+    if written != wanted:
+        problems.append(
+            "The scenes must be the script's scenes, in its order, with the same ids and the "
+            "same narration word for word. Direct them, do not rewrite them."
+        )
+    declared = {asset["id"]: asset for asset in output["assets"]}
+    library = {entry["key"] for entry in inputs.get("library", [])}
+    for scene in output["scenes"]:
+        asset_id = scene.get("visual", {}).get("asset_id")
+        if asset_id is not None and asset_id not in declared:
+            problems.append(f"Scene {scene['id']} shows {asset_id}, which `assets` does not list.")
+    for asset_id, asset in declared.items():
+        if asset["origin"] == "library" and asset_id not in library:
+            problems.append(
+                f"The asset {asset_id} is not in the library. Its origin is not library."
+            )
+    return problems
+
+
+# --- assets -----------------------------------------------------------------------------
+
+
+def manifest_covers_the_spec(
+    inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
+) -> list[str]:
+    """Problems with an asset manifest: it must list exactly the pictures the spec shows,
+    say where each is used, and write prompts in the channel's style."""
+    spec, style = inputs["spec"], str(inputs.get("style_block") or "").strip()
+    used: dict[str, list[str]] = {}
+    clips: set[str] = set()
+    for scene in spec["scenes"]:
+        visual = scene.get("visual")
+        if visual:
+            used.setdefault(visual["asset_id"], []).append(scene["id"])
+            if visual.get("clip"):
+                clips.add(visual["asset_id"])
+    library = {entry["key"] for entry in inputs.get("library", [])}
+    listed = {entry["id"]: entry for entry in output["assets"]}
+    problems = []
+    for asset_id in sorted(set(used) - set(listed)):
+        problems.append(f"The spec shows {asset_id}, and the manifest does not list it.")
+    for asset_id in sorted(set(listed) - set(used)):
+        problems.append(f"The manifest lists {asset_id}, which no scene shows.")
+    for asset_id, entry in listed.items():
+        if asset_id not in used:
+            continue
+        if sorted(entry["used_in"]) != sorted(used[asset_id]):
+            problems.append(
+                f"{asset_id} is used in {', '.join(used[asset_id])}. `used_in` says otherwise."
+            )
+        if entry["becomes_clip"] != (asset_id in clips):
+            problems.append(f"`becomes_clip` of {asset_id} must match the spec's `clip`.")
+        if entry["origin"] == "generated" and style and style not in entry.get("prompt", ""):
+            problems.append(
+                f"The prompt of {asset_id} must contain the channel style block, word for word."
+            )
+        if entry["origin"] == "library" and entry.get("library_key") not in library:
+            problems.append(f"{asset_id} names a library asset that the library does not have.")
+    return problems
+
+
+# --- package ----------------------------------------------------------------------------
+
+
+def package_fits_the_video(
+    inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
+) -> list[str]:
+    length = float(inputs["spec"]["format"]["target_duration_s"])
+    if output["cover_frame_s"] > length:
+        return [
+            f"`cover_frame_s` is {output['cover_frame_s']}, "
+            f"and the video is {length:g} seconds long."
+        ]
+    return []
+
+
+# --- revise -----------------------------------------------------------------------------
+
+MAX_PATCH_OPERATIONS = 20
+# What an owner's comment may not change: these come from the episode and the channel.
+PROTECTED = ("spec_version", "episode_id", "format", "theme")
+
+
+def patch_leaves_a_valid_spec(
+    inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
+) -> list[str]:
+    """Problems with a revision: a patch that does not apply, or leaves a spec that is not
+    valid or that the theme cannot draw."""
+    patch = output["patch"]
+    if len(patch) > MAX_PATCH_OPERATIONS:
+        return [
+            f"The patch has {len(patch)} operations. "
+            f"Keep it minimal: at most {MAX_PATCH_OPERATIONS}."
+        ]
+    try:
+        revised = json_patch.apply(inputs["spec"], patch)
+    except json_patch.PatchError as error:
+        return [str(error)]
+    problems = [str(found) for found in schemas.validate("episode_spec", revised)]
+    if problems:
+        return [f"After the patch the spec is not valid. {problem}" for problem in problems]
+    for name in PROTECTED:
+        if revised[name] != inputs["spec"][name]:
+            problems.append(f"The patch may not change `{name}`.")
+    problems += [str(found) for found in check_capabilities(revised, inputs["capabilities"])]
     return problems

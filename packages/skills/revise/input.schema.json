@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Revise input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec",
+    "comment",
+    "capabilities"
+  ],
+  "properties": {
+    "spec": {
+      "type": "object",
+      "required": [
+        "scenes"
+      ]
+    },
+    "comment": {
+      "type": "string",
+      "pattern": "\\S",
+      "maxLength": 4000
+    },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "theme"
+      ]
+    }
+  }
+}
