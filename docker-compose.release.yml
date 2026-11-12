@@ -13,7 +13,7 @@ name: video-factory
 
 services:
   db:
-    image: postgres:16-bookworm
+    image: postgres:18-bookworm
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-vfs}
