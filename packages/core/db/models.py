@@ -88,11 +88,17 @@ class Episode(Base):
         enum_check("state", enums.EpisodeState),
         enum_check("stale_from_state", enums.EpisodeState),
         not_negative("total_cost_usd"),
+        CheckConstraint(
+            "target_duration_s IS NULL OR target_duration_s BETWEEN 15 AND 180",
+            name="target_duration_in_range",
+        ),
     )
 
     channel_id: Mapped[uuid.UUID] = _fk("channel.id")
     title: Mapped[str | None] = mapped_column(String(200))
     idea: Mapped[str] = mapped_column(Text)
+    # The length this episode aims for, in seconds. Empty means the channel's length.
+    target_duration_s: Mapped[int | None] = mapped_column(Integer)
     state: Mapped[enums.EpisodeState] = mapped_column(
         enum_type(enums.EpisodeState),
         default=enums.EpisodeState.IDEA,

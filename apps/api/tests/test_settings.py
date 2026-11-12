@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from apps.api.episodes import MemoryEpisodeService
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
 from apps.api.providers import MemoryProviderService
@@ -33,6 +34,7 @@ def make_client(
             checks=checks,
             setting_store=store or MemorySettingStore(),
             provider_service=MemoryProviderService(),
+            episode_service=MemoryEpisodeService(),
         )
     )
 

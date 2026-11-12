@@ -19,15 +19,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.worker.runner import Handler, JobContext
 from packages.adapters.llm.base import LLMAdapter
 from packages.core import usage
 from packages.core.db.models import Channel, Episode, Job, SpecVersion
-from packages.core.enums import ErrorClass, JobStatus, SpecAuthor, SpecKind
+from packages.core.enums import ErrorClass, JobStatus, SpecAuthor
 from packages.core.queue import JobError
+from packages.core.specs import store_spec
 from packages.render.theme import load_theme
 from packages.skills import rules
 from packages.skills.planner import Check, Repair, SkillResult, load_skill, run_skill
@@ -112,11 +113,16 @@ def current_spec(session: Session, episode: Episode) -> dict[str, Any]:
     return dict(version.body)
 
 
-def _channel(channel: Channel) -> dict[str, Any]:
+def _length(episode: Episode, channel: Channel) -> int:
+    """The episode's own target length, or the channel's when it has none."""
+    return episode.target_duration_s or channel.target_duration_s
+
+
+def _channel(episode: Episode, channel: Channel) -> dict[str, Any]:
     return {
         "name": channel.name,
         "motto": channel.motto,
-        "target_duration_s": channel.target_duration_s,
+        "target_duration_s": _length(episode, channel),
     }
 
 
@@ -132,7 +138,7 @@ def _brief(session: Session, episode: Episode, channel: Channel, _job: JobContex
     return Prepared(
         {
             "idea": episode.idea,
-            "channel": _channel(channel),
+            "channel": _channel(episode, channel),
             "past_titles": [title for title in past if title],
         }
     )
@@ -149,7 +155,7 @@ def _script(session: Session, episode: Episode, channel: Channel, _job: JobConte
         {
             "brief": document_of(session, episode.id, BRIEF_JOB),
             "claims": document_of(session, episode.id, RESEARCH_JOB),
-            "target_duration_s": channel.target_duration_s,
+            "target_duration_s": _length(episode, channel),
             "voice_speed": channel.voice_speed,
         },
         check=rules.script_fits,
@@ -166,7 +172,7 @@ def _direct(session: Session, episode: Episode, channel: Channel, _job: JobConte
             "width": WIDTH,
             "height": HEIGHT,
             "fps": FPS,
-            "target_duration_s": channel.target_duration_s,
+            "target_duration_s": _length(episode, channel),
         },
         "theme": channel.theme,
         "voice": {"voice_id": channel.voice_id, "speed": channel.voice_speed},
@@ -181,7 +187,7 @@ def _direct(session: Session, episode: Episode, channel: Channel, _job: JobConte
             "claims": claims,
             "capabilities": load_theme(channel.theme).capabilities,
             "library": library_index(),
-            "channel": _channel(channel),
+            "channel": _channel(episode, channel),
         },
         check=rules.spec_follows_the_plan,
         repair=rules.complete_spec(fixed),
@@ -231,35 +237,6 @@ _JOBS: dict[str, tuple[str, Prepare]] = {
     PACKAGE_JOB: ("package", _package),
     REVISE_JOB: ("revise", _revise),
 }
-
-
-def store_spec(
-    session: Session,
-    episode_id: uuid.UUID,
-    body: Mapping[str, Any],
-    *,
-    author: SpecAuthor,
-    skill_version: str | None = None,
-) -> SpecVersion:
-    """Add a version of the episode's authored spec and make it the current one."""
-    episode = session.get(Episode, episode_id, with_for_update=True)
-    assert episode is not None  # noqa: S101 - the caller has just read it
-    newest = session.scalar(
-        select(func.max(SpecVersion.version)).where(SpecVersion.episode_id == episode_id)
-    )
-    version = SpecVersion(
-        episode_id=episode_id,
-        version=(newest or 0) + 1,
-        kind=SpecKind.AUTHORED,
-        body=dict(body),
-        author=author,
-        skill_version=skill_version,
-        parent_id=episode.current_spec_id,
-    )
-    session.add(version)
-    session.flush()
-    episode.current_spec_id = version.id
-    return version
 
 
 def plan_handlers(

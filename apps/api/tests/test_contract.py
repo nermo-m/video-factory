@@ -11,6 +11,7 @@ from typing import Any
 import schemathesis
 from fastapi import FastAPI
 
+from apps.api.episodes import MemoryEpisodeService
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
 from apps.api.openapi import OPENAPI_PATH, render_openapi
@@ -31,6 +32,7 @@ def make_app() -> FastAPI:
         checks=HealthChecks(database=ok, storage=ok, comfyui=ok),
         setting_store=MemorySettingStore(),
         provider_service=MemoryProviderService(),
+        episode_service=MemoryEpisodeService(),
     )
 
 
@@ -55,7 +57,8 @@ def test_every_documented_error_uses_the_common_error_shape() -> None:
     for path, operations in document["paths"].items():
         for method, operation in operations.items():
             for status, response in operation["responses"].items():
-                if status == "200" or (path.endswith("/health") and status == "503"):
+                # Every answer that is not a success is an error in the common shape.
+                if status.startswith("2") or (path.endswith("/health") and status == "503"):
                     continue
                 schema = response["content"]["application/json"]["schema"]
                 error_refs.add((path, method, status, schema.get("$ref")))

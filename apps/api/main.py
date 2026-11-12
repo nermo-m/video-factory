@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from apps.api.episodes import DatabaseEpisodeService, EpisodeService
+from apps.api.episodes import router as episodes_router
 from apps.api.errors import COMMON_ERROR_RESPONSES, install_error_handlers
 from apps.api.health import HealthChecks, default_checks
 from apps.api.health import router as health_router
@@ -33,6 +35,7 @@ def create_app(
     checks: HealthChecks | None = None,
     setting_store: SettingStore | None = None,
     provider_service: ProviderService | None = None,
+    episode_service: EpisodeService | None = None,
 ) -> FastAPI:
     """Build the application.
 
@@ -41,7 +44,7 @@ def create_app(
     network is touched.
     """
     settings = settings if settings is not None else load_settings()
-    given = (checks, setting_store, provider_service)
+    given = (checks, setting_store, provider_service, episode_service)
     engine = make_engine(settings.database_url) if None in given else None
     if engine is not None:
         sessions = make_session_factory(engine)
@@ -49,6 +52,9 @@ def create_app(
         setting_store = setting_store or DatabaseSettingStore(sessions)
         provider_service = provider_service or DatabaseProviderService(
             sessions, settings.provider_mode, ProviderProbe(settings)
+        )
+        episode_service = episode_service or DatabaseEpisodeService(
+            sessions, critic_enabled=settings.critic_enabled
         )
 
     @asynccontextmanager
@@ -74,8 +80,10 @@ def create_app(
     app.state.health_checks = checks
     app.state.setting_store = setting_store
     app.state.provider_service = provider_service
+    app.state.episode_service = episode_service
     install_error_handlers(app)
     app.include_router(health_router, prefix=API_PREFIX)
     app.include_router(settings_router, prefix=API_PREFIX)
     app.include_router(providers_router, prefix=API_PREFIX)
+    app.include_router(episodes_router, prefix=API_PREFIX)
     return app

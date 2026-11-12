@@ -11,6 +11,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from apps.api.episodes import MemoryEpisodeService
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
 from apps.api.providers import MemoryProviderService
@@ -34,6 +35,7 @@ def render_openapi() -> str:
         checks=HealthChecks(database=unused, storage=unused, comfyui=unused),
         setting_store=MemorySettingStore(),
         provider_service=MemoryProviderService(),
+        episode_service=MemoryEpisodeService(),
     )
     return json.dumps(app.openapi(), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 

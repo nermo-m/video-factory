@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from apps.api.episodes import MemoryEpisodeService
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
 from apps.api.providers import DatabaseProviderService
@@ -56,6 +57,7 @@ def client(sessions: sessionmaker[Session], probe: Probe, database_url: str) -> 
             checks=HealthChecks(database=ok, storage=ok, comfyui=ok),
             setting_store=MemorySettingStore(),
             provider_service=DatabaseProviderService(sessions, "subscription", probe),
+            episode_service=MemoryEpisodeService(),
         )
     )
 
