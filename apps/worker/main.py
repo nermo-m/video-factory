@@ -14,6 +14,7 @@ from types import FrameType
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.worker.handlers import HANDLERS
+from apps.worker.handlers.pictures import picture_handlers
 from apps.worker.handlers.plan import plan_handlers
 from apps.worker.handlers.produce import cached_voice, produce_handlers
 from apps.worker.runner import Handler, Worker
@@ -49,6 +50,7 @@ def build_handlers(settings: Settings, sessions: sessionmaker[Session]) -> dict[
     return {
         **HANDLERS,
         **plan_handlers(sessions, language_model, local.storage()),
+        **picture_handlers(sessions, storage=local.storage(), image=local.image),
         **produce_handlers(
             sessions,
             storage=local.storage(),

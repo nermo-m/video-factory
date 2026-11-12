@@ -179,7 +179,7 @@ def provider_for_job(job_type: str, mode: str) -> Provider | None:
     providers = providers_for(mode)
     if job_type.startswith(("plan.", "agent.")):
         return providers.text
-    if job_type == "asset.image":
+    if job_type == "gen.image":
         return providers.image
     return None
 
@@ -504,7 +504,7 @@ def _resume_jobs(
             for prefix, example in (
                 ("plan.", "plan.brief"),
                 ("agent.", "agent.critic"),
-                ("asset.image", "asset.image"),
+                ("gen.image", "gen.image"),
             )
             if provider_for_job(example, mode) is provider
         ]

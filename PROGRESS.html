@@ -493,14 +493,15 @@
       "id": "VFS-26",
       "order": 300,
       "title": "Asset manifest, asset models and rights check",
-      "status": "review",
-      "note": "An episode's pictures are stored assets with versions, a render waits for all of them, and the rights check exists. First card of milestone M3, taken early on the owner's instruction to get to first videos. In review as a pull request."
+      "status": "done",
+      "note": "An episode's pictures are stored assets with versions, a render waits for all of them, and the rights check exists. First card of milestone M3, taken early on the owner's instruction to get to first videos. Merged in pull request #41."
     },
     {
       "id": "VFS-27",
       "order": 310,
       "title": "Image adapter with mock",
-      "status": "ready"
+      "status": "review",
+      "note": "The picture interface, its demo twin and the job that makes one picture and stores it as a version of its asset. In review as a pull request."
     },
     {
       "id": "VFS-60",
@@ -511,7 +512,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-27 and VFS-60: pictures made through the Codex CLI"
+    "next": "VFS-60 Image creation through the Codex CLI"
   },
   "checklist": [
     {
@@ -546,7 +547,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1436 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 241 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
+      "value": "1446 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 251 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",

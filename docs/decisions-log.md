@@ -1245,3 +1245,31 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - **`GET /episodes/{id}/assets` is not paged.** It lists the pictures of one spec, a
     handful by the spec's own limits.
 - **Reverse:** `packages/core/assets.py`.
+
+## D-042: Picture adapter, the picture job, and clips until ComfyUI
+
+- **Date:** 2026-11-13. **Card:** VFS-27.
+- **Choice:**
+  - **This card builds the interface, its demo twin and the `gen.image` job.** The real
+    adapter of `api` mode, the OpenAI image API, is card VFS-71, parked: the owner said to
+    skip the paid API for now. Subscription mode gets its adapter in VFS-60. Until then
+    both modes answer with an owner task that says so, and never use another mode.
+  - **One picture per job, stored as a new version** of its asset with the prompt as it
+    was sent, the model, the size and the cost, and counted as one image of its provider.
+  - **A picture that has a file is kept.** Running the pictures step again does not spend
+    the plan's images a second time. Only a job that says `regenerate` makes a new
+    version, which is what the owner's Regenerate will send.
+  - **Every prompt ends with a rule against text in the picture**, because all words on
+    screen are drawn by the render engine (section 8).
+  - **The demo twin answers for any picture**: the bundled one with that id, else one of
+    the bundled pictures chosen by the id, always the same one.
+  - **`gen.clip` finishes without a clip** and says why, until the ComfyUI adapter exists
+    (VFS-29). The scene then shows its still picture, which the render engine already
+    does for a clip scene without a clip file. Without this, every plan with a clip scene
+    would stop at a job nothing can run.
+  - **The limits tracker named the picture job `asset.image`**, which no pipeline state
+    queues. It is `gen.image` now, as in section 4.1, so the image budget is asked before
+    each picture.
+  - **Departure from the build rules:** the adapter and the job were written before their
+    tests in this card.
+- **Reverse:** `apps/worker/handlers/pictures.py`, `packages/adapters/image/`.

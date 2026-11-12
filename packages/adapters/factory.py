@@ -5,8 +5,7 @@ at that moment. The mode comes from the settings and is never changed here: ther
 fallback from one mode to another.
 
 So far it knows the adapters that exist: storage and voice, which are local in every
-mode, the language model, and the second reviewer. The image adapter is added by its
-own card.
+mode, the language model, the second reviewer, and the picture adapter.
 """
 
 from __future__ import annotations
@@ -15,6 +14,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from packages.adapters.image import ImageAdapter, SampleImages
 from packages.adapters.llm import (
     AnthropicLLM,
     ClaudeCliLLM,
@@ -91,6 +91,22 @@ class Adapters:
         raise NeedsOwnerError(
             "API mode has no model for the second review yet: the OpenAI adapter arrives "
             "with the critic. Use PROVIDER_MODE=demo or subscription until then."
+        )
+
+    def image(self) -> ImageAdapter:
+        """The picture adapter of the configured mode (section 3.4). Raises NeedsOwnerError
+        when that mode cannot make pictures, and never reaches for another mode instead."""
+        mode = self.settings.provider_mode
+        if mode == "demo":
+            return SampleImages()
+        if mode == "subscription":
+            raise NeedsOwnerError(
+                "Subscription mode cannot make pictures yet: creating them through the Codex "
+                "command line tool arrives with card VFS-60."
+            )
+        raise NeedsOwnerError(
+            "API mode cannot make pictures yet: the OpenAI image adapter is not built. Use "
+            "PROVIDER_MODE=subscription, where pictures are made on the ChatGPT plan."
         )
 
     def storage(self) -> LocalStorage:

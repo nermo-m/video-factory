@@ -22,17 +22,15 @@ from packages.adapters.tts.samples import SampleVoice
 from packages.core import assets
 from packages.core.settings import Settings
 from packages.core.stages import LAST_BUILT_STATE, STATES, index_of, plan_stage, stage_count
+from packages.core.tests.test_assets import own_spec
 from packages.render.encode import for_preview, render_scene
 from packages.render.theme import load_theme
 
 
-def test_the_worker_has_a_handler_for_every_job_up_to_the_render_except_generation(
-    tmp_path: Path,
-) -> None:
+def test_the_worker_has_a_handler_for_every_job_up_to_the_render(tmp_path: Path) -> None:
     """The pipeline rests after the last built state, so every job before it must be one
-    the worker can run. Generated pictures and clips are the known exception: they arrive
-    in milestone M3, and until then a plan uses library pictures, which need no job."""
-    sample = demo_render.load_sample()
+    the worker can run, also for a plan with a generated picture and a clip."""
+    sample = own_spec(demo_render.load_sample())
     settings = Settings(database_url="postgresql://unused", data_dir=str(tmp_path))
     handlers = build_handlers(settings, sessionmaker[Session]())
     assert LAST_BUILT_STATE is not None
@@ -44,9 +42,8 @@ def test_the_worker_has_a_handler_for_every_job_up_to_the_render_except_generati
         for request in plan_stage(state, stage, spec=sample)
     }
 
-    assert needed <= set(handlers), "the sample episode needs no job without a handler"
-    assert {"gen.voice", "render.scene", "render.join"} <= set(handlers)
-    assert {"gen.image", "gen.clip"}.isdisjoint(handlers), "update this test in milestone M3"
+    assert {"gen.image", "gen.clip", "gen.voice", "render.scene", "render.join"} <= needed
+    assert needed <= set(handlers), "no job of a built state is without a handler"
 
 
 @pytest.fixture(scope="module")

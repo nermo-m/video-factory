@@ -332,7 +332,7 @@ def test_fr34_lifting_a_limit_resumes_the_jobs_that_waited_for_that_provider(
 ) -> None:
     with sessions.begin() as session:
         planner = waiting_job(session, "plan.brief")
-        image = waiting_job(session, "asset.image")
+        image = waiting_job(session, "gen.image")
         limits.limit_reached(session, CLAUDE, message="limit", retry_at=None, now=NOW)
         limits.check(session, "subscription", FakeProbe(), now=NOW + timedelta(minutes=10))
 

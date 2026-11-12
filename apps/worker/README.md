@@ -10,6 +10,8 @@ So far:
 - `demo_render.py` renders the bundled sample episode in one command (`make demo-render`):
   voice, resolve, render, format checks.
 - `handlers/plan.py`: the planning jobs, one skill call each.
+- `handlers/pictures.py`: `gen.image` makes one picture and stores it as a version of its
+  asset. `gen.clip` finishes without a clip until the ComfyUI adapter exists.
 - `handlers/produce.py`: the same steps as `demo_render.py`, as queued jobs. `gen.voice`
   speaks one scene, `render.scene` encodes one scene, `render.join` mixes, joins, checks
   the format and stores the draft render. Scene files live in `episodes/<id>/scenes` below
