@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -217,8 +218,18 @@ def research(*answers: Any) -> Any:
 def test_fr02_a_claim_whose_source_was_retrieved_is_kept() -> None:
     result = research(answer({"claims": [CLAIM]}, sources=(RETRIEVED,)))
 
-    assert result.output == {"claims": [CLAIM]}
+    (kept,) = result.output["claims"]
+    assert {**kept, "retrieved_at": CLAIM["retrieved_at"]} == CLAIM
     assert result.removed == ()
+
+
+def test_fr02_a_kept_claim_is_stamped_with_the_time_it_was_retrieved() -> None:
+    before = datetime.now(UTC).replace(microsecond=0)
+
+    result = research(answer({"claims": [CLAIM]}, sources=(RETRIEVED,)))
+
+    stamped = datetime.fromisoformat(result.output["claims"][0]["retrieved_at"])
+    assert before <= stamped <= datetime.now(UTC), "the model's own guess is replaced"
 
 
 def test_fr02_a_claim_without_a_retrieved_passage_is_rejected() -> None:
@@ -226,7 +237,7 @@ def test_fr02_a_claim_without_a_retrieved_passage_is_rejected() -> None:
 
     result = research(answer({"claims": [CLAIM, invented]}, sources=(RETRIEVED,)))
 
-    assert result.output["claims"] == [CLAIM]
+    assert [claim["id"] for claim in result.output["claims"]] == [CLAIM["id"]]
     assert len(result.removed) == 1
     assert "c_from_memory" in result.removed[0]
 

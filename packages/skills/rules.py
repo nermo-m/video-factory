@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
@@ -42,17 +43,19 @@ def keep_sourced_claims(
 ) -> tuple[dict[str, Any], list[str]]:
     """FR-02: drop every claim whose source is not among the retrieved pages.
 
-    When nothing is left the answer says so in `note`, as the schema asks.
+    When nothing is left the answer says so in `note`, as the schema asks. A kept claim
+    gets the time of this call as `retrieved_at`: the model does not know what time it is.
     """
     claims = output.get("claims")
     if not isinstance(claims, list):
         return output, []
     retrieved = {same_page(source.url) for source in response.sources}
+    now = datetime.now(UTC).isoformat(timespec="seconds")
     kept, removed = [], []
     for claim in claims:
         url = claim.get("source_url") if isinstance(claim, dict) else None
         if isinstance(url, str) and same_page(url) in retrieved:
-            kept.append(claim)
+            kept.append({**claim, "retrieved_at": now})
         else:
             name = claim.get("id", "?") if isinstance(claim, dict) else "?"
             removed.append(f"Claim {name} was dropped: its source {url} was not retrieved.")

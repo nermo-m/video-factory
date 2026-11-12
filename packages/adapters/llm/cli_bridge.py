@@ -9,7 +9,9 @@ one model call. The bridge's contract, `bridge/1`, is described in its README.
   The job then waits. Nothing here can reach a paid API (FR-28).
 * The adapters exist in subscription mode only and refuse to be built in another mode.
 
-Claude Code enforces an output schema itself. Two cases ask for JSON in the prompt
+Claude Code enforces an output schema itself, sent without its `$schema` and `$id` lines,
+which the tool refuses. A schema that refers into another file cannot be sent at all. Two
+more cases ask for JSON in the prompt
 instead and parse the answer here: a research call, because web search and an enforced
 schema are not combined in API mode either, and every Codex call, because Codex only
 takes schemas written in OpenAI's strict form, which this project's schemas are not.
@@ -208,13 +210,14 @@ class ClaudeCliLLM(_BridgeLLM):
     title = "Claude Code"
 
     def _body(self, request: LLMRequest) -> dict[str, Any]:
-        enforce = request.output_schema is not None and not request.web_search
+        sendable = tool_schema(request.output_schema) if request.output_schema else None
+        enforce = sendable is not None and not request.web_search
         prompt = request.prompt
         if request.output_schema is not None and not enforce:
             prompt = _with_schema(prompt, request.output_schema)
         body = self._common(request, prompt=prompt, effort=request.effort)
         if enforce:
-            body["schema"] = request.output_schema
+            body["schema"] = sendable
         if request.web_search:
             body["web_search"] = True
         return body
@@ -246,6 +249,34 @@ class CodexCliLLM(_BridgeLLM):
             prompt = _with_schema(prompt, request.output_schema)
         effort = self._EFFORTS.get(request.effort) if request.effort else None
         return self._common(request, prompt=prompt, effort=effort)
+
+
+def tool_schema(schema: Mapping[str, Any]) -> dict[str, Any] | None:
+    """A schema as Claude Code can enforce it, or None when it cannot take it.
+
+    The tool refuses the lines that name the schema's dialect and address (`$schema`,
+    `$id`), so they are left out. It cannot follow a reference into another file. Such a
+    schema travels in the prompt instead, and the caller checks the answer against it.
+    """
+
+    def convert(node: Any) -> Any:
+        if isinstance(node, list):
+            return [convert(item) for item in node]
+        if not isinstance(node, dict):
+            return node
+        converted = {}
+        for key, value in node.items():
+            if key == "$ref" and not str(value).startswith("#"):
+                raise ValueError(value)
+            if key not in {"$schema", "$id"}:
+                converted[key] = convert(value)
+        return converted
+
+    try:
+        result: dict[str, Any] = convert(dict(schema))
+    except ValueError:
+        return None
+    return result
 
 
 def _with_schema(prompt: str, schema: Mapping[str, Any]) -> str:
