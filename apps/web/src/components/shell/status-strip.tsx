@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 
 import { type HealthResponse, getHealth } from "@/api/client";
 import { useEpisodes } from "@/components/episodes/episodes-provider";
+import { useProviders } from "@/components/providers/providers-provider";
+import { warningOf } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 
 import { BellIcon, SpinnerIcon } from "./nav-items";
@@ -82,6 +84,26 @@ export interface StatusStripViewProps {
   state: ApiState;
   runningJobs: number;
   waitingForOwner: number;
+  /** Set while a provider is near budget, paused or limited. */
+  providerWarning?: { label: string; severe: boolean } | null;
+}
+
+function WarningIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={3}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="size-3 shrink-0"
+    >
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4l3 2" />
+    </svg>
+  );
 }
 
 /**
@@ -89,7 +111,12 @@ export interface StatusStripViewProps {
  * GPU status, running jobs (opens Jobs) and items waiting for the owner. On a phone it
  * shows icons and counts only. Status is never shown by colour alone.
  */
-export function StatusStripView({ state, runningJobs, waitingForOwner }: StatusStripViewProps) {
+export function StatusStripView({
+  state,
+  runningJobs,
+  waitingForOwner,
+  providerWarning = null,
+}: StatusStripViewProps) {
   const gpu = gpuStatus(state);
   const demoMode = state.kind === "ready" && state.health.demo_mode;
   const jobsLabel =
@@ -99,8 +126,17 @@ export function StatusStripView({ state, runningJobs, waitingForOwner }: StatusS
   const waitingLabel = waitingForOwner === 0 ? "Nothing waiting" : `${waitingForOwner} waiting for you`;
 
   return (
-    <header className="sticky top-0 z-30 flex h-13 items-center gap-3 border-b bg-background px-4 text-xs text-muted-foreground sm:gap-4 sm:px-6">
-      <Link href="/" className="flex min-h-11 items-center font-heading text-base font-bold text-foreground">
+    <header
+      className={cn(
+        "sticky top-0 z-30 flex h-13 items-center border-b bg-background text-xs text-muted-foreground sm:gap-4 sm:px-6",
+        // With the warning there is one more item, so a phone gets tighter spacing.
+        providerWarning ? "gap-1.5 px-3" : "gap-3 px-4",
+      )}
+    >
+      <Link
+        href="/"
+        className="flex min-h-11 items-center font-heading text-base font-bold text-foreground min-[375px]:whitespace-nowrap"
+      >
         Video Factory
       </Link>
       <div className="grow" />
@@ -119,6 +155,24 @@ export function StatusStripView({ state, runningJobs, waitingForOwner }: StatusS
           <span className="sr-only sm:not-sr-only">{gpu.label}</span>
         </span>
       </div>
+
+      {providerWarning && (
+        <Link
+          href="/settings/usage"
+          data-testid="provider-warning"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center"
+        >
+          <span
+            className={cn(
+              "inline-flex h-6.5 items-center gap-1.5 rounded-full px-2.5 font-semibold",
+              providerWarning.severe ? "bg-chip-failed text-danger" : "bg-chip-out-of-date text-warning",
+            )}
+          >
+            <WarningIcon />
+            <span className="sr-only sm:not-sr-only">{providerWarning.label}</span>
+          </span>
+        </Link>
+      )}
 
       <Link
         href="/jobs"
@@ -170,5 +224,9 @@ export function StatusStrip() {
     episodes.kind === "ready"
       ? episodes.episodes.filter((episode) => episode.awaiting_approval).length
       : 0;
-  return <StatusStripView state={state} runningJobs={0} waitingForOwner={waiting} />;
+  const providers = useProviders().state;
+  const warning = providers.kind === "ready" ? warningOf(providers.providers) : null;
+  return (
+    <StatusStripView state={state} runningJobs={0} waitingForOwner={waiting} providerWarning={warning} />
+  );
 }

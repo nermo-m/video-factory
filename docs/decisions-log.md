@@ -1083,3 +1083,41 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     model's answer.
 - **Reverse:** the wording lives in `apps/web/src/lib/workspace.ts`, the estimate in
   `packages/core/lengths.py`.
+
+## D-037: Model picker and Usage page
+
+- **Date:** 2026-11-12. **Card:** VFS-59.
+- **Problem:** The card asks for more than the API can answer today: there is no stored
+  7 day history, no list of limit events, and no setting for a model per role.
+- **Choice:**
+  - **Built on what the API has:** `GET /providers`, the budget route, `POST
+    /providers/check` and the settings route. Nothing in the API changed.
+  - **Usage page at `/settings/usage`:** one card per provider of the current mode, with
+    its state, one bar per window and unit against the budget, who counted, when it was
+    last checked, and the budget fields. Demo recordings have no budget.
+  - **The picker lists the providers it is given.** The API returns only those of the
+    current mode, so a paid model appears only in API mode, marked Paid. A limited or
+    paused option stays visible with the reason and the return time and cannot be chosen.
+    Its two bars show the fuller unit of each window.
+  - **The picker is used in Settings as "Models in use", without a choice.** In each mode
+    every role has exactly one provider today. Choosing a model per role, and the override
+    in New episode, need a setting the API does not have: card VFS-68.
+  - **Not built, because nothing stores it:** the 7 day history and the list of recent
+    limit events. Card VFS-68 as well.
+  - **Words follow the facts:** every count says "Counted by this app". Only a limit a
+    tool reported says "Limit reported by the tool". Times are shown in the owner's own
+    time zone, with the weekday when more than a day away.
+  - **Check limits now** shows that it runs, cannot be pressed twice, and confirms each
+    provider that is ready again. The whole answer arrives at once, because the API checks
+    all providers in one call.
+  - **Use paid APIs asks before it is turned on**, and says that the mode must be `api` as
+    well. Turning it off does not ask.
+  - **Status strip:** one chip that names the provider and its state, or counts them when
+    there are several. Red for limited or paused, yellow for near budget, always with an
+    icon and words. It leads to the Usage page.
+  - **A budget is set in the unit the API pauses by:** calls and images for a plan, US
+    dollars for a paid API. A paid provider shows its calls as a plain count. A budget of
+    zero allows nothing, as in the API, so its bar is full after the first use.
+  - **One provider list for every screen**, read every 30 seconds while the tab is
+    visible, like the episode list.
+- **Reverse:** the wording is in `apps/web/src/lib/providers.ts`.

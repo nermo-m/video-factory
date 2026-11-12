@@ -13,6 +13,9 @@ are in design doc section 11.5, and the mockups win where they differ.
   error states.
 - `src/components/workspace/`: the episode workspace at `/episodes/{id}`: pipeline, tabs,
   the Plan tab with scene cards, raw JSON, a change asked for in words, and the gate bar.
+- `src/components/providers/`: the providers every screen shares (read again every half
+  minute), the model picker, the Usage page at `/settings/usage` and the Settings page.
+- `src/lib/providers.ts`: how a provider's state and usage are worded.
 - `src/lib/episodes.ts`: how an episode is shown: its group, its step and its status line.
 - `src/lib/workspace.ts`: the workspace's wording: pipeline steps, scene facts, changes.
 - `e2e/`: Playwright and axe tests with approved screenshots. Run `make e2e`.
