@@ -383,8 +383,8 @@
       "id": "VFS-56",
       "order": 212,
       "title": "Host CLI bridge for Claude Code and Codex",
-      "status": "review",
-      "note": "The host bridge for subscription mode: /health, /claude and /codex on 127.0.0.1:8189, plan sign-in checked before every call, key variables removed, usage limits mapped to plan_limit, web pages refused. Every flag confirmed against the installed tools without a model call (ADR 8). 277 unit tests with fake tools. In review as a pull request."
+      "status": "done",
+      "note": "The host bridge for subscription mode: /health, /claude and /codex on 127.0.0.1:8189, plan sign-in checked before every call, key variables removed, usage limits mapped to plan_limit, web pages refused. Every flag confirmed against the installed tools without a model call (ADR 8). 277 unit tests with fake tools. Merged in pull request #27."
     },
     {
       "id": "VFS-65",
@@ -397,7 +397,8 @@
       "id": "VFS-57",
       "order": 214,
       "title": "Claude CLI and Codex CLI adapters",
-      "status": "ready"
+      "status": "active",
+      "note": "In progress: the adapters that call the host bridge."
     },
     {
       "id": "VFS-58",
@@ -449,8 +450,11 @@
     }
   ],
   "now_building": {
-    "status": "idle",
-    "next": "VFS-57 Claude CLI and Codex CLI adapters"
+    "status": "active",
+    "id": "VFS-57",
+    "title": "Claude CLI and Codex CLI adapters",
+    "started": "2026-11-12T14:50:00Z",
+    "resume": "Branch vfs-57-cli-adapters from main after pull request #27. Next: tests in packages/adapters/tests/test_llm_bridge.py (through a real bridge with the fake tools from tools/cli_bridge/tests, plus a stub server for the error classes), then packages/adapters/llm/bridge.py, settings CLI_BRIDGE_URL, CLAUDE_CLI_MODEL and CODEX_CLI_MODEL, and the factory. Verify with: make check, make coverage. Then push, open the pull request and enable auto-merge."
   },
   "checklist": [
     {
