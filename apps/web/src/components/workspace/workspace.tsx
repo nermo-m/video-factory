@@ -9,10 +9,11 @@ import { displayTitle } from "@/lib/episodes";
 import { primaryAction, quietAction } from "@/lib/styles";
 import { useIsDesktop } from "@/lib/use-media";
 import { cn } from "@/lib/utils";
-import { STEP_WORDS, type Spec, type StepState, chipOf, pipelineOf } from "@/lib/workspace";
+import { type ChipTone, STEP_WORDS, type Spec, type StepState, chipOf, pipelineOf } from "@/lib/workspace";
 
 import { GateBar } from "./gate-bar";
 import { PlanTab } from "./plan-tab";
+import { DraftVideo, RenderTab, StepFailed } from "./render-tab";
 import { type WorkspaceData, useWorkspace } from "./use-workspace";
 
 function StepIcon({ state }: { state: StepState }) {
@@ -81,10 +82,9 @@ function Pipeline({ episode }: { episode: EpisodeDetail }) {
 const TABS = ["Plan", "Assets", "Voice", "Render", "Export"] as const;
 type Tab = (typeof TABS)[number];
 
-const LATER: Record<Exclude<Tab, "Plan">, string> = {
+const LATER: Record<Exclude<Tab, "Plan" | "Render">, string> = {
   Assets: "The pictures and clips of this episode, with accept, regenerate and upload. They arrive with milestone M3.",
   Voice: "The narration of each scene, to play and to record again. It arrives with a later milestone.",
-  Render: "The draft video, its contact sheet and its quality checks. They arrive with a later milestone.",
   Export: "Title, description, hashtags and the export pack. They arrive with milestone M4.",
 };
 
@@ -139,9 +139,18 @@ function PlanPending({ episode, reload }: { episode: EpisodeDetail; reload: () =
   );
 }
 
-function Tabs({ data, reload }: { data: WorkspaceData; reload: () => Promise<void> }) {
+function Tabs({
+  data,
+  reload,
+  tab,
+  setTab,
+}: {
+  data: WorkspaceData;
+  reload: () => Promise<void>;
+  tab: Tab;
+  setTab: (tab: Tab) => void;
+}) {
   const id = useId();
-  const [tab, setTab] = useState<Tab>("Plan");
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
   function onKeyDown(event: KeyboardEvent, index: number) {
@@ -187,8 +196,12 @@ function Tabs({ data, reload }: { data: WorkspaceData; reload: () => Promise<voi
         ))}
       </div>
 
+      <StepFailed episode={data.episode} reload={reload} />
+
       <div role="tabpanel" id={`${id}-panel-${tab}`} aria-labelledby={`${id}-tab-${tab}`} className="flex min-w-0 flex-col gap-4">
-        {tab !== "Plan" ? (
+        {tab === "Render" ? (
+          <RenderTab episode={data.episode} render={data.render} />
+        ) : tab !== "Plan" ? (
           <section className="flex max-w-xl flex-col gap-3 rounded-lg border bg-card p-5 sm:p-6">
             <h2 className="text-lg font-semibold">Not built yet</h2>
             <p className="text-muted-foreground">{LATER[tab]}</p>
@@ -212,11 +225,19 @@ function BackIcon() {
   );
 }
 
+const CHIP_LOOK: Record<ChipTone, string> = {
+  waiting: "bg-chip-needs-you text-primary",
+  working: "bg-chip-working text-info",
+  finished: "bg-chip-finished text-success",
+  stopped: "bg-chip-failed text-danger",
+};
+
 function Ready({ data, reload }: { data: WorkspaceData; reload: () => Promise<void> }) {
   const { episode, spec } = data;
   const title = displayTitle(episode);
   const chip = chipOf(episode);
   const scenes = (spec?.spec as Spec | undefined)?.scenes?.length;
+  const [tab, setTab] = useState<Tab>("Plan");
 
   return (
     <div className="flex flex-col gap-5">
@@ -231,7 +252,7 @@ function Ready({ data, reload }: { data: WorkspaceData; reload: () => Promise<vo
             <li aria-hidden="true">/</li>
             <li className="line-clamp-1 max-w-[40ch] wrap-anywhere">{title}</li>
             <li aria-hidden="true">/</li>
-            <li aria-current="page">Plan</li>
+            <li aria-current="page">{tab}</li>
           </ol>
         </nav>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -247,7 +268,7 @@ function Ready({ data, reload }: { data: WorkspaceData; reload: () => Promise<vo
             data-testid="episode-status"
             className={cn(
               "inline-flex h-6.5 shrink-0 items-center rounded-full px-2.5 text-xs font-semibold",
-              chip.waiting ? "bg-chip-needs-you text-primary" : episode.state === "done" ? "bg-chip-finished text-success" : "bg-chip-working text-info",
+              CHIP_LOOK[chip.tone],
             )}
           >
             {chip.label}
@@ -260,12 +281,17 @@ function Ready({ data, reload }: { data: WorkspaceData; reload: () => Promise<vo
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[11.5rem_minmax(0,1fr)] lg:gap-6 2xl:grid-cols-[13.75rem_minmax(0,55rem)_20rem]">
         <Pipeline episode={episode} />
-        <Tabs data={data} reload={reload} />
-        <aside aria-label="Preview" className="hidden flex-col gap-3 2xl:flex">
+        <Tabs data={data} reload={reload} tab={tab} setTab={setTab} />
+        {/* The Render tab shows the video itself, so the preview beside it would be a second copy. */}
+        <aside aria-label="Preview" className={cn("hidden flex-col gap-3", tab !== "Render" && "2xl:flex")}>
           <h2 className="font-sans text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">Preview</h2>
-          <div className="flex aspect-9/16 items-center justify-center rounded-[0.875rem] border bg-surface p-6 text-center text-[0.8125rem] text-muted-foreground">
-            The video appears here after the Render step.
-          </div>
+          {data.render?.video_url ? (
+            <DraftVideo render={data.render} title={title} className="max-h-none w-full" />
+          ) : (
+            <div className="flex aspect-9/16 items-center justify-center rounded-[0.875rem] border bg-surface p-6 text-center text-[0.8125rem] text-muted-foreground">
+              The video appears here after the Render step.
+            </div>
+          )}
         </aside>
       </div>
     </div>

@@ -7,12 +7,28 @@ images, short clips and narration. A deterministic render engine assembles the v
 the spec. The owner approves the plan and the assets, reviews the result, and uploads the
 accepted video by hand. The app never posts anything itself.
 
-> **Status: early development (milestone M2, planning).** The render engine works:
-> `make demo-render` turns the bundled sample spec into a finished video. Planning works
-> too: New episode on the Board turns an idea into a plan, and the episode's workspace
-> shows it, lets you edit it or ask for changes in words, and approve it. The steps from
-> an approved plan to a video come next. This README grows with each milestone and
-> is finished in M8.
+> **Status: early development (milestone M2, planning and pipeline).** In demo mode an
+> idea becomes a video in the browser: New episode on the Board turns an idea into a plan,
+> the episode's workspace shows it, lets you edit it or ask for changes in words, and
+> after you approve the plan and the pictures the worker speaks, draws and joins the
+> video, which plays in the Render tab. Demo mode always tells the bundled sample story,
+> and pictures of your own arrive with milestone M3. `make demo-render` renders the same
+> sample straight from its spec. This README grows with each milestone and is finished
+> in M8.
+
+## Try it in the browser
+
+Prerequisite: Docker with Compose. No keys, no GPU, no accounts and no model download.
+
+```bash
+make up   # then open http://127.0.0.1:3000
+```
+
+Choose New episode, type any idea and press Start. When the plan needs you, read it,
+change a title if you like, and approve it. Approve the pictures, and a few minutes
+later the Render tab plays the video. Leave the narration as it is unless you have run
+`make models`: without the voice model, the bundled voice only knows the sample's words,
+and the episode page tells you so if you change them.
 
 ## Render the sample episode
 

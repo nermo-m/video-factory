@@ -122,7 +122,47 @@ export interface FakeEpisode {
   revision: Revision;
   /** How many times a revision is read before it stops being "running". */
   revisionReadsUntilReady: number;
+  /** The episode's latest jobs, newest first, as GET /episodes/{id} lists them. */
+  jobs: Json[];
+  /** The episode's videos, newest first. */
+  renders: Json[];
   requests: { method: string; path: string; body: unknown }[];
+}
+
+let jobNumber = 0;
+
+/** One row of an episode's jobs. */
+export function job(type: string, status: string, fields: Json = {}): Json {
+  jobNumber += 1;
+  return {
+    id: `00000000-0000-4000-8000-${String(jobNumber).padStart(12, "0")}`,
+    type,
+    status,
+    error_class: null,
+    error_message: null,
+    attempts: status === "queued" ? 0 : 1,
+    created_at: "2026-11-12T08:05:00Z",
+    started_at: status === "queued" ? null : "2026-11-12T08:05:01Z",
+    finished_at: status === "succeeded" || status === "failed" ? "2026-11-12T08:05:09Z" : null,
+    ...fields,
+  };
+}
+
+export const VIDEO_URL = "/api/v1/files/jobs/render.join/ab/abcdef/video.mp4";
+export const SHEET_URL = "/api/v1/files/jobs/render.join/ab/abcdef/video_contact_sheet.jpg";
+
+/** One video of an episode, as GET /episodes/{id}/renders lists it. */
+export function render(fields: Json = {}): Json {
+  return {
+    id: "00000000-0000-4000-8000-0000000000f1",
+    kind: "draft",
+    created_at: "2026-11-12T08:09:00Z",
+    duration_s: 44.25,
+    video_url: VIDEO_URL,
+    contact_sheet_url: SHEET_URL,
+    spec_version: 1,
+    ...fields,
+  };
 }
 
 export function fakeEpisode(fields: Partial<EpisodeRow> = {}): FakeEpisode {
@@ -154,6 +194,8 @@ export function fakeEpisode(fields: Partial<EpisodeRow> = {}): FakeEpisode {
       can_apply: true,
     },
     revisionReadsUntilReady: 1,
+    jobs: [],
+    renders: [],
     requests: [],
   };
 }
@@ -176,7 +218,11 @@ export async function mockEpisode(page: Page, fake: FakeEpisode) {
     created_at: "2026-11-12T08:00:00Z",
     spec: fake.spec,
   });
-  const detail = () => ({ ...fake.episode, spec_version: fake.spec ? fake.version : null, jobs: [] });
+  const detail = () => ({
+    ...fake.episode,
+    spec_version: fake.spec ? fake.version : null,
+    jobs: fake.jobs,
+  });
   const revision = () => {
     reads += 1;
     const ready = reads > fake.revisionReadsUntilReady;
@@ -240,8 +286,19 @@ export async function mockEpisode(page: Page, fake: FakeEpisode) {
       fake.version += 1;
       return route.fulfill({ json: specOut() });
     }
+    if (method === "GET" && path === "/renders") {
+      return route.fulfill({
+        json: { renders: fake.renders, total: fake.renders.length, limit: 24, offset: 0 },
+      });
+    }
     if (method === "POST" && path === "/approve") {
-      fake.episode = { ...fake.episode, state: "asset_plan", awaiting_approval: false, gate: null };
+      const next = fake.episode.gate === "assets" ? "voice" : "asset_plan";
+      fake.episode = { ...fake.episode, state: next, awaiting_approval: false, gate: null };
+      return route.fulfill({ json: detail() });
+    }
+    if (method === "POST" && path === "/rerun") {
+      fake.episode = { ...fake.episode, state: (body as { state: string }).state };
+      fake.jobs = [job("gen.voice", "queued")];
       return route.fulfill({ json: detail() });
     }
     if (method === "POST" && path === "/reject") {
