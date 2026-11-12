@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore } from "react";
+import { useId, useState } from "react";
 
 import type { EpisodeOut } from "@/api/client";
 import { type EpisodesState, useEpisodes } from "@/components/episodes/episodes-provider";
@@ -8,6 +8,7 @@ import { Banner, EmptyState, PageHeader } from "@/components/page";
 import { type ApiState, useApiState } from "@/components/shell/status-strip";
 import { type GroupId, episodeCount, groupOf } from "@/lib/episodes";
 import { quietAction } from "@/lib/styles";
+import { useIsPhone } from "@/lib/use-media";
 import { cn } from "@/lib/utils";
 
 import { EpisodeCard } from "./episode-card";
@@ -48,23 +49,6 @@ export function BoardBanner({ state }: { state: ApiState }) {
     );
   }
   return null;
-}
-
-const PHONE = "(max-width: 639.98px)";
-
-function watchPhone(onChange: () => void) {
-  const query = window.matchMedia(PHONE);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-/** True under 640 px. Only behaviour depends on it: the layout itself is decided in CSS. */
-function useIsPhone(): boolean {
-  return useSyncExternalStore(
-    watchPhone,
-    () => window.matchMedia(PHONE).matches,
-    () => false,
-  );
 }
 
 function ChevronIcon({ open }: { open: boolean }) {

@@ -11,6 +11,9 @@ are in design doc section 11.5, and the mockups win where they differ.
   `/episodes/new`.
 - `src/components/board/`: the Board with its groups, cards and its loading, empty and
   error states.
+- `src/components/workspace/`: the episode workspace at `/episodes/{id}`: pipeline, tabs,
+  the Plan tab with scene cards, raw JSON, a change asked for in words, and the gate bar.
 - `src/lib/episodes.ts`: how an episode is shown: its group, its step and its status line.
+- `src/lib/workspace.ts`: the workspace's wording: pipeline steps, scene facts, changes.
 - `e2e/`: Playwright and axe tests with approved screenshots. Run `make e2e`.
 - `*.stories.tsx`: Storybook stories at phone, tablet and desktop size. Run `make storybook`.

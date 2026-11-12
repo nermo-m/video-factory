@@ -39,8 +39,8 @@ function CloseIcon() {
  * up. It is open whenever the address is /episodes/new, so the New episode buttons are
  * plain links, the Back button closes it, and closing it leads to the Board.
  *
- * Start creates the episode and begins planning at once. Planning stops by itself at the
- * plan gate, before anything is produced.
+ * Start creates the episode, begins planning at once and opens the episode's workspace.
+ * Planning stops by itself at the plan gate, before anything is produced.
  */
 export function NewEpisodeDialog() {
   const router = useRouter();
@@ -62,6 +62,7 @@ export function NewEpisodeDialog() {
     }
     setStarting(true);
     setFailure(null);
+    let created: string;
     try {
       const result = await postEpisode({
         body: { idea: text, target_duration_s: length, start: true },
@@ -73,14 +74,15 @@ export function NewEpisodeDialog() {
         setStarting(false);
         return;
       }
+      created = result.data.id;
     } catch {
       setFailure(API_NOT_ANSWERING);
       setStarting(false);
       return;
     }
-    // Start stays disabled from here on: the episode exists, and the Board is next.
-    await refresh();
-    router.push(BOARD);
+    // Start stays disabled from here on: the episode exists, and its workspace is next.
+    void refresh();
+    router.push(`/episodes/${created}`);
   }
 
   return (

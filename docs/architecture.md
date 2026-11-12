@@ -43,7 +43,7 @@ flowchart LR
 
 | Component | Code | Responsibility | Exists after M0 |
 | --- | --- | --- | --- |
-| `web` | `apps/web` | The interface. Talks only to `api`, through the generated typed client | App shell, status strip, Board with the episodes, New episode dialog |
+| `web` | `apps/web` | The interface. Talks only to `api`, through the generated typed client | App shell, status strip, Board with the episodes, New episode dialog, episode workspace with the Plan tab |
 | `api` | `apps/api` | REST API under `/api/v1`, validation, pipeline state machine, enqueues jobs, serves files | Health endpoint, error shape, OpenAPI |
 | `worker` | `apps/worker` | Claims jobs and runs them: planner calls, images, voice, render, QC, export, and the client side of ComfyUI | Job loops and a no-op job |
 | `db` | Postgres 16 | All state: episodes, specs, assets, jobs, renders, reviews, usage | All 15 tables |

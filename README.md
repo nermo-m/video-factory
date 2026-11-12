@@ -9,9 +9,9 @@ accepted video by hand. The app never posts anything itself.
 
 > **Status: early development (milestone M2, planning).** The render engine works:
 > `make demo-render` turns the bundled sample spec into a finished video. Planning works
-> too: New episode on the Board turns an idea into a plan that waits for approval. The
-> screen to read and approve the plan, and the steps from an approved plan to a video,
-> come next. This README grows with each milestone and
+> too: New episode on the Board turns an idea into a plan, and the episode's workspace
+> shows it, lets you edit it or ask for changes in words, and approve it. The steps from
+> an approved plan to a video come next. This README grows with each milestone and
 > is finished in M8.
 
 ## Render the sample episode

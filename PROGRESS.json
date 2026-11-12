@@ -309,8 +309,8 @@
       "id": "VFS-24",
       "order": 260,
       "title": "Episode workspace with Plan tab and revise flow",
-      "status": "active",
-      "note": "The episode workspace: stepper, Plan tab with scene cards and inline edit, duration bar, raw JSON, revision by comment with a diff, and the gate bar."
+      "status": "review",
+      "note": "The episode workspace: pipeline, tabs, the Plan tab with brief, claims, duration bar and scene cards that are edited in place, raw JSON, a change asked for in words with its diff, and the gate bar. In review as a pull request."
     },
     {
       "id": "VFS-59",
@@ -326,11 +326,8 @@
     }
   ],
   "now_building": {
-    "status": "active",
-    "id": "VFS-24",
-    "title": "Episode workspace with Plan tab and revise flow",
-    "started": "2026-11-12T19:40:00Z",
-    "resume": "Branch vfs-24-episode-workspace. The /plan route is done. Next: browser tests in apps/web/e2e/workspace.spec.ts, then the workspace under apps/web/src/components/workspace. Verify with make e2e, then make check."
+    "status": "idle",
+    "next": "VFS-59 Model picker and Usage page"
   },
   "checklist": [
     {
@@ -365,7 +362,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1368 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 195 integration (Python), 19 Node, 72 browser tests with axe and screenshots"
+      "value": "1381 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 198 integration (Python), 19 Node, 117 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -393,6 +390,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "An idea becomes an approved plan in the browser: type it, read the plan, ask for a change in words, apply it, approve. Tested on a 390 px screen through the real API and worker."
+    },
     {
       "date": "2026-11-12",
       "text": "The first working screens: New episode takes an idea on a phone or a desktop, and the Board shows it move to Needs you with Approve the plan."
