@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from apps.api.episodes import MemoryEpisodeService
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
 from apps.api.providers import MemoryProviderService, UnknownEpisodeError
@@ -86,6 +87,7 @@ def client(service: Service) -> TestClient:
             checks=HealthChecks(database=ok, storage=ok, comfyui=ok),
             setting_store=MemorySettingStore(),
             provider_service=service,
+            episode_service=MemoryEpisodeService(),
         )
     )
 
@@ -267,6 +269,7 @@ def test_demo_mode_lists_its_recordings_as_a_provider_without_limits() -> None:
             checks=HealthChecks(database=ok, storage=ok, comfyui=ok),
             setting_store=MemorySettingStore(),
             provider_service=MemoryProviderService(),
+            episode_service=MemoryEpisodeService(),
         )
     )
 

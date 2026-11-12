@@ -965,3 +965,36 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   accepted on the first try, 110 seconds in all. The directed spec was valid for the
   theme. Its four pictures were planned as generated, which milestone M3 will make.
 - **Reverse:** each skill is a folder, each rule one function in `rules.py`.
+
+## D-034: The episode API
+
+- **Date:** 2026-11-12. **Card:** VFS-22.
+- **Problem:** Section 10 lists the episode routes in one line each. It leaves open which
+  channel a new episode belongs to, where its target length is kept, how a revision that
+  needs a model call fits into a quick API, and what the answers look like.
+- **Choice:**
+  - **Spec changes live in `packages/core/specs.py`.** A spec is never changed in place:
+    every change is a new version that points at the one before. The director's answer,
+    the owner's edit and an applied revision all go through the same functions, and each
+    edit after the plan gate marks its stale scenes through the pipeline.
+  - **A revision runs as a job.** `POST /episodes/{id}/revise` queues the revise skill and
+    answers 202 with the job. `GET /episodes/{id}/revisions/{job_id}` shows the proposal:
+    its summary, its patch and what applying it would change. `POST .../revise/apply`
+    applies it. So a revision is counted and waits for a limited provider like every other
+    model call, and the API never waits for a model.
+  - **A proposal belongs to one version.** It is applied only while the spec is still the
+    version it was written for. After any other change it is refused with `spec_changed`,
+    because it no longer says what the owner saw.
+  - **The read address of a proposal is `/revisions/{job_id}`**, not `/revise/{job_id}`:
+    the second would overlap with `/revise/apply`, which the fuzz test caught.
+  - **One default channel.** The first episode creates "My channel" with the theme
+    `night_scrolls` and the voice `bm_george`. The channel routes of section 10 have no
+    card in this milestone.
+  - **The episode has its own target length**, 45 or 60 seconds as the New episode screen
+    asks, in a new column (migration 0004). Empty means the channel's length.
+  - **Errors.** An unknown episode is 404. What the pipeline refuses is 409 with the
+    pipeline's own code (`awaiting_approval`, `not_awaiting_approval`, `jobs_unfinished`).
+    A spec that is not valid is 422 with every problem listed, including what the theme
+    cannot draw.
+  - **The Board list is paged** from the start (`limit`, `offset`, `total`).
+- **Reverse:** routes are thin. The rules are in `specs.py` and `pipeline.py`.

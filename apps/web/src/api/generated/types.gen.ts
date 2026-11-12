@@ -5,6 +5,16 @@ export type ClientOptions = {
 };
 
 /**
+ * ApplyRequest
+ */
+export type ApplyRequest = {
+    /**
+     * Job Id
+     */
+    job_id: string;
+};
+
+/**
  * Billing
  */
 export type Billing = 'demo' | 'plan' | 'api';
@@ -72,6 +82,30 @@ export type BudgetUpdate = {
 };
 
 /**
+ * ChangeOut
+ */
+export type ChangeOut = {
+    /**
+     * New
+     */
+    new?: unknown;
+    /**
+     * Old
+     */
+    old?: unknown;
+    /**
+     * Op
+     */
+    op: 'add' | 'remove' | 'replace';
+    /**
+     * Path
+     *
+     * Where in the spec, as a JSON Pointer.
+     */
+    path: string;
+};
+
+/**
  * Check
  */
 export type Check = {
@@ -98,6 +132,161 @@ export type ContinueRequest = {
      */
     episode_id: string;
 };
+
+/**
+ * EpisodeCreate
+ */
+export type EpisodeCreate = {
+    /**
+     * Idea
+     */
+    idea: string;
+    /**
+     * Start
+     *
+     * Start planning at once.
+     */
+    start?: boolean;
+    /**
+     * Target Duration S
+     */
+    target_duration_s?: 45 | 60;
+};
+
+/**
+ * EpisodeDetail
+ */
+export type EpisodeDetail = {
+    /**
+     * Awaiting Approval
+     */
+    awaiting_approval: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Gate
+     *
+     * plan, assets or review while it waits for approval.
+     */
+    gate: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Idea
+     */
+    idea: string;
+    /**
+     * Jobs
+     *
+     * The latest jobs, newest first.
+     */
+    jobs: Array<JobOut>;
+    /**
+     * Spec Version
+     *
+     * The current version of its spec, if it has one.
+     */
+    spec_version: number | null;
+    stale_from_state: EpisodeState | null;
+    /**
+     * Stale Scenes
+     */
+    stale_scenes: {
+        [key: string]: Array<string>;
+    };
+    state: EpisodeState;
+    /**
+     * Target Duration S
+     */
+    target_duration_s: number;
+    /**
+     * Title
+     */
+    title: string | null;
+};
+
+/**
+ * EpisodeList
+ */
+export type EpisodeList = {
+    /**
+     * Episodes
+     */
+    episodes: Array<EpisodeOut>;
+    /**
+     * Limit
+     */
+    limit: number;
+    /**
+     * Offset
+     */
+    offset: number;
+    /**
+     * Total
+     */
+    total: number;
+};
+
+/**
+ * EpisodeOut
+ */
+export type EpisodeOut = {
+    /**
+     * Awaiting Approval
+     */
+    awaiting_approval: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Gate
+     *
+     * plan, assets or review while it waits for approval.
+     */
+    gate: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Idea
+     */
+    idea: string;
+    /**
+     * Spec Version
+     *
+     * The current version of its spec, if it has one.
+     */
+    spec_version: number | null;
+    stale_from_state: EpisodeState | null;
+    /**
+     * Stale Scenes
+     */
+    stale_scenes: {
+        [key: string]: Array<string>;
+    };
+    state: EpisodeState;
+    /**
+     * Target Duration S
+     */
+    target_duration_s: number;
+    /**
+     * Title
+     */
+    title: string | null;
+};
+
+/**
+ * EpisodeState
+ *
+ * Pipeline states in order (section 4.1).
+ */
+export type EpisodeState = 'idea' | 'brief' | 'research' | 'script' | 'direction' | 'asset_plan' | 'asset_gen' | 'voice' | 'render' | 'qc' | 'critique' | 'package' | 'export' | 'done';
 
 /**
  * ErrorBody
@@ -161,6 +350,52 @@ export type HealthResponse = {
  * HealthStatus
  */
 export type HealthStatus = 'ok' | 'unavailable';
+
+/**
+ * JobOut
+ */
+export type JobOut = {
+    /**
+     * Attempts
+     */
+    attempts: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Error Class
+     */
+    error_class: string | null;
+    /**
+     * Error Message
+     *
+     * Why the job failed or waits, in words for the owner.
+     */
+    error_message: string | null;
+    /**
+     * Finished At
+     */
+    finished_at: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Started At
+     */
+    started_at: string | null;
+    status: JobStatus;
+    /**
+     * Type
+     */
+    type: string;
+};
+
+/**
+ * JobStatus
+ */
+export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
 /**
  * Provider
@@ -238,6 +473,85 @@ export type ProvidersResponse = {
 };
 
 /**
+ * RejectRequest
+ */
+export type RejectRequest = {
+    /**
+     * Comment
+     */
+    comment: string;
+    return_to_state?: EpisodeState | null;
+};
+
+/**
+ * RerunRequest
+ */
+export type RerunRequest = {
+    state: EpisodeState;
+};
+
+/**
+ * ReviseRequest
+ */
+export type ReviseRequest = {
+    /**
+     * Comment
+     */
+    comment: string;
+};
+
+/**
+ * RevisionOut
+ */
+export type RevisionOut = {
+    /**
+     * Base Version
+     *
+     * The spec version the proposal was written for.
+     */
+    base_version: number;
+    /**
+     * Can Apply
+     */
+    can_apply: boolean;
+    /**
+     * Changes
+     *
+     * What applying it would change. Null when it no longer fits the spec.
+     */
+    changes: Array<ChangeOut> | null;
+    /**
+     * Comment
+     */
+    comment: string;
+    /**
+     * Job Id
+     */
+    job_id: string;
+    /**
+     * Message
+     *
+     * Why it failed, waits, or can no longer be applied.
+     */
+    message: string | null;
+    /**
+     * Patch
+     *
+     * The proposed JSON Patch.
+     */
+    patch: Array<{
+        [key: string]: unknown;
+    }> | null;
+    status: JobStatus;
+    /**
+     * Summary
+     *
+     * What the proposal changes, in words.
+     */
+    summary: string | null;
+};
+
+/**
  * SettingsResponse
  */
 export type SettingsResponse = {
@@ -286,6 +600,87 @@ export type SettingsUpdate = {
 };
 
 /**
+ * SpecAuthor
+ */
+export type SpecAuthor = 'model' | 'owner';
+
+/**
+ * SpecDiff
+ */
+export type SpecDiff = {
+    /**
+     * Changes
+     */
+    changes: Array<ChangeOut>;
+    /**
+     * From Version
+     */
+    from_version: number;
+    /**
+     * To Version
+     */
+    to_version: number;
+};
+
+/**
+ * SpecOut
+ */
+export type SpecOut = {
+    author: SpecAuthor;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Skill Version
+     */
+    skill_version: string | null;
+    /**
+     * Spec
+     */
+    spec: {
+        [key: string]: unknown;
+    };
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * SpecVersionOut
+ */
+export type SpecVersionOut = {
+    author: SpecAuthor;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Current
+     */
+    current: boolean;
+    /**
+     * Skill Version
+     */
+    skill_version: string | null;
+    /**
+     * Version
+     */
+    version: number;
+};
+
+/**
+ * SpecVersions
+ */
+export type SpecVersions = {
+    /**
+     * Versions
+     */
+    versions: Array<SpecVersionOut>;
+};
+
+/**
  * StatusSource
  *
  * Whether a provider status came from the tool itself or from this app's own count.
@@ -329,6 +724,591 @@ export type WindowsOut = {
     five_hours: UsageOut;
     seven_days: UsageOut;
 };
+
+export type GetEpisodesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Offset
+         */
+        offset?: number;
+    };
+    url: '/api/v1/episodes';
+};
+
+export type GetEpisodesErrors = {
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodesError = GetEpisodesErrors[keyof GetEpisodesErrors];
+
+export type GetEpisodesResponses = {
+    /**
+     * Successful Response
+     */
+    200: EpisodeList;
+};
+
+export type GetEpisodesResponse = GetEpisodesResponses[keyof GetEpisodesResponses];
+
+export type PostEpisodeData = {
+    body: EpisodeCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/episodes';
+};
+
+export type PostEpisodeErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeError = PostEpisodeErrors[keyof PostEpisodeErrors];
+
+export type PostEpisodeResponses = {
+    /**
+     * Successful Response
+     */
+    201: EpisodeDetail;
+};
+
+export type PostEpisodeResponse = PostEpisodeResponses[keyof PostEpisodeResponses];
+
+export type GetEpisodeData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}';
+};
+
+export type GetEpisodeErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodeError = GetEpisodeErrors[keyof GetEpisodeErrors];
+
+export type GetEpisodeResponses = {
+    /**
+     * Successful Response
+     */
+    200: EpisodeDetail;
+};
+
+export type GetEpisodeResponse = GetEpisodeResponses[keyof GetEpisodeResponses];
+
+export type PostEpisodeAdvanceData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/advance';
+};
+
+export type PostEpisodeAdvanceErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeAdvanceError = PostEpisodeAdvanceErrors[keyof PostEpisodeAdvanceErrors];
+
+export type PostEpisodeAdvanceResponses = {
+    /**
+     * Successful Response
+     */
+    200: EpisodeDetail;
+};
+
+export type PostEpisodeAdvanceResponse = PostEpisodeAdvanceResponses[keyof PostEpisodeAdvanceResponses];
+
+export type PostEpisodeApproveData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/approve';
+};
+
+export type PostEpisodeApproveErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeApproveError = PostEpisodeApproveErrors[keyof PostEpisodeApproveErrors];
+
+export type PostEpisodeApproveResponses = {
+    /**
+     * Successful Response
+     */
+    200: EpisodeDetail;
+};
+
+export type PostEpisodeApproveResponse = PostEpisodeApproveResponses[keyof PostEpisodeApproveResponses];
+
+export type PostEpisodeRejectData = {
+    body: RejectRequest;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/reject';
+};
+
+export type PostEpisodeRejectErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeRejectError = PostEpisodeRejectErrors[keyof PostEpisodeRejectErrors];
+
+export type PostEpisodeRejectResponses = {
+    /**
+     * Successful Response
+     */
+    200: EpisodeDetail;
+};
+
+export type PostEpisodeRejectResponse = PostEpisodeRejectResponses[keyof PostEpisodeRejectResponses];
+
+export type PostEpisodeRerunData = {
+    body: RerunRequest;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/rerun';
+};
+
+export type PostEpisodeRerunErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeRerunError = PostEpisodeRerunErrors[keyof PostEpisodeRerunErrors];
+
+export type PostEpisodeRerunResponses = {
+    /**
+     * Successful Response
+     */
+    200: EpisodeDetail;
+};
+
+export type PostEpisodeRerunResponse = PostEpisodeRerunResponses[keyof PostEpisodeRerunResponses];
+
+export type PostEpisodeReviseData = {
+    body: ReviseRequest;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/revise';
+};
+
+export type PostEpisodeReviseErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeReviseError = PostEpisodeReviseErrors[keyof PostEpisodeReviseErrors];
+
+export type PostEpisodeReviseResponses = {
+    /**
+     * Successful Response
+     */
+    202: RevisionOut;
+};
+
+export type PostEpisodeReviseResponse = PostEpisodeReviseResponses[keyof PostEpisodeReviseResponses];
+
+export type PostEpisodeReviseApplyData = {
+    body: ApplyRequest;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/revise/apply';
+};
+
+export type PostEpisodeReviseApplyErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeReviseApplyError = PostEpisodeReviseApplyErrors[keyof PostEpisodeReviseApplyErrors];
+
+export type PostEpisodeReviseApplyResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpecOut;
+};
+
+export type PostEpisodeReviseApplyResponse = PostEpisodeReviseApplyResponses[keyof PostEpisodeReviseApplyResponses];
+
+export type GetEpisodeRevisionData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+        /**
+         * Job Id
+         */
+        job_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/revisions/{job_id}';
+};
+
+export type GetEpisodeRevisionErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodeRevisionError = GetEpisodeRevisionErrors[keyof GetEpisodeRevisionErrors];
+
+export type GetEpisodeRevisionResponses = {
+    /**
+     * Successful Response
+     */
+    200: RevisionOut;
+};
+
+export type GetEpisodeRevisionResponse = GetEpisodeRevisionResponses[keyof GetEpisodeRevisionResponses];
+
+export type GetEpisodeSpecData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/spec';
+};
+
+export type GetEpisodeSpecErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodeSpecError = GetEpisodeSpecErrors[keyof GetEpisodeSpecErrors];
+
+export type GetEpisodeSpecResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpecOut;
+};
+
+export type GetEpisodeSpecResponse = GetEpisodeSpecResponses[keyof GetEpisodeSpecResponses];
+
+export type PutEpisodeSpecData = {
+    /**
+     * Body
+     */
+    body: {
+        [key: string]: unknown;
+    };
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/spec';
+};
+
+export type PutEpisodeSpecErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PutEpisodeSpecError = PutEpisodeSpecErrors[keyof PutEpisodeSpecErrors];
+
+export type PutEpisodeSpecResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpecOut;
+};
+
+export type PutEpisodeSpecResponse = PutEpisodeSpecResponses[keyof PutEpisodeSpecResponses];
+
+export type GetEpisodeSpecDiffData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query: {
+        /**
+         * From
+         */
+        from: number;
+        /**
+         * To
+         */
+        to: number;
+    };
+    url: '/api/v1/episodes/{episode_id}/spec/diff';
+};
+
+export type GetEpisodeSpecDiffErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodeSpecDiffError = GetEpisodeSpecDiffErrors[keyof GetEpisodeSpecDiffErrors];
+
+export type GetEpisodeSpecDiffResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpecDiff;
+};
+
+export type GetEpisodeSpecDiffResponse = GetEpisodeSpecDiffResponses[keyof GetEpisodeSpecDiffResponses];
+
+export type GetEpisodeSpecVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/spec/versions';
+};
+
+export type GetEpisodeSpecVersionsErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodeSpecVersionsError = GetEpisodeSpecVersionsErrors[keyof GetEpisodeSpecVersionsErrors];
+
+export type GetEpisodeSpecVersionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SpecVersions;
+};
+
+export type GetEpisodeSpecVersionsResponse = GetEpisodeSpecVersionsResponses[keyof GetEpisodeSpecVersionsResponses];
 
 export type GetHealthData = {
     body?: never;

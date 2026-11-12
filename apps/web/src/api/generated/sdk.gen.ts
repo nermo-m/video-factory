@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetProvidersData, GetProvidersErrors, GetProvidersResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PostProviderContinueData, PostProviderContinueErrors, PostProviderContinueResponses, PostProvidersCheckData, PostProvidersCheckErrors, PostProvidersCheckResponses, PutProviderBudgetData, PutProviderBudgetErrors, PutProviderBudgetResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
+import type { GetEpisodeData, GetEpisodeErrors, GetEpisodeResponses, GetEpisodeRevisionData, GetEpisodeRevisionErrors, GetEpisodeRevisionResponses, GetEpisodesData, GetEpisodesErrors, GetEpisodeSpecData, GetEpisodeSpecDiffData, GetEpisodeSpecDiffErrors, GetEpisodeSpecDiffResponses, GetEpisodeSpecErrors, GetEpisodeSpecResponses, GetEpisodeSpecVersionsData, GetEpisodeSpecVersionsErrors, GetEpisodeSpecVersionsResponses, GetEpisodesResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetProvidersData, GetProvidersErrors, GetProvidersResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PostEpisodeAdvanceData, PostEpisodeAdvanceErrors, PostEpisodeAdvanceResponses, PostEpisodeApproveData, PostEpisodeApproveErrors, PostEpisodeApproveResponses, PostEpisodeData, PostEpisodeErrors, PostEpisodeRejectData, PostEpisodeRejectErrors, PostEpisodeRejectResponses, PostEpisodeRerunData, PostEpisodeRerunErrors, PostEpisodeRerunResponses, PostEpisodeResponses, PostEpisodeReviseApplyData, PostEpisodeReviseApplyErrors, PostEpisodeReviseApplyResponses, PostEpisodeReviseData, PostEpisodeReviseErrors, PostEpisodeReviseResponses, PostProviderContinueData, PostProviderContinueErrors, PostProviderContinueResponses, PostProvidersCheckData, PostProvidersCheckErrors, PostProvidersCheckResponses, PutEpisodeSpecData, PutEpisodeSpecErrors, PutEpisodeSpecResponses, PutProviderBudgetData, PutProviderBudgetErrors, PutProviderBudgetResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,118 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
+
+/**
+ * The Board: episodes, newest first
+ */
+export const getEpisodes = <ThrowOnError extends boolean = false>(options?: Options<GetEpisodesData, ThrowOnError>): RequestResult<GetEpisodesResponses, GetEpisodesErrors, ThrowOnError> => (options?.client ?? client).get<GetEpisodesResponses, GetEpisodesErrors, ThrowOnError>({ url: '/api/v1/episodes', ...options });
+
+/**
+ * Create an episode from an idea
+ */
+export const postEpisode = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeData, ThrowOnError>): RequestResult<PostEpisodeResponses, PostEpisodeErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeResponses, PostEpisodeErrors, ThrowOnError>({
+    url: '/api/v1/episodes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * One episode with its latest jobs
+ */
+export const getEpisode = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeData, ThrowOnError>): RequestResult<GetEpisodeResponses, GetEpisodeErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeResponses, GetEpisodeErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}', ...options });
+
+/**
+ * Run the next state
+ */
+export const postEpisodeAdvance = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeAdvanceData, ThrowOnError>): RequestResult<PostEpisodeAdvanceResponses, PostEpisodeAdvanceErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeAdvanceResponses, PostEpisodeAdvanceErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/advance', ...options });
+
+/**
+ * Pass the gate the episode waits at
+ */
+export const postEpisodeApprove = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeApproveData, ThrowOnError>): RequestResult<PostEpisodeApproveResponses, PostEpisodeApproveErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeApproveResponses, PostEpisodeApproveErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/approve', ...options });
+
+/**
+ * Turn down what is at the gate, with a comment
+ */
+export const postEpisodeReject = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeRejectData, ThrowOnError>): RequestResult<PostEpisodeRejectResponses, PostEpisodeRejectErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeRejectResponses, PostEpisodeRejectErrors, ThrowOnError>({
+    url: '/api/v1/episodes/{episode_id}/reject',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Run a state again. Later states become stale, nothing is deleted
+ */
+export const postEpisodeRerun = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeRerunData, ThrowOnError>): RequestResult<PostEpisodeRerunResponses, PostEpisodeRerunErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeRerunResponses, PostEpisodeRerunErrors, ThrowOnError>({
+    url: '/api/v1/episodes/{episode_id}/rerun',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Ask for a change in words. Queues the revise skill and returns its job
+ */
+export const postEpisodeRevise = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeReviseData, ThrowOnError>): RequestResult<PostEpisodeReviseResponses, PostEpisodeReviseErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeReviseResponses, PostEpisodeReviseErrors, ThrowOnError>({
+    url: '/api/v1/episodes/{episode_id}/revise',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Apply a proposed revision. Stored as a new version of the spec
+ */
+export const postEpisodeReviseApply = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeReviseApplyData, ThrowOnError>): RequestResult<PostEpisodeReviseApplyResponses, PostEpisodeReviseApplyErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeReviseApplyResponses, PostEpisodeReviseApplyErrors, ThrowOnError>({
+    url: '/api/v1/episodes/{episode_id}/revise/apply',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * A proposed revision: its patch and what it would change
+ */
+export const getEpisodeRevision = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeRevisionData, ThrowOnError>): RequestResult<GetEpisodeRevisionResponses, GetEpisodeRevisionErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeRevisionResponses, GetEpisodeRevisionErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/revisions/{job_id}', ...options });
+
+/**
+ * The current authored spec
+ */
+export const getEpisodeSpec = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeSpecData, ThrowOnError>): RequestResult<GetEpisodeSpecResponses, GetEpisodeSpecErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeSpecResponses, GetEpisodeSpecErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/spec', ...options });
+
+/**
+ * Replace the authored spec. It is checked and stored as a new version
+ */
+export const putEpisodeSpec = <ThrowOnError extends boolean = false>(options: Options<PutEpisodeSpecData, ThrowOnError>): RequestResult<PutEpisodeSpecResponses, PutEpisodeSpecErrors, ThrowOnError> => (options.client ?? client).put<PutEpisodeSpecResponses, PutEpisodeSpecErrors, ThrowOnError>({
+    url: '/api/v1/episodes/{episode_id}/spec',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * What changed between two versions of the spec
+ */
+export const getEpisodeSpecDiff = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeSpecDiffData, ThrowOnError>): RequestResult<GetEpisodeSpecDiffResponses, GetEpisodeSpecDiffErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeSpecDiffResponses, GetEpisodeSpecDiffErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/spec/diff', ...options });
+
+/**
+ * Every version of the spec
+ */
+export const getEpisodeSpecVersions = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeSpecVersionsData, ThrowOnError>): RequestResult<GetEpisodeSpecVersionsResponses, GetEpisodeSpecVersionsErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeSpecVersionsResponses, GetEpisodeSpecVersionsErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/spec/versions', ...options });
 
 /**
  * Liveness, database, storage, ComfyUI reachability and demo mode

@@ -295,8 +295,8 @@
       "id": "VFS-22",
       "order": 240,
       "title": "Episode API: lifecycle, spec versions and diff",
-      "status": "active",
-      "note": "In progress: the episode API."
+      "status": "review",
+      "note": "The episode routes: list and create, read, advance, approve, reject, rerun, spec read and replace, versions, diff, revise and apply. Every spec change is a new version. A revision runs as a job and is applied only to the version it was written for. In review as a pull request."
     },
     {
       "id": "VFS-23",
@@ -324,11 +324,8 @@
     }
   ],
   "now_building": {
-    "status": "active",
-    "id": "VFS-22",
-    "title": "Episode API: lifecycle, spec versions and diff",
-    "started": "2026-11-12T19:40:00Z",
-    "resume": "Branch vfs-22-episode-api from main after pull request #32. Plan is in the Started comment on the board card: packages/core/specs.py with tests first, migration 0004 for the episode's target length, routes in apps/api/episodes.py, revise as a job with apply, make generate-api. Verify with: make check, make coverage. Then pull request with auto-merge."
+    "status": "idle",
+    "next": "VFS-23 Board and New episode screens"
   },
   "checklist": [
     {
@@ -363,7 +360,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1319 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 167 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1368 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 195 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -391,6 +388,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The planning flow works through the API in the running stack: an idea is created, reaches the plan gate by itself, is revised in words, shown as a diff, applied and approved."
+    },
     {
       "date": "2026-11-12",
       "text": "All seven planner skills ran live in a row on the owner's plan: one idea became a brief, research, a script, a directed spec the theme can draw, a picture plan and an upload package in under two minutes."
