@@ -226,7 +226,15 @@
       "id": "VFS-19",
       "order": 210,
       "title": "LLM adapter with mock and recorded responses",
-      "status": "ready"
+      "status": "review",
+      "note": "The language model adapter: recorded responses for demo mode, the Anthropic adapter with web search behind the paid API guard, and model call logging. Tested through the real SDK with a mock transport, no paid call. 49 unit and 8 integration tests. Waits for a pull request."
+    },
+    {
+      "id": "VFS-64",
+      "order": 211,
+      "title": "Live check of the Anthropic adapter against the real API",
+      "status": "blocked",
+      "note": "Needs owner: an API key, PROVIDER_MODE=api with the Use paid APIs switch on, and a development budget of about 1 US dollar."
     },
     {
       "id": "VFS-56",
@@ -291,7 +299,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-19 LLM adapter with mock and recorded responses"
+    "next": "VFS-56 Host CLI bridge for Claude Code and Codex"
   },
   "checklist": [
     {
@@ -326,7 +334,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "693 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 115 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "743 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 123 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -354,6 +362,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The pipeline can talk to a language model: recorded answers in demo mode, Claude through the API when the owner switches it on, with cost recorded per call and the key proven absent from every log line."
+    },
     {
       "date": "2026-11-12",
       "text": "The paid API guard is in place before any paid adapter exists: no mode switch, no fallback, and a paid call cannot be recorded as anything else."

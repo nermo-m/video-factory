@@ -181,3 +181,19 @@ def test_nfr01_settings_never_print_the_database_password() -> None:
 
     assert "secret" not in repr(settings)
     assert "secret" not in str(settings)
+
+
+def test_token_counts_are_logged_as_numbers_while_tokens_stay_hidden() -> None:
+    log = logging.getLogger("test.tokens")
+
+    (entry,) = emit(
+        "info",
+        log,
+        "info",
+        "model call",
+        extra={"input_tokens": 1200, "output_tokens": 340, "access_token": "abc", "token": "xyz"},
+    )
+
+    assert (entry["input_tokens"], entry["output_tokens"]) == (1200, 340)
+    assert entry["access_token"] == logs.REDACTED
+    assert entry["token"] == logs.REDACTED

@@ -74,6 +74,9 @@ services:
       DATA_DIR: /data
       LOG_LEVEL: ${LOG_LEVEL:-info}
       CRITIC_ENABLED: ${CRITIC_ENABLED:-true}
+      # Used only when PROVIDER_MODE is api and the owner has switched paid APIs on.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
       KOKORO_MODEL_PATH: /models/kokoro/kokoro.onnx
       KOKORO_VOICES_PATH: /models/kokoro/voices.bin
     volumes:

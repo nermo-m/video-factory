@@ -27,6 +27,7 @@ worker = [
     { include-group = "core" },
     # The Kokoro voice model runs on ONNX Runtime (packages/adapters/tts).
     # The render engine: frames are drawn with Pillow and NumPy.
+    "anthropic==2.8.0",
     "numpy==2.5.4",
     "onnxruntime==1.31.1",
     "pillow==13.0.0",

@@ -5,8 +5,8 @@ storage. Each adapter ships with a mock twin in the same pull request.
 
 Rule: this is the only place a vendor SDK may be imported.
 
-So far: `storage/` (local folder, the v1 storage), `clip/probe.py` (is ComfyUI reachable)
-and `tts/` (the voice).
+So far: `storage/` (local folder, the v1 storage), `clip/probe.py` (is ComfyUI reachable),
+`tts/` (the voice) and `llm/` (the language model).
 
 ## Provider mode (`factory.py`, `paid.py`)
 
@@ -16,6 +16,23 @@ another. Every adapter that calls a paid API builds on `PaidApiAdapter` in `paid
 it refuses to start unless the mode is `api` and the switch is on, and it keeps the key
 out of anything that could be printed. A test fails when a module imports a paid SDK
 without it.
+
+## Language model (`llm/`)
+
+One request is one skill call: a prompt in, a text or a JSON document out, with tokens,
+cost, latency and, for research, the passages the model really retrieved.
+
+| File | What it does |
+| --- | --- |
+| `base.py` | `LLMAdapter`, `LLMRequest`, `LLMResponse`, and the JSON parsing of an answer |
+| `recorded.py` | The twin for demo mode: replays `samples/recordings/<skill>.json` and checks it against the skill's schema and version |
+| `anthropic_api.py` | Claude through the paid API, with web search for research. Builds on `PaidApiAdapter` |
+
+`Adapters.llm()` picks by mode: recordings in `demo`, the Anthropic API in `api` (only
+with the owner's switch on), and in `subscription` an error that says the host bridge is
+not built yet. Failures come back in the error classes the job queue acts on. The
+Anthropic adapter is tested through the real SDK with a mock transport, so no test can
+reach the network. Its check against the live API is card VFS-64.
 
 ## Voice (`tts/`)
 

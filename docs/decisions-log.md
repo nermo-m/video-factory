@@ -689,3 +689,51 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   methods in the `Allow` header, and an unreadable request body answered 400, which was
   not documented. Both are fixed with tests.
 - **Reverse:** the tables are at the top of `packages/core/providers.py`.
+
+## D-027: The language model adapter
+
+- **Date:** 2026-11-12. **Card:** VFS-19.
+- **Problem:** Section 3.3 names an `LLMAdapter` with the Anthropic API as the real
+  implementation and recorded responses as the mock. It does not say what a request and a
+  response look like, how a recording is found, how structured output and web search are
+  asked for, or how the adapter can be trusted without calling a paid API.
+- **Choice:**
+  - **One request is one skill call.** `LLMRequest` carries the skill and its version, the
+    prompt, an optional output schema and whether the model may search the web.
+    `LLMResponse` carries the output, tokens, cost, latency, the provider and model that
+    answered, and for research the passages the model really retrieved (FR-02).
+  - **Recordings** are one file per skill, `samples/recordings/<skill>.json`, and answer
+    whatever the prompt is: demo mode tells one story. A recording is checked against the
+    schema and the skill version the caller asks for, so a stale recording fails loudly.
+    The recordings themselves arrive with the skills (VFS-20, VFS-21).
+  - **Anthropic adapter.** Python SDK `anthropic` 2.8.0 (Apache-2.0). Default model
+    `claude-opus-5-5`, effort `medium`, set by `ANTHROPIC_MODEL` and per request.
+    Structured output through `output_config.format`, with the constraints the API does
+    not enforce removed from the schema that is sent. Web search through the server tool
+    `web_search_20260209`, called directly so results and citations are in the answer.
+    Search answers always carry citations, which the API refuses together with a fixed
+    output format, so a search request asks for JSON in the prompt and it is parsed here.
+    A paused search turn is sent back up to three times. Requests opt into the API's
+    server-side refusal fallback.
+  - **Cost** is computed from the usage the API reports and a price table in the adapter
+    (prices of 2026-11-03). A model without a price is refused at start, because its cost
+    would be a guess. A web search is one cent.
+  - **Errors** map to the queue's classes: rate limits, overload, server errors and
+    connection failures are retried, a bad key or unknown model goes to the owner, an
+    answer that is not JSON or is cut off is invalid output, a rejected request is a bug.
+  - **Tested through the real SDK.** The tests replace only the SDK's HTTP transport, so
+    they see the request the SDK really builds. That already corrected one assumption:
+    SDK 2.8.0 sends the key as a bearer token with API version 2026-10-21.
+  - **Keys and logs.** A test captures every log line of every logger at debug level
+    during successful and failing calls and fails if the key appears. The app's own line
+    per call carries numbers only. The log redaction now lets `input_tokens` and
+    `output_tokens` through, which are counts, while anything else named like a token
+    stays hidden.
+  - **Model call logging.** `packages/core/usage.py` stores one `model_call` row per call.
+    The billing type follows from the provider, and plan and demo calls store cost 0.
+  - **Subscription mode** has no language model until the host bridge exists (VFS-56,
+    VFS-57). The factory says so and never reaches for the paid API instead.
+- **Not verified:** the adapter has not called the live API. No key, and the development
+  budget is 0. Card VFS-64 holds the live check and lists what it must confirm, including
+  the fallback beta header.
+- **Reverse:** another provider is another class behind `LLMAdapter`.

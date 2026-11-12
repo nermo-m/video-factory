@@ -18,11 +18,15 @@ LEVELS = ("debug", "info", "warning", "error")
 _STANDARD_FIELDS = frozenset(logging.makeLogRecord({}).__dict__) | {"message", "asctime"}
 _SECRET_MARKERS = ("password", "secret", "token", "api_key", "apikey", "authorization", "cookie")
 _SECRET_NAMES = frozenset({"database_url", "dsn"})
+# Counts of model tokens. Their names contain "token" but they are numbers, not secrets.
+_NOT_SECRET = frozenset({"input_tokens", "output_tokens"})
 REDACTED = "[redacted]"
 
 
 def _is_secret(name: str) -> bool:
     lowered = name.lower()
+    if lowered in _NOT_SECRET:
+        return False
     return lowered in _SECRET_NAMES or any(marker in lowered for marker in _SECRET_MARKERS)
 
 
