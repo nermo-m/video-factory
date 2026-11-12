@@ -53,8 +53,9 @@ class Adapters:
             return RecordedLLM(RECORDINGS_DIR)
         if mode == "subscription":
             raise NeedsOwnerError(
-                "Subscription mode reaches its models through the host bridge, which is not "
-                "built yet. Use PROVIDER_MODE=demo until it is."
+                "Subscription mode reaches its models through the host bridge. The bridge is "
+                "built, the adapters that call it are not yet (card VFS-57). Use "
+                "PROVIDER_MODE=demo until they are."
             )
         try:
             return AnthropicLLM(

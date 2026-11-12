@@ -3,7 +3,7 @@
 # "C:/Program Files/Git/export/demo"). The paths in these recipes are meant for the inside
 # of containers, so that rewriting is switched off. Other systems ignore the variable.
 export MSYS_NO_PATHCONV := 1
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update models voice-test sample-voice demo-render
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update models voice-test sample-voice demo-render bridge bridge-start bridge-stop bridge-status bridge-flags
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -111,11 +111,34 @@ progress: ## Serve the build-status page at http://127.0.0.1:8094
 env: ## Create .env from .env.example when it does not exist
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
 
+# In subscription mode the worker reaches the owner's Claude and ChatGPT plans through
+# the host bridge (tools/cli_bridge), so the bridge starts and stops with the stack. The
+# other modes never start it and do not need uv on the host for `make up`.
+SUBSCRIPTION = grep -q '^PROVIDER_MODE=subscription' .env 2>/dev/null
+BRIDGE = uv run --env-file .env python -m tools.cli_bridge
+
 up: env ## Build and start web, api, worker and db, and wait until they are healthy
 	docker compose up --build --detach --wait
+	@if $(SUBSCRIPTION); then $(BRIDGE) start; fi
 
 down: ## Stop the stack (data volumes are kept)
 	docker compose down
+	@if $(SUBSCRIPTION); then $(BRIDGE) stop; fi
+
+bridge: env ## Run the host bridge to the Claude Code and Codex tools in this terminal
+	$(BRIDGE) run
+
+bridge-start: env ## Start the host bridge in the background (make up does this in subscription mode)
+	$(BRIDGE) start
+
+bridge-stop: env ## Stop the host bridge
+	$(BRIDGE) stop
+
+bridge-status: env ## Show whether the bridge runs and whether each tool is signed in with a plan
+	$(BRIDGE) status
+
+bridge-flags: ## Ask the installed claude and codex whether they accept the bridge's flags (no model call)
+	uv run pytest tools/cli_bridge -m host_tools -q
 
 ps: ## Show service status
 	docker compose ps

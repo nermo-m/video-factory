@@ -93,7 +93,7 @@ strict = true
 warn_unreachable = true
 explicit_package_bases = true
 mypy_path = "."
-files = ["apps/api", "apps/worker", "packages", "scripts", "tests", "conftest.py"]
+files = ["apps/api", "apps/worker", "packages", "scripts", "tools", "tests", "conftest.py"]
 
 [[tool.mypy.overrides]]
 # ONNX Runtime ships no type information. It is imported in one place, the Kokoro voice
@@ -102,8 +102,9 @@ module = ["onnxruntime"]
 ignore_missing_imports = true
 
 [tool.coverage.run]
-# NFR-04: 80 percent line coverage on apps/api, apps/worker and packages/.
-source = ["apps/api", "apps/worker", "packages"]
+# NFR-04: 80 percent line coverage on apps/api, apps/worker and packages/. The host
+# bridge is held to the same gate.
+source = ["apps/api", "apps/worker", "packages", "tools/cli_bridge"]
 omit = [
     "*/tests/*",
     # Generated schema definitions, exercised by the migration tests as a whole.
@@ -121,12 +122,13 @@ exclude_also = [
 
 [tool.pytest.ini_options]
 minversion = "9.0"
-addopts = "-ra --strict-markers --strict-config -m \"not integration and not render and not voice\""
+addopts = "-ra --strict-markers --strict-config -m \"not integration and not render and not voice and not host_tools\""
 markers = [
     "integration: needs a real Postgres. Run with make test-integration",
     "render: golden-frame and audio tests that run inside the worker image",
     "voice: the real Kokoro voice. Needs the model files. Run with make voice-test",
+    "host_tools: asks the installed claude and codex programs whether they accept the bridge's flags. No model call. Run with make bridge-flags",
 ]
 pythonpath = ["."]
-testpaths = ["apps", "packages", "scripts", "tests"]
+testpaths = ["apps", "packages", "scripts", "tools", "tests"]
 xfail_strict = true

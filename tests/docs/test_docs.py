@@ -21,6 +21,7 @@ EXPECTED_ADRS = {
     "0005-spec-driven-rendering.md": "Spec-driven rendering",
     "0006-python-packaging.md": "Python",
     "0007-kokoro-without-gpl-dependencies.md": "Kokoro",
+    "0008-host-bridge-for-the-command-line-tools.md": "host bridge",
 }
 REQUIRED_SECTIONS = [
     "## Status",

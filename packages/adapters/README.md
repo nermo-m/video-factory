@@ -29,8 +29,8 @@ cost, latency and, for research, the passages the model really retrieved.
 | `anthropic_api.py` | Claude through the paid API, with web search for research. Builds on `PaidApiAdapter` |
 
 `Adapters.llm()` picks by mode: recordings in `demo`, the Anthropic API in `api` (only
-with the owner's switch on), and in `subscription` an error that says the host bridge is
-not built yet. Failures come back in the error classes the job queue acts on. The
+with the owner's switch on), and in `subscription` an error that says the adapters for
+the host bridge (`tools/cli_bridge`) are not built yet. Failures come back in the error classes the job queue acts on. The
 Anthropic adapter is tested through the real SDK with a mock transport, so no test can
 reach the network. Its check against the live API is card VFS-64.
 
