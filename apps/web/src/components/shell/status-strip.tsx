@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { type HealthResponse, getHealth } from "@/api/client";
+import { useEpisodes } from "@/components/episodes/episodes-provider";
 import { cn } from "@/lib/utils";
 
 import { BellIcon, SpinnerIcon } from "./nav-items";
@@ -159,10 +160,15 @@ export function StatusStripView({ state, runningJobs, waitingForOwner }: StatusS
 }
 
 /**
- * The strip wired to the API. Running jobs and waiting items stay at zero until the jobs
- * and episodes endpoints exist: nothing can be queued from the interface before then.
+ * The strip wired to the API. Waiting items are the loaded episodes that stand at a gate.
+ * Running jobs stay at zero until the jobs endpoint exists.
  */
 export function StatusStrip() {
   const state = useApiState();
-  return <StatusStripView state={state} runningJobs={0} waitingForOwner={0} />;
+  const episodes = useEpisodes().state;
+  const waiting =
+    episodes.kind === "ready"
+      ? episodes.episodes.filter((episode) => episode.awaiting_approval).length
+      : 0;
+  return <StatusStripView state={state} runningJobs={0} waitingForOwner={waiting} />;
 }

@@ -7,9 +7,11 @@ images, short clips and narration. A deterministic render engine assembles the v
 the spec. The owner approves the plan and the assets, reviews the result, and uploads the
 accepted video by hand. The app never posts anything itself.
 
-> **Status: early development (milestone M1, spec and render).** The render engine works:
-> `make demo-render` turns the bundled sample spec into a finished video. The planning
-> pipeline and the interface for it come next. This README grows with each milestone and
+> **Status: early development (milestone M2, planning).** The render engine works:
+> `make demo-render` turns the bundled sample spec into a finished video. Planning works
+> too: New episode on the Board turns an idea into a plan that waits for approval. The
+> screen to read and approve the plan, and the steps from an approved plan to a video,
+> come next. This README grows with each milestone and
 > is finished in M8.
 
 ## Render the sample episode

@@ -998,3 +998,45 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     cannot draw.
   - **The Board list is paged** from the start (`limit`, `offset`, `total`).
 - **Reverse:** routes are thin. The rules are in `specs.py` and `pipeline.py`.
+
+## D-035: Board and New episode screens
+
+- **Date:** 2026-11-12. **Card:** VFS-23.
+- **Problem:** The Board mockups and the written spec differ, the mockups show data the API
+  does not have yet, and there is no mockup of New episode.
+- **Choice:**
+  - **Groups as in the mockups** (D-014): Needs you, Planning, Producing, Finished on
+    desktop. Below 1024 px Planning and Producing are one group, In progress. Tablet has
+    two columns, Needs you and everything else. On a phone the group headings are buttons
+    that fold the group, and Finished starts folded.
+  - **An episode at any gate is under Needs you**, with the action in words: Approve the
+    plan, Approve the pictures, Review the video.
+  - **The progress strip has seven steps**, as drawn: Brief, Research, Script, Direction,
+    Pictures, Video, Export. Each covers one or more of the fourteen pipeline states. The
+    strip also says its step in words, so it never depends on colour.
+  - **Cards are not links yet.** The episode workspace arrives with VFS-24, and a link to a
+    page that does not exist would be worse than none.
+  - **Not shown yet, because the API has no data for it:** the thumbnail, version and length
+    of a rendered video (they come with the render cards), the elapsed time of the running
+    job, and a failed job. The count of running jobs in the status strip stays at zero
+    until the jobs routes exist.
+  - **One episode list for every screen.** A provider in the app shell reads `/episodes`
+    every 5 seconds while the tab is visible. The Board shows it and the status strip
+    counts what waits for the owner.
+  - **A failed load is never an empty Board.** Nothing loaded: an error with the reason and
+    Try again. A refresh that fails later: the episodes stay and a note says they may be
+    out of date.
+  - **50 episodes a page.** With more, the Board says "Showing 50 of 120 episodes" and
+    offers Show more.
+  - **New episode is the address `/episodes/new`**: the Board with the dialog open over
+    it. So the New episode buttons stay plain links, Back closes the dialog, and closing
+    leads to the Board. It is a full-screen sheet on a phone and a centred 560 px dialog
+    from tablet up, as section 11.5 says.
+  - **After Start the Board opens**, not the workspace as the key flow in 11.5 says,
+    because the workspace does not exist yet. VFS-24 changes that.
+  - **Length defaults to 45 seconds**, the API's default.
+  - **Browser tests answer the episode list from a fixed list**, so they do not depend on
+    what other tests left in the database. One test goes through the real API and worker:
+    New episode on a 390 px screen, and the Board asks to approve the plan.
+- **Reverse:** the mapping from states to groups, steps and words is one file,
+  `apps/web/src/lib/episodes.ts`.

@@ -3,6 +3,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { type Page, expect, test } from "@playwright/test";
 
+import { mockEpisodes } from "./support";
+
 const SIZES = {
   phone: { width: 390, height: 844 },
   tablet: { width: 820, height: 1180 },
@@ -18,8 +20,13 @@ const ROUTES = [
   { path: "/episodes/new", heading: "New episode" },
 ];
 
-/** Open a page and wait until the status strip has heard from the API. */
+/**
+ * Open a page and wait until the status strip has heard from the API. The shell is tested
+ * with no episodes, whatever other tests left in the database. board.spec.ts covers the
+ * Board with episodes.
+ */
 async function open(page: Page, path = "/") {
+  await mockEpisodes(page, () => []);
   await page.goto(path);
   await expect(page.getByTestId("demo-badge")).toBeVisible();
 }

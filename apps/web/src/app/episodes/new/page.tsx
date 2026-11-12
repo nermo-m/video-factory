@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 
-import { EmptyState, PageHeader } from "@/components/page";
+import { Board } from "@/components/board/board";
+import { NewEpisodeDialog } from "@/components/episodes/new-episode-dialog";
 
 export const metadata: Metadata = { title: "New episode" };
 
+/** The Board with the New episode dialog open over it. */
 export default function Page() {
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="New episode" />
-      <EmptyState title="Not built yet">Starting an episode from an idea arrives with the planning milestone. Until then the studio only runs its foundation.</EmptyState>
-    </div>
+    <>
+      <Board />
+      <NewEpisodeDialog />
+    </>
   );
 }

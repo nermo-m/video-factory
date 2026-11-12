@@ -438,14 +438,15 @@
       "id": "VFS-22",
       "order": 240,
       "title": "Episode API: lifecycle, spec versions and diff",
-      "status": "review",
-      "note": "The episode routes: list and create, read, advance, approve, reject, rerun, spec read and replace, versions, diff, revise and apply. Every spec change is a new version. A revision runs as a job and is applied only to the version it was written for. In review as a pull request."
+      "status": "done",
+      "note": "The episode routes: list and create, read, advance, approve, reject, rerun, spec read and replace, versions, diff, revise and apply. Every spec change is a new version. A revision runs as a job and is applied only to the version it was written for. Merged in pull request #33."
     },
     {
       "id": "VFS-23",
       "order": 250,
       "title": "Board and New episode screens",
-      "status": "ready"
+      "status": "review",
+      "note": "The Board shows the episodes in the groups of the mockups, with loading, empty and error states, and New episode starts one from an idea. In review as a pull request."
     },
     {
       "id": "VFS-24",
@@ -468,7 +469,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-23 Board and New episode screens"
+    "next": "VFS-24 Episode workspace with Plan tab and revise flow"
   },
   "checklist": [
     {
@@ -503,7 +504,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1368 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 195 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1368 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 195 integration (Python), 19 Node, 72 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -531,6 +532,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The first working screens: New episode takes an idea on a phone or a desktop, and the Board shows it move to Needs you with Approve the plan."
+    },
     {
       "date": "2026-11-12",
       "text": "The planning flow works through the API in the running stack: an idea is created, reaches the plan gate by itself, is revised in words, shown as a diff, applied and approved."
