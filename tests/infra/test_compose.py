@@ -98,3 +98,12 @@ def test_fr27_the_worker_is_told_where_the_host_bridge_is(compose: dict[str, Any
     assert environment["CLI_BRIDGE_URL"] == "${CLI_BRIDGE_URL:-http://host.docker.internal:8189}"
     assert environment["CLAUDE_CLI_MODEL"] == "${CLAUDE_CLI_MODEL:-}"
     assert environment["CODEX_CLI_MODEL"] == "${CODEX_CLI_MODEL:-}"
+
+
+def test_fr34_api_and_worker_can_check_the_limits(compose: dict[str, Any]) -> None:
+    api = compose["services"]["api"]["environment"]
+    worker = compose["services"]["worker"]["environment"]
+
+    # "Check limits now" runs in the api service, the automatic check in the worker.
+    assert api["CLI_BRIDGE_URL"] == "${CLI_BRIDGE_URL:-http://host.docker.internal:8189}"
+    assert worker["LIMIT_CHECK_MINUTES"] == "${LIMIT_CHECK_MINUTES:-10}"

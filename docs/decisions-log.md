@@ -822,3 +822,51 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   that test once they exist. Here the adapters are tested through a real bridge with the
   fake tools, and against a stub that answers with every error class of the contract.
 - **Reverse:** another way to reach the tools is another class behind `LLMAdapter`.
+
+## D-030: The usage and limits tracker
+
+- **Date:** 2026-11-12. **Card:** VFS-58.
+- **Problem:** Section 3.5 describes the tracker's behaviour and its two tables. It leaves
+  open where budgets and overrides are stored, what the default budgets are, which job
+  needs which provider, how a waiting job is marked, and how the api service can run the
+  check.
+- **Choice:**
+  - **Rules in `packages/core/limits.py`.** The first half is plain rules without a
+    database (windows, budget share, states, the reason a job waits). The second half
+    applies them to `provider_usage` and `provider_status`.
+  - **Every recorded model call is also a usage row.** `record_model_call` writes both, so
+    a skill cannot forget one of them.
+  - **What is counted against a budget.** A plan budget is the number of text calls and
+    the number of images, each in the 5 hour and the 7 day window. A paid provider's
+    budget is dollars in the same two windows. The fullest of them decides: 80 percent
+    warns, 100 percent pauses.
+  - **Default budgets**, "deliberately low" as the design asks: for a plan 20 calls and 5
+    images in 5 hours, 150 calls and 30 images in 7 days. For a paid provider 1 dollar in
+    5 hours and 5 dollars in 7 days. The owner changes them with
+    `PUT /providers/{id}/budget`.
+  - **Budgets and overrides are rows in the `setting` table**, so no new table is needed:
+    `budget.<provider>` and `budget_override.<provider>` (the episodes that may continue).
+  - **Which job needs which provider** follows from its type: `plan.*` and `agent.*` use
+    the text provider of the mode, `asset.image` the image provider, everything else none.
+  - **A waiting job** goes back to the queue with error class `plan_limit` and the reason
+    as its message, which is what the interface will show. It is not counted as a failed
+    attempt. It is tried again at the reset time, or after ten minutes when none is known.
+  - **Limit events.** When a job fails with a plan limit, the worker stores the limit on
+    the provider in the same transaction, so later jobs wait without asking the tool again.
+  - **"Continue anyway" lifts a budget pause, never a limit.** The budget is this app's own
+    caution. The limit is the plan's.
+  - **The check.** The free check asks the host bridge whether the tool is installed and
+    signed in with a plan. The tiny call ("Reply with the single word: ok") is made only
+    for a limited provider: by the automatic check once its reset time has passed or when
+    it gave none, and by "Check limits now" always. A paid provider is never probed with a
+    call. A lifted limit lets the waiting jobs be claimed at once.
+  - **The api service runs "Check limits now" itself.** For that it gets `CLI_BRIDGE_URL`
+    in Compose, and the Anthropic adapter is now loaded only when asked for, because the
+    api image does not install the paid SDK.
+  - **API details.** Money travels as text (`"0.50"`), so an amount arrives exactly as
+    typed. Budget numbers that each make sense but contradict one another (5 hours above
+    7 days) are answered with 409. A second "Check limits now" within 30 seconds is
+    answered with 429 and the seconds to wait.
+- **Not in this card:** the screens (VFS-59), counting images (the image card in M3), and
+  budgets per model. The tables hold the model of every use, so that can be added.
+- **Reverse:** budgets are settings rows and can be changed or deleted at any time.

@@ -397,14 +397,15 @@
       "id": "VFS-57",
       "order": 214,
       "title": "Claude CLI and Codex CLI adapters",
-      "status": "review",
-      "note": "The adapters of subscription mode: ClaudeCliLLM and CodexCliLLM call the host bridge, a plan call costs nothing, a usage limit makes the job wait until the reset time, and neither adapter can be built in another mode. 57 unit tests through a real bridge with fake tools. In review as a pull request."
+      "status": "done",
+      "note": "The adapters of subscription mode: ClaudeCliLLM and CodexCliLLM call the host bridge, a plan call costs nothing, a usage limit makes the job wait until the reset time, and neither adapter can be built in another mode. 57 unit tests through a real bridge with fake tools. Merged in pull request #28."
     },
     {
       "id": "VFS-58",
       "order": 216,
       "title": "Usage and limits tracker with owner budgets",
-      "status": "ready"
+      "status": "review",
+      "note": "The usage and limits tracker: 5 hour and 7 day counts, budgets that warn at 80 percent and pause at 100, Continue anyway for one episode, limit events with reset time, the automatic and on-demand check, and the four /providers routes. A waiting job stays queued with its reason. In review as a pull request."
     },
     {
       "id": "VFS-20",
@@ -463,7 +464,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-58 Usage and limits tracker with owner budgets"
+    "next": "VFS-20 Planner service and skills: brief, research, script"
   },
   "checklist": [
     {
@@ -498,7 +499,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1083 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 123 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1161 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 155 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -526,6 +527,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The app now knows when to hold back: it counts its own use of each plan, pauses at the owner's budget, waits out a usage limit until the reset time, and checks the providers without spending anything on healthy ones."
+    },
     {
       "date": "2026-11-12",
       "text": "Subscription mode is wired end to end in code: the planner asks Claude Code and the second reviewer asks Codex through the host bridge, covered by the owner's plans, and a usage limit pauses the job instead of ever reaching a paid API."

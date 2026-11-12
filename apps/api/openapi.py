@@ -13,6 +13,7 @@ from pathlib import Path
 
 from apps.api.health import Check, CheckStatus, HealthChecks
 from apps.api.main import create_app
+from apps.api.providers import MemoryProviderService
 from apps.api.settings import MemorySettingStore
 from packages.core.settings import Settings
 
@@ -32,6 +33,7 @@ def render_openapi() -> str:
         settings,
         checks=HealthChecks(database=unused, storage=unused, comfyui=unused),
         setting_store=MemorySettingStore(),
+        provider_service=MemoryProviderService(),
     )
     return json.dumps(app.openapi(), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 

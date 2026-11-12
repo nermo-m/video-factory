@@ -45,6 +45,8 @@ class Settings:
     cli_bridge_url: str = DEFAULT_CLI_BRIDGE_URL
     claude_cli_model: str = ""
     codex_cli_model: str = ""
+    # Minutes between the automatic checks of the providers' limits (section 3.5).
+    limit_check_minutes: int = 10
 
 
 def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
@@ -84,6 +86,13 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         problems.append("CLI_BRIDGE_URL must be an http or https address.")
 
+    limit_check_minutes = 10
+    raw_minutes = env.get("LIMIT_CHECK_MINUTES", "").strip() or "10"
+    if raw_minutes.isdecimal() and int(raw_minutes) >= 1:
+        limit_check_minutes = int(raw_minutes)
+    else:
+        problems.append("LIMIT_CHECK_MINUTES must be a whole number, 1 or more.")
+
     critic = env.get("CRITIC_ENABLED", "true").strip().lower() or "true"
     if critic not in {"true", "false"}:
         problems.append("CRITIC_ENABLED must be true or false.")
@@ -104,4 +113,5 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         cli_bridge_url=cli_bridge_url,
         claude_cli_model=env.get("CLAUDE_CLI_MODEL", "").strip(),
         codex_cli_model=env.get("CODEX_CLI_MODEL", "").strip(),
+        limit_check_minutes=limit_check_minutes,
     )

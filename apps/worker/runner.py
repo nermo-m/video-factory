@@ -13,17 +13,18 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from packages.core import pipeline, queue
-from packages.core.enums import ErrorClass, JobTag
+from packages.core import limits, pipeline, queue
+from packages.core.enums import ErrorClass, JobTag, Provider
 
 logger = logging.getLogger("apps.worker")
 
@@ -53,6 +54,9 @@ class Worker:
         stale_after_s: float = queue.STALE_AFTER_S,
         heartbeat_file: Path | None = None,
         critic_enabled: bool = True,
+        provider_mode: str = "demo",
+        limit_probe: limits.Probe | None = None,
+        limit_check_interval_s: float = 600.0,
     ) -> None:
         if cpu_workers < 1:
             raise ValueError("cpu_workers must be 1 or more")
@@ -64,6 +68,12 @@ class Worker:
         self._stale_after_s = stale_after_s
         self._heartbeat_file = heartbeat_file
         self._critic_enabled = critic_enabled
+        # Usage and limits tracker (section 3.5). Without a probe nothing is checked,
+        # which is right for demo mode: recordings have no limits.
+        self._provider_mode = provider_mode
+        self._limit_probe = limit_probe
+        self._limit_check_interval_s = limit_check_interval_s
+        self._limits_checked_at = 0.0
         self._active: dict[int, queue.ClaimedJob] = {}
         self._active_lock = threading.Lock()
 
@@ -104,6 +114,8 @@ class Worker:
             self._active[thread_id] = claim
         logger.info("job started", extra=ids)
         try:
+            if self._waits_for_its_provider(claim, ids):
+                return
             handler = self._handlers.get(claim.type)
             if handler is None:
                 message = f"No handler is registered for job type '{claim.type}'."
@@ -122,6 +134,33 @@ class Worker:
         finally:
             with self._active_lock:
                 self._active.pop(thread_id, None)
+
+    def _provider(self, claim: queue.ClaimedJob) -> Provider | None:
+        """The provider this job calls, when it calls one that can be limited."""
+        provider = limits.provider_for_job(claim.type, self._provider_mode)
+        return None if provider in (None, Provider.DEMO) else provider
+
+    def _waits_for_its_provider(self, claim: queue.ClaimedJob, ids: dict[str, Any]) -> bool:
+        """Section 3.5: "A limited or paused provider keeps its jobs queued with a
+        visible reason." True when the job was put back to wait."""
+        provider = self._provider(claim)
+        if provider is None:
+            return False
+        try:
+            with self._sessions.begin() as session:
+                waits = limits.gate(
+                    session, provider, episode_id=claim.episode_id, now=datetime.now(UTC)
+                )
+                if waits is None:
+                    return False
+                reason, until = waits
+                queue.fail(session, claim, ErrorClass.PLAN_LIMIT, reason, retry_at=until)
+        except SQLAlchemyError:
+            # The job stays claimed, goes stale and is looked at again.
+            logger.exception("could not ask the limits tracker", extra=ids)
+            return True
+        logger.info("job waits for its provider: %s", reason, extra=ids)
+        return True
 
     def _complete(
         self, claim: queue.ClaimedJob, output: Mapping[str, Any] | None, ids: dict[str, Any]
@@ -169,6 +208,17 @@ class Worker:
         try:
             with self._sessions.begin() as session:
                 status = queue.fail(session, claim, error_class, message, retry_at=retry_at)
+                provider = self._provider(claim)
+                if error_class is ErrorClass.PLAN_LIMIT and provider is not None:
+                    # FR-31: the tool reported its limit. Later jobs wait without
+                    # asking the tool again.
+                    limits.limit_reached(
+                        session,
+                        provider,
+                        message=message,
+                        retry_at=retry_at,
+                        now=datetime.now(UTC),
+                    )
         except SQLAlchemyError:
             logger.exception("could not store the job failure", extra=ids)
             return
@@ -207,3 +257,26 @@ class Worker:
             returned = queue.requeue_stale(session, stale_after_s=self._stale_after_s)
         for job_id in returned:
             logger.warning("abandoned job returned to the queue", extra={"job_id": job_id})
+        self._check_limits()
+
+    def _check_limits(self) -> None:
+        """FR-34: every LIMIT_CHECK_MINUTES look at each provider. The free checks run
+        for all of them, the tiny model call only for one that is limited."""
+        if self._limit_probe is None:
+            return
+        if time.monotonic() - self._limits_checked_at < self._limit_check_interval_s:
+            return
+        self._limits_checked_at = time.monotonic()
+        with self._sessions.begin() as session:
+            views = limits.check(
+                session, self._provider_mode, self._limit_probe, now=datetime.now(UTC)
+            )
+        for view in views:
+            logger.info(
+                "provider checked",
+                extra={
+                    "provider": view.provider.value,
+                    "state": view.state.value,
+                    "share": round(view.share, 3),
+                },
+            )

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
+import type { GetHealthData, GetHealthErrors, GetHealthResponses, GetProvidersData, GetProvidersErrors, GetProvidersResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PostProviderContinueData, PostProviderContinueErrors, PostProviderContinueResponses, PostProvidersCheckData, PostProvidersCheckErrors, PostProvidersCheckResponses, PutProviderBudgetData, PutProviderBudgetErrors, PutProviderBudgetResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -22,6 +22,40 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * Liveness, database, storage, ComfyUI reachability and demo mode
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, GetHealthErrors, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, GetHealthErrors, ThrowOnError>({ url: '/api/v1/health', ...options });
+
+/**
+ * Each provider with its state, usage and budget
+ */
+export const getProviders = <ThrowOnError extends boolean = false>(options?: Options<GetProvidersData, ThrowOnError>): RequestResult<GetProvidersResponses, GetProvidersErrors, ThrowOnError> => (options?.client ?? client).get<GetProvidersResponses, GetProvidersErrors, ThrowOnError>({ url: '/api/v1/providers', ...options });
+
+/**
+ * Check the limits of every provider now
+ */
+export const postProvidersCheck = <ThrowOnError extends boolean = false>(options?: Options<PostProvidersCheckData, ThrowOnError>): RequestResult<PostProvidersCheckResponses, PostProvidersCheckErrors, ThrowOnError> => (options?.client ?? client).post<PostProvidersCheckResponses, PostProvidersCheckErrors, ThrowOnError>({ url: '/api/v1/providers/check', ...options });
+
+/**
+ * Set the owner's soft budget for a provider
+ */
+export const putProviderBudget = <ThrowOnError extends boolean = false>(options: Options<PutProviderBudgetData, ThrowOnError>): RequestResult<PutProviderBudgetResponses, PutProviderBudgetErrors, ThrowOnError> => (options.client ?? client).put<PutProviderBudgetResponses, PutProviderBudgetErrors, ThrowOnError>({
+    url: '/api/v1/providers/{provider}/budget',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * "Continue anyway": let one episode pass a budget pause of this provider
+ */
+export const postProviderContinue = <ThrowOnError extends boolean = false>(options: Options<PostProviderContinueData, ThrowOnError>): RequestResult<PostProviderContinueResponses, PostProviderContinueErrors, ThrowOnError> => (options.client ?? client).post<PostProviderContinueResponses, PostProviderContinueErrors, ThrowOnError>({
+    url: '/api/v1/providers/{provider}/continue',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Non-secret settings and which secrets are present
