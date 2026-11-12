@@ -472,14 +472,15 @@
       "id": "VFS-69",
       "order": 267,
       "title": "Voice and render jobs through the queue",
-      "status": "review",
-      "note": "The worker speaks each scene, encodes each scene and joins the video as queued jobs, and an episode rests after the render. In review as a pull request."
+      "status": "done",
+      "note": "The worker speaks each scene, encodes each scene and joins the video as queued jobs, and an episode rests after the render. Merged in pull request #37."
     },
     {
       "id": "VFS-70",
       "order": 268,
       "title": "Renders route and file serving",
-      "status": "ready"
+      "status": "review",
+      "note": "The API lists the videos of an episode and serves stored media with range requests, only from below the data folder. In review as a pull request."
     },
     {
       "id": "VFS-25",
@@ -490,7 +491,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-70 Renders route and file serving"
+    "next": "VFS-25 End to end demo test: idea to rendered video"
   },
   "checklist": [
     {
@@ -525,7 +526,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1386 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 214 integration (Python), 19 Node, 146 browser tests with axe and screenshots"
+      "value": "1435 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 225 integration (Python), 19 Node, 146 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",

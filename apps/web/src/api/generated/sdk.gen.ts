@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetEpisodeData, GetEpisodeErrors, GetEpisodePlanData, GetEpisodePlanErrors, GetEpisodePlanResponses, GetEpisodeResponses, GetEpisodeRevisionData, GetEpisodeRevisionErrors, GetEpisodeRevisionResponses, GetEpisodesData, GetEpisodesErrors, GetEpisodeSpecData, GetEpisodeSpecDiffData, GetEpisodeSpecDiffErrors, GetEpisodeSpecDiffResponses, GetEpisodeSpecErrors, GetEpisodeSpecResponses, GetEpisodeSpecVersionsData, GetEpisodeSpecVersionsErrors, GetEpisodeSpecVersionsResponses, GetEpisodesResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetProvidersData, GetProvidersErrors, GetProvidersResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PostEpisodeAdvanceData, PostEpisodeAdvanceErrors, PostEpisodeAdvanceResponses, PostEpisodeApproveData, PostEpisodeApproveErrors, PostEpisodeApproveResponses, PostEpisodeData, PostEpisodeErrors, PostEpisodeRejectData, PostEpisodeRejectErrors, PostEpisodeRejectResponses, PostEpisodeRerunData, PostEpisodeRerunErrors, PostEpisodeRerunResponses, PostEpisodeResponses, PostEpisodeReviseApplyData, PostEpisodeReviseApplyErrors, PostEpisodeReviseApplyResponses, PostEpisodeReviseData, PostEpisodeReviseErrors, PostEpisodeReviseResponses, PostProviderContinueData, PostProviderContinueErrors, PostProviderContinueResponses, PostProvidersCheckData, PostProvidersCheckErrors, PostProvidersCheckResponses, PutEpisodeSpecData, PutEpisodeSpecErrors, PutEpisodeSpecResponses, PutProviderBudgetData, PutProviderBudgetErrors, PutProviderBudgetResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
+import type { GetEpisodeData, GetEpisodeErrors, GetEpisodePlanData, GetEpisodePlanErrors, GetEpisodePlanResponses, GetEpisodeRendersData, GetEpisodeRendersErrors, GetEpisodeRendersResponses, GetEpisodeResponses, GetEpisodeRevisionData, GetEpisodeRevisionErrors, GetEpisodeRevisionResponses, GetEpisodesData, GetEpisodesErrors, GetEpisodeSpecData, GetEpisodeSpecDiffData, GetEpisodeSpecDiffErrors, GetEpisodeSpecDiffResponses, GetEpisodeSpecErrors, GetEpisodeSpecResponses, GetEpisodeSpecVersionsData, GetEpisodeSpecVersionsErrors, GetEpisodeSpecVersionsResponses, GetEpisodesResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetProvidersData, GetProvidersErrors, GetProvidersResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PostEpisodeAdvanceData, PostEpisodeAdvanceErrors, PostEpisodeAdvanceResponses, PostEpisodeApproveData, PostEpisodeApproveErrors, PostEpisodeApproveResponses, PostEpisodeData, PostEpisodeErrors, PostEpisodeRejectData, PostEpisodeRejectErrors, PostEpisodeRejectResponses, PostEpisodeRerunData, PostEpisodeRerunErrors, PostEpisodeRerunResponses, PostEpisodeResponses, PostEpisodeReviseApplyData, PostEpisodeReviseApplyErrors, PostEpisodeReviseApplyResponses, PostEpisodeReviseData, PostEpisodeReviseErrors, PostEpisodeReviseResponses, PostProviderContinueData, PostProviderContinueErrors, PostProviderContinueResponses, PostProvidersCheckData, PostProvidersCheckErrors, PostProvidersCheckResponses, PutEpisodeSpecData, PutEpisodeSpecErrors, PutEpisodeSpecResponses, PutProviderBudgetData, PutProviderBudgetErrors, PutProviderBudgetResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -66,6 +66,11 @@ export const postEpisodeReject = <ThrowOnError extends boolean = false>(options:
         ...options.headers
     }
 });
+
+/**
+ * The videos of an episode, newest first
+ */
+export const getEpisodeRenders = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeRendersData, ThrowOnError>): RequestResult<GetEpisodeRendersResponses, GetEpisodeRendersErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeRendersResponses, GetEpisodeRendersErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/renders', ...options });
 
 /**
  * Run a state again. Later states become stale, nothing is deleted
@@ -134,6 +139,11 @@ export const getEpisodeSpecDiff = <ThrowOnError extends boolean = false>(options
  * Every version of the spec
  */
 export const getEpisodeSpecVersions = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeSpecVersionsData, ThrowOnError>): RequestResult<GetEpisodeSpecVersionsResponses, GetEpisodeSpecVersionsErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeSpecVersionsResponses, GetEpisodeSpecVersionsErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/spec/versions', ...options });
+
+/**
+ * A stored video, picture or narration file
+ */
+export const getFile = <ThrowOnError extends boolean = false>(options: Options<GetFileData, ThrowOnError>): RequestResult<GetFileResponses, GetFileErrors, ThrowOnError> => (options.client ?? client).get<GetFileResponses, GetFileErrors, ThrowOnError>({ url: '/api/v1/files/{path}', ...options });
 
 /**
  * Liveness, database, storage, ComfyUI reachability and demo mode

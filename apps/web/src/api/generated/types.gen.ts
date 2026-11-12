@@ -186,6 +186,12 @@ export type EpisodeDetail = {
      */
     jobs: Array<JobOut>;
     /**
+     * Resting
+     *
+     * True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.
+     */
+    resting: boolean;
+    /**
      * Spec Version
      *
      * The current version of its spec, if it has one.
@@ -257,6 +263,12 @@ export type EpisodeOut = {
      * Idea
      */
     idea: string;
+    /**
+     * Resting
+     *
+     * True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.
+     */
+    resting: boolean;
     /**
      * Spec Version
      *
@@ -529,6 +541,68 @@ export type RejectRequest = {
      */
     comment: string;
     return_to_state?: EpisodeState | null;
+};
+
+/**
+ * RenderKind
+ */
+export type RenderKind = 'preview' | 'draft' | 'final';
+
+/**
+ * RenderList
+ */
+export type RenderList = {
+    /**
+     * Limit
+     */
+    limit: number;
+    /**
+     * Offset
+     */
+    offset: number;
+    /**
+     * Renders
+     */
+    renders: Array<RenderOut>;
+    /**
+     * Total
+     */
+    total: number;
+};
+
+/**
+ * RenderOut
+ */
+export type RenderOut = {
+    /**
+     * Contact Sheet Url
+     */
+    contact_sheet_url: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Duration S
+     */
+    duration_s: number | null;
+    /**
+     * Id
+     */
+    id: string;
+    kind: RenderKind;
+    /**
+     * Spec Version
+     *
+     * The version of the plan this video was rendered from.
+     */
+    spec_version: number | null;
+    /**
+     * Video Url
+     *
+     * Where the video is served, below this API.
+     */
+    video_url: string | null;
 };
 
 /**
@@ -1070,6 +1144,53 @@ export type PostEpisodeRejectResponses = {
 
 export type PostEpisodeRejectResponse = PostEpisodeRejectResponses[keyof PostEpisodeRejectResponses];
 
+export type GetEpisodeRendersData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Offset
+         */
+        offset?: number;
+    };
+    url: '/api/v1/episodes/{episode_id}/renders';
+};
+
+export type GetEpisodeRendersErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetEpisodeRendersError = GetEpisodeRendersErrors[keyof GetEpisodeRendersErrors];
+
+export type GetEpisodeRendersResponses = {
+    /**
+     * Successful Response
+     */
+    200: RenderList;
+};
+
+export type GetEpisodeRendersResponse = GetEpisodeRendersResponses[keyof GetEpisodeRendersResponses];
+
 export type PostEpisodeRerunData = {
     body: RerunRequest;
     path: {
@@ -1415,6 +1536,56 @@ export type GetEpisodeSpecVersionsResponses = {
 };
 
 export type GetEpisodeSpecVersionsResponse = GetEpisodeSpecVersionsResponses[keyof GetEpisodeSpecVersionsResponses];
+
+export type GetFileData = {
+    body?: never;
+    path: {
+        /**
+         * Path
+         */
+        path: string;
+    };
+    query?: never;
+    url: '/api/v1/files/{path}';
+};
+
+export type GetFileErrors = {
+    /**
+     * The Range header could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * There is no such media file.
+     */
+    404: ErrorResponse;
+    /**
+     * The range starts after the end of the file.
+     */
+    416: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type GetFileError = GetFileErrors[keyof GetFileErrors];
+
+export type GetFileResponses = {
+    /**
+     * The file, or the part of it that was asked for.
+     */
+    200: Blob | File;
+    /**
+     * The file, or the part of it that was asked for.
+     */
+    206: Blob | File;
+};
+
+export type GetFileResponse = GetFileResponses[keyof GetFileResponses];
 
 export type GetHealthData = {
     body?: never;
