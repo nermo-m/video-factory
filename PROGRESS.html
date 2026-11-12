@@ -383,8 +383,15 @@
       "id": "VFS-56",
       "order": 212,
       "title": "Host CLI bridge for Claude Code and Codex",
-      "status": "active",
-      "note": "In progress: the host bridge for the Claude Code and Codex command line tools."
+      "status": "review",
+      "note": "The host bridge for subscription mode: /health, /claude and /codex on 127.0.0.1:8189, plan sign-in checked before every call, key variables removed, usage limits mapped to plan_limit, web pages refused. Every flag confirmed against the installed tools without a model call (ADR 8). 269 unit tests with fake tools. In review as a pull request."
+    },
+    {
+      "id": "VFS-65",
+      "order": 213,
+      "title": "Live check of the host bridge with the signed-in tools",
+      "status": "blocked",
+      "note": "Needs owner: the go-ahead for a handful of short live calls through the bridge, which spend a little plan allowance and no money."
     },
     {
       "id": "VFS-57",
@@ -442,11 +449,8 @@
     }
   ],
   "now_building": {
-    "status": "active",
-    "id": "VFS-56",
-    "title": "Host CLI bridge for Claude Code and Codex",
-    "started": "2026-11-12T12:05:00Z",
-    "resume": "Branch vfs-56-cli-bridge on top of vfs-19-llm-adapter. Flags are confirmed against Claude Code 2.1.300 and Codex 0.144.1 (to be written into ADR 8). Next: tests with fake claude and codex programs under tools/cli_bridge/tests, then the bridge in tools/cli_bridge. Verify with: uv run pytest tools, make check."
+    "status": "idle",
+    "next": "VFS-57 Claude CLI and Codex CLI adapters"
   },
   "checklist": [
     {
@@ -481,7 +485,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "743 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice and 123 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1012 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 123 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -505,10 +509,14 @@
     },
     {
       "label": "Architecture records",
-      "value": "docs/architecture.md and ADRs 1 to 7, with tests that keep diagrams and code in step"
+      "value": "docs/architecture.md and ADRs 1 to 8, with tests that keep diagrams and code in step"
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "Subscription mode has its bridge: a small service on the PC that runs the Claude Code and Codex command line tools for the worker and refuses any sign-in that is billed per use. Checked from a container, and every flag checked against the installed tools without a model call."
+    },
     {
       "date": "2026-11-12",
       "text": "The project has its public home on GitHub: 21 cards merged as pull requests, CI green on main, main protected, and the first container images published."

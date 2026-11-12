@@ -11,6 +11,7 @@ import dataclasses
 import http.client
 import json
 import threading
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -347,3 +348,36 @@ def test_a_second_bridge_cannot_listen_on_the_same_port(running: Running) -> Non
 
     with pytest.raises(OSError):  # noqa: PT011 - the port is taken, whatever the system calls it
         make_server(second, port=running.port)
+
+
+def test_a_refusal_always_reaches_the_caller_even_with_a_large_body_unread(
+    running: Running,
+) -> None:
+    # A connection that is closed with unread input can lose the answer on its way out.
+    # It happened about once in thirty requests, so many are sent.
+    body = {"prompt": "x" * 200_000}
+    statuses = set()
+    for _ in range(150):
+        status, _, _ = running.send(
+            "POST", "/claude", body, headers={"Origin": "https://evil.example"}
+        )
+        statuses.add(status)
+
+    assert statuses == {403}
+    assert calls(running.record) == []
+
+
+def test_a_caller_that_sends_less_than_it_announced_is_answered_without_a_long_wait(
+    running: Running,
+) -> None:
+    started = time.monotonic()
+
+    status, _, _ = running.send(
+        "POST",
+        "/claude",
+        raw=b"{}",
+        headers={"Content-Length": "5000", "Origin": "https://evil.example"},
+    )
+
+    assert status == 403
+    assert time.monotonic() - started < 5

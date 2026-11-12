@@ -769,6 +769,10 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   second program listen on a port that is already taken, so two bridges could have run
   side by side. The option is off on Windows now, with a test. Asking a closed port takes
   Windows two seconds, so start and stop first try to take the port, which answers at once.
+  And a request that was refused before its body was read sometimes never got its answer:
+  closing a connection with unread input can drop the answer on its way out (about one
+  request in thirty with a large body). The bridge now reads the rest of a request before
+  it refuses it, with a test that sends 150 of them.
 - **Not verified:** no model call has gone through the bridge. Card VFS-65 holds the live
   check. The sample outputs the fake tools print were written by hand from the tools'
   documented output.

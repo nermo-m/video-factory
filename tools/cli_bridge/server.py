@@ -14,6 +14,7 @@ spend the owner's plan. Three checks keep pages out:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import sys
@@ -41,6 +42,8 @@ HOST = "127.0.0.1"
 # The names the bridge is reached by: from this PC, and from the worker container.
 NAMES = ("127.0.0.1", "localhost", "host.docker.internal")
 MAX_BODY_BYTES = 2 * 1024 * 1024
+# How long a caller that announced more than it sent is waited for before it is answered.
+DRAIN_SECONDS = 0.5
 ROUTES = {"/health": "GET", "/claude": "POST", "/codex": "POST"}
 
 
@@ -50,9 +53,13 @@ class _Handler(BaseHTTPRequestHandler):
     sys_version = ""
     # Seconds a client may take to send its request.
     timeout = 30
+    # Bytes of the request body that were announced and have not been read.
+    _unread = 0
 
     def _handle(self) -> None:
         route = self.path.split("?", 1)[0]
+        announced = (self.headers.get("Content-Length") or "").strip()
+        self._unread = int(announced) if announced.isdecimal() else 0
         try:
             status, body, headers = 200, self._answer(route), {}
         except BridgeError as error:
@@ -65,6 +72,7 @@ class _Handler(BaseHTTPRequestHandler):
             log.error("bridge failure", extra={"error": type(error).__name__, "frames": frames})
             failure = BridgeError(INTERNAL, "The bridge failed. See its log.", status=500)
             status, body, headers = 500, failure.to_json(), {}
+        self._drain()
         self._send(status, body, headers)
         known = route if route in ROUTES else "other"
         log.info("bridge request", extra={"method": self.command, "route": known, "status": status})
@@ -137,10 +145,32 @@ class _Handler(BaseHTTPRequestHandler):
                 f"The request is larger than {MAX_BODY_BYTES} bytes.",
                 status=413,
             )
+        sent = self.rfile.read(length)
+        self._unread = 0
         try:
-            return json.loads(self.rfile.read(length).decode("utf-8"))
+            return json.loads(sent.decode("utf-8"))
         except ValueError:
             raise bad_request("The request body is not JSON.") from None
+
+    def _drain(self) -> None:
+        """Read what is left of a request that is answered without having been read.
+
+        A connection that is closed with unread input can lose the answer on its way out:
+        the caller then sees a broken connection instead of the refusal. A caller that
+        announced more than it sends is waited for only briefly, and a body beyond the
+        size limit is not read to its end.
+        """
+        remaining = min(self._unread, MAX_BODY_BYTES)
+        if remaining == 0:
+            return
+        self.connection.settimeout(DRAIN_SECONDS)
+        with contextlib.suppress(OSError):
+            while remaining > 0:
+                chunk = self.rfile.read1(min(remaining, 65536))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+        self.connection.settimeout(self.timeout)
 
     def _send(self, status: int, body: dict[str, Any], headers: dict[str, str]) -> None:
         payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
