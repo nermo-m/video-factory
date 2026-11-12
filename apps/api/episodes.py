@@ -426,10 +426,7 @@ class DatabaseEpisodeService:
         total: float | None = None
         if body is not None:
             speed = float(body.get("voice", {}).get("speed", 1.0))
-            exact = [
-                (scene, lengths.scene_seconds(str(scene.get("narration", "")), speed))
-                for scene in body.get("scenes", [])
-            ]
+            exact = [(scene, lengths.estimate(scene, speed)) for scene in body.get("scenes", [])]
             scenes = [
                 ScenePlan(
                     id=str(scene.get("id", "")),

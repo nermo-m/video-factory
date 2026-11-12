@@ -7,6 +7,9 @@ bar use the same estimate, so they cannot disagree.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 WORDS_PER_SECOND = 2.3
 # The silence around each scene's narration (section 5.2: pad_before_s and pad_after_s).
 PAUSE_PER_SCENE_S = 0.7
@@ -25,6 +28,15 @@ def count_words(text: str) -> int:
 def scene_seconds(narration: str, speed: float = 1.0) -> float:
     """The estimated length of one scene: its words at speaking pace, plus its pause."""
     return count_words(narration) / (WORDS_PER_SECOND * speed) + PAUSE_PER_SCENE_S
+
+
+def estimate(scene: Mapping[str, Any], speed: float = 1.0) -> float:
+    """The estimated length of a scene of a spec. A silent scene declares its own length,
+    and a scene may hold its last frame after the narration."""
+    narration = str(scene.get("narration") or "")
+    if not narration.strip() and "duration_s" in scene:
+        return float(scene["duration_s"])
+    return scene_seconds(narration, speed) + float(scene.get("hold_s") or 0)
 
 
 def accepted_range(target_duration_s: float) -> tuple[float, float]:

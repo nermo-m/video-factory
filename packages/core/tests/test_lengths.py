@@ -52,3 +52,16 @@ def test_the_script_budget_and_the_estimate_agree() -> None:
     total = sum(lengths.scene_seconds(" ".join(["w"] * words)) for words in per_scene)
 
     assert total <= 45 + lengths.TOLERANCE_S
+
+
+def test_a_silent_scene_takes_the_length_it_declares() -> None:
+    assert lengths.estimate({"narration": "", "duration_s": 0.6}) == pytest.approx(0.6)
+
+
+def test_a_hold_after_the_narration_is_added() -> None:
+    spoken = lengths.scene_seconds("Small steps still count.")
+
+    assert lengths.estimate({"narration": "Small steps still count.", "hold_s": 2}) == (
+        pytest.approx(spoken + 2)
+    )
+    assert lengths.estimate({"narration": "Small steps still count."}) == pytest.approx(spoken)
