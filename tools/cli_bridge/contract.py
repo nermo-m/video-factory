@@ -22,6 +22,7 @@ CODEX_EFFORTS = ("low", "medium", "high")
 MAX_TURNS = 50
 MAX_PROMPT_CHARACTERS = 1_000_000
 MAX_SYSTEM_CHARACTERS = 200_000
+MAX_IMAGE_PROMPT_CHARACTERS = 20_000
 # The Claude schema travels on the command line, which Windows limits to 32,767
 # characters in total. The limit here is on the schema as it is written there, with its
 # quotes escaped, and leaves room for the program path and the other arguments. It is
@@ -52,6 +53,15 @@ class CodexRequest:
     schema: Mapping[str, Any] | None = None
     model: str | None = None
     effort: str | None = None
+    timeout_s: float | None = None
+
+
+@dataclass(frozen=True)
+class ImageRequest:
+    """One picture from the Codex image tool."""
+
+    prompt: str
+    model: str | None = None
     timeout_s: float | None = None
 
 
@@ -165,5 +175,16 @@ def parse_codex_request(body: object, *, max_timeout_seconds: float) -> CodexReq
         schema=fields.schema(limit=MAX_CODEX_SCHEMA_CHARACTERS, on_command_line=False),
         model=fields.model(),
         effort=fields.choice("effort", CODEX_EFFORTS),
+        timeout_s=fields.seconds("timeout_s", high=max_timeout_seconds),
+    )
+
+
+def parse_image_request(body: object, *, max_timeout_seconds: float) -> ImageRequest:
+    fields = _Fields(body, frozenset({"prompt", "model", "timeout_s"}))
+    prompt = fields.text("prompt", limit=MAX_IMAGE_PROMPT_CHARACTERS, required=True)
+    assert prompt is not None  # noqa: S101 - a required text is never None
+    return ImageRequest(
+        prompt=prompt,
+        model=fields.model(),
         timeout_s=fields.seconds("timeout_s", high=max_timeout_seconds),
     )

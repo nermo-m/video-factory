@@ -7,9 +7,11 @@ not be able to spend the owner's plan.
 
 from __future__ import annotations
 
+import base64
 import dataclasses
 import http.client
 import json
+import os
 import threading
 import time
 from collections.abc import Iterator
@@ -310,6 +312,7 @@ def test_an_unknown_address_is_not_found(running: Running) -> None:
         ("POST", "/health", "GET"),
         ("GET", "/claude", "POST"),
         ("GET", "/codex", "POST"),
+        ("GET", "/codex/image", "POST"),
         ("PUT", "/claude", "POST"),
         ("DELETE", "/health", "GET"),
         ("OPTIONS", "/claude", "POST"),
@@ -418,3 +421,38 @@ def test_a_signed_in_tool_that_prints_an_unreadable_status_is_not_ready() -> Non
 
     assert (health["claude"]["signed_in"], health["claude"]["ready"]) == (False, False)
     assert (health["codex"]["signed_in"], health["codex"]["ready"]) == (False, False)
+
+
+def test_fr30_a_picture_call_over_http(tmp_path: Path) -> None:
+    picture = (
+        Path(__file__).resolve().parents[3] / "samples/lighthouse_keeper/assets/a_storm_sea.png"
+    )
+    home = tmp_path / "codex-home"
+    record = tmp_path / "record.jsonl"
+    config = BridgeConfig(
+        claude_command=MISSING,
+        codex_command=fake(
+            "codex", output="codex_image.jsonl", record=record, image=picture, image_home=home
+        ),
+    )
+    bridge = Bridge(config, environ={**os.environ, "CODEX_HOME": str(home)})
+    server = make_server(bridge, port=0)
+    thread = threading.Thread(
+        target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True
+    )
+    thread.start()
+    try:
+        running = Running(server.server_address[1], record)
+        status, _, body = running.send("POST", "/codex/image", {"prompt": "A harbour."})
+        refused, _, error = running.send(
+            "POST", "/codex/image", {"prompt": "A harbour.", "schema": {}}
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    assert status == 200
+    assert base64.b64decode(body["image_base64"]) == picture.read_bytes()
+    assert (refused, error["error"]["code"]) == (400, "bad_request")
+    assert len(calls(record)) == 1, "the refused request started no tool"

@@ -500,19 +500,20 @@
       "id": "VFS-27",
       "order": 310,
       "title": "Image adapter with mock",
-      "status": "review",
-      "note": "The picture interface, its demo twin and the job that makes one picture and stores it as a version of its asset. In review as a pull request."
+      "status": "done",
+      "note": "The picture interface, its demo twin and the job that makes one picture and stores it as a version of its asset. Merged in pull request #42."
     },
     {
       "id": "VFS-60",
       "order": 312,
       "title": "Image creation through the Codex CLI",
-      "status": "ready"
+      "status": "review",
+      "note": "In subscription mode pictures are made by Codex's image tool on the ChatGPT plan, through the host bridge. Checked with a real picture. In review as a pull request."
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-60 Image creation through the Codex CLI"
+    "next": "The Assets tab: see the pictures before approving them (VFS-30)"
   },
   "checklist": [
     {
@@ -547,7 +548,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1446 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 251 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
+      "value": "1480 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 251 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -575,6 +576,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-13",
+      "text": "The app made its first real picture on the ChatGPT plan: the worker's adapter asks the host bridge, the bridge asks Codex's image tool, and a finished picture comes back in about 40 seconds, with no API key."
+    },
     {
       "date": "2026-11-12",
       "text": "Milestone M2's goal works in the browser: type an idea, edit the plan, approve it and the pictures, and about two minutes later the Render tab plays the video. One browser test does exactly that through the real API and worker on every pull request."

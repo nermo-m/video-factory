@@ -23,7 +23,11 @@ from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, ClassVar
 
-from tools.cli_bridge.contract import parse_claude_request, parse_codex_request
+from tools.cli_bridge.contract import (
+    parse_claude_request,
+    parse_codex_request,
+    parse_image_request,
+)
 from tools.cli_bridge.errors import (
     FORBIDDEN,
     INTERNAL,
@@ -44,7 +48,7 @@ NAMES = ("127.0.0.1", "localhost", "host.docker.internal")
 MAX_BODY_BYTES = 2 * 1024 * 1024
 # How long a caller that announced more than it sent is waited for before it is answered.
 DRAIN_SECONDS = 0.5
-ROUTES = {"/health": "GET", "/claude": "POST", "/codex": "POST"}
+ROUTES = {"/health": "GET", "/claude": "POST", "/codex": "POST", "/codex/image": "POST"}
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -112,6 +116,8 @@ class _Handler(BaseHTTPRequestHandler):
         longest = self.bridge.config.max_timeout_seconds
         if route == "/claude":
             return self.bridge.claude(parse_claude_request(body, max_timeout_seconds=longest))
+        if route == "/codex/image":
+            return self.bridge.codex_image(parse_image_request(body, max_timeout_seconds=longest))
         return self.bridge.codex(parse_codex_request(body, max_timeout_seconds=longest))
 
     def _refuse_web_pages(self) -> None:

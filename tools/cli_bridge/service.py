@@ -20,7 +20,7 @@ from typing import Any
 
 from tools.cli_bridge import claude, codex
 from tools.cli_bridge.config import BridgeConfig
-from tools.cli_bridge.contract import ClaudeRequest, CodexRequest
+from tools.cli_bridge.contract import ClaudeRequest, CodexRequest, ImageRequest
 from tools.cli_bridge.environment import child_environment
 from tools.cli_bridge.errors import (
     BUSY,
@@ -141,6 +141,18 @@ class Bridge:
 
         def read(finished: Finished) -> dict[str, Any]:
             return codex.read(finished, request, now=self._clock())
+
+        return self._call(self._codex, request.timeout_s, build, read)
+
+    def codex_image(self, request: ImageRequest) -> dict[str, Any]:
+        """One picture from Codex's image tool, on the owner's ChatGPT plan (FR-30)."""
+        home = codex.images_home(child_environment(self._environ))
+
+        def build(work: Path, inputs: Path) -> tuple[list[str], str]:
+            return codex.image_arguments(request, work=work), codex.image_prompt(request)
+
+        def read(finished: Finished) -> dict[str, Any]:
+            return codex.read_image(finished, request, now=self._clock(), home=home)
 
         return self._call(self._codex, request.timeout_s, build, read)
 

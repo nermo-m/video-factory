@@ -20,7 +20,7 @@ import pytest
 
 from tools.cli_bridge import claude, codex
 from tools.cli_bridge.config import BridgeConfig
-from tools.cli_bridge.contract import ClaudeRequest, CodexRequest
+from tools.cli_bridge.contract import ClaudeRequest, CodexRequest, ImageRequest
 from tools.cli_bridge.environment import child_environment
 from tools.cli_bridge.process import Finished, resolve, run
 
@@ -114,3 +114,24 @@ def test_codex_reports_its_sign_in_in_the_form_the_bridge_reads() -> None:
 
     said = finished.stdout + finished.stderr
     assert "Logged in using" in said or "Not logged in" in said, "an unknown status wording"
+
+
+def test_codex_accepts_every_flag_of_a_picture_call() -> None:
+    finished = start_without_a_prompt(
+        CONFIG.codex_command,
+        lambda work, inputs: codex.image_arguments(ImageRequest(prompt="unused"), work=work),
+    )
+
+    said = finished.stdout + finished.stderr
+    assert "No prompt provided" in said, said
+
+
+def test_codex_still_has_the_image_tool_the_bridge_leaves_switched_on() -> None:
+    finished = start_without_a_prompt(
+        CONFIG.codex_command, lambda work, inputs: ["features", "list"]
+    )
+
+    listed = {
+        line.split()[0]: line.split()[-1] for line in finished.stdout.splitlines() if line.split()
+    }
+    assert listed.get(codex.IMAGE_FEATURE) == "true", "the image tool is missing or switched off"
