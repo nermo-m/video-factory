@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Research input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "brief"
+  ],
+  "properties": {
+    "brief": {
+      "$ref": "#/$defs/brief"
+    }
+  },
+  "$defs": {
+    "brief": {
+      "type": "object",
+      "required": [
+        "angle",
+        "lesson",
+        "audience",
+        "titles"
+      ]
+    }
+  }
+}

@@ -894,3 +894,40 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **VFS-67 is closed with this.** Its third line, the research skill applying FR-02 in
   subscription mode, is the research skill's own work in VFS-20, which now gets sources in
   every mode that has them.
+
+## D-032: The planner service and the first three skills
+
+- **Date:** 2026-11-12. **Card:** VFS-20.
+- **Problem:** Section 6 lists the parts of a skill folder and the planner's steps. It
+  does not say how a prompt is built, where a skill's version lives, how a skill's own
+  rules are applied, what the script's output looks like, or how a skill gets the answer
+  of the skill before it.
+- **Choice:**
+  - **Prompt.** `SKILL.md` is the system prompt, the input as JSON is the prompt. The
+    block on top of `SKILL.md` gives the name, the version and whether the skill searches.
+  - **The corrective retry** repeats the input and lists what was wrong with the answer.
+    An answer the adapter could not read as JSON counts as the first failure too. Both
+    calls are returned and stored, because both were made.
+  - **FR-02 is applied by the planner, not by the model.** A claim is kept only when its
+    address is one of the pages the adapter reports as retrieved. The same page written
+    differently (with `www.`, a trailing slash, another case) still counts. Dropped claims
+    are named in the job's result. Dropping a claim is not a reason to ask again.
+  - **The word budget** is `(target + 2 - 0.7 per scene) x 2.3 x speed`: the design's 2.3
+    words per second, the 2 seconds the resolver accepts, and the default pause around a
+    scene. A script is sent back when it is more than 5 percent over. The sample episode
+    has 97 words against a budget of 96 and renders at 44.2 seconds, so the real voice is
+    a little faster than 2.3. The resolver keeps the last word on length.
+  - **The script** is a list of scenes with `id`, `beat` (hook, setup, story, fact,
+    takeaway, closing) and `narration`, and `claim_ids` where a fact is said.
+  - **Job results.** A planning job's output is `{skill, skill_version, document,
+    removed}`. The next skill reads `document` of the newest finished job of the type it
+    needs.
+  - **Recordings** for demo mode tell the sample episode: the recorded script is the
+    sample's narration word for word, and the recorded research returns no claim, because
+    the story is made up.
+- **Order of work, said openly:** for this card the service was written before its tests,
+  not after them as the build rules ask. The tests were then checked by putting four
+  faults into the code on purpose (keep unsourced claims, a third attempt, a huge slack,
+  skip the skill's rules). Each made tests fail.
+- **Reverse:** a skill is a folder. Its instructions and schemas change without touching
+  the service.

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Script",
+  "description": "Output of the script skill: the narration, scene by scene (design doc section 6).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenes"
+  ],
+  "properties": {
+    "scenes": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "beat",
+          "narration"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^s[0-9]{2}_[a-z0-9_]{1,24}$"
+          },
+          "beat": {
+            "enum": [
+              "hook",
+              "setup",
+              "story",
+              "fact",
+              "takeaway",
+              "closing"
+            ]
+          },
+          "narration": {
+            "type": "string",
+            "pattern": "\\S",
+            "maxLength": 600
+          },
+          "claim_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^c_[a-z0-9_]{1,40}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

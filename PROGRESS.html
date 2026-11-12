@@ -411,8 +411,8 @@
       "id": "VFS-20",
       "order": 220,
       "title": "Planner service and skills: brief, research, script",
-      "status": "active",
-      "note": "In progress: the planner service and the skills brief, research and script."
+      "status": "review",
+      "note": "The planner service with one corrective retry, and the skills brief, research and script with schemas, examples, tests and demo recordings. A claim without a retrieved source is dropped, and a script must fit its word budget. Worker handlers for the three planning jobs. In review as a pull request."
     },
     {
       "id": "VFS-21",
@@ -465,11 +465,8 @@
     }
   ],
   "now_building": {
-    "status": "active",
-    "id": "VFS-20",
-    "title": "Planner service and skills: brief, research, script",
-    "started": "2026-11-12T16:55:00Z",
-    "resume": "Branch vfs-20-planner-skills from main after pull request #30. Plan is in the Started comment on the board card: packages/skills/planner.py with tests first, skill folders brief, research and script, rules for retrieved sources and the word budget, recordings in samples/recordings, worker handlers for plan.brief, plan.research and plan.script. Verify with: make check, make coverage. Then pull request with auto-merge."
+    "status": "idle",
+    "next": "VFS-21 Skills: direct, assets, package, revise"
   },
   "checklist": [
     {
@@ -504,7 +501,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1174 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 155 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
+      "value": "1229 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 7 flag checks against the installed command line tools and 160 integration (Python), 19 Node, 28 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -516,7 +513,7 @@
     },
     {
       "label": "Third-party media in the repository",
-      "value": "Three OFL-1.1 fonts. All artwork, sounds, golden frames and the sample episode are original (44 registered asset files)"
+      "value": "Three OFL-1.1 fonts. All artwork, sounds, golden frames and the sample episode are original (47 registered asset files)"
     },
     {
       "label": "Continuous integration",
@@ -532,6 +529,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "The planner can think: an idea becomes a brief, checked facts and a script that fits its length, with one corrective retry and every claim tied to a page that was really retrieved."
+    },
     {
       "date": "2026-11-12",
       "text": "First live calls: from the worker container through the bridge to Claude Code and Codex on the owner's plans, at no cost, with the pages of a web search coming back as sources."
