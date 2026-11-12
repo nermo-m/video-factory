@@ -11,6 +11,7 @@ from packages.core import schemas
 from packages.core.enums import EpisodeState, JobTag
 from packages.core.stages import (
     GATES,
+    LAST_BUILT_STATE,
     REJECT_RETURNS_TO,
     Scope,
     next_state,
@@ -158,3 +159,8 @@ def test_only_stale_scenes_are_spoken_and_encoded_again(spec: dict[str, Any]) ->
 def test_a_state_that_needs_the_spec_says_so_when_there_is_none() -> None:
     with pytest.raises(ValueError, match="spec"):
         plan_stage(EpisodeState.VOICE, 0, spec=None)
+
+
+def test_the_built_pipeline_ends_with_the_render() -> None:
+    """Milestone M2 builds the pipeline up to the render. An episode rests there."""
+    assert LAST_BUILT_STATE is EpisodeState.RENDER

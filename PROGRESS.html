@@ -459,8 +459,27 @@
       "id": "VFS-59",
       "order": 264,
       "title": "Model picker and Usage page",
+      "status": "done",
+      "note": "The model picker with status and usage for each option, the Usage page with budgets, Check limits now and the Use paid APIs switch, and a warning in the status strip. Merged in pull request #36."
+    },
+    {
+      "id": "VFS-68",
+      "order": 266,
+      "title": "Usage history, limit events and a model per role",
+      "status": "backlog"
+    },
+    {
+      "id": "VFS-69",
+      "order": 267,
+      "title": "Voice and render jobs through the queue",
       "status": "review",
-      "note": "The model picker with status and usage for each option, the Usage page with budgets, Check limits now and the Use paid APIs switch, and a warning in the status strip. In review as a pull request."
+      "note": "The worker speaks each scene, encodes each scene and joins the video as queued jobs, and an episode rests after the render. In review as a pull request."
+    },
+    {
+      "id": "VFS-70",
+      "order": 268,
+      "title": "Renders route and file serving",
+      "status": "ready"
     },
     {
       "id": "VFS-25",
@@ -471,7 +490,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-25 End to end demo test: idea to rendered video"
+    "next": "VFS-70 Renders route and file serving"
   },
   "checklist": [
     {
@@ -506,7 +525,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1381 unit, 38 render (14 golden frames, 24 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 198 integration (Python), 19 Node, 146 browser tests with axe and screenshots"
+      "value": "1386 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 13 flag and schema checks against the installed command line tools and 214 integration (Python), 19 Node, 146 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -534,6 +553,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-12",
+      "text": "An approved plan now becomes a video by itself: the worker speaks every scene, encodes every scene and joins them as queued jobs. The sample story rendered through the running stack in about two minutes."
+    },
     {
       "date": "2026-11-12",
       "text": "The Usage page shows what each provider used in the last 5 hours and 7 days against your budget, checks limits on demand, and the status strip warns on every screen when a provider is near budget, paused or limited."

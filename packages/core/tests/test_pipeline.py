@@ -18,7 +18,7 @@ import pytest
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from packages.core import pipeline, queue, schemas
+from packages.core import pipeline, queue, schemas, stages
 from packages.core.db import models
 from packages.core.enums import (
     EpisodeState,
@@ -39,6 +39,18 @@ S = EpisodeState
 @pytest.fixture
 def sessions(migrated: Engine) -> sessionmaker[Session]:
     return sessionmaker(migrated, expire_on_commit=False)
+
+
+@pytest.fixture(autouse=True)
+def whole_pipeline(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The rules of section 4.2 are tested on the whole pipeline, to `done`. Where the
+    product rests today is tested at the end of this file, with `as_built`."""
+    monkeypatch.setattr(stages, "LAST_BUILT_STATE", None)
+
+
+@pytest.fixture
+def as_built(whole_pipeline: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(stages, "LAST_BUILT_STATE", S.RENDER)
 
 
 @pytest.fixture(scope="module")
@@ -746,3 +758,57 @@ def test_re_running_a_state_before_voice_drops_the_scene_marks(
         pipeline.rerun(session, episode_id, S.DIRECTION)
 
     assert episode(sessions, episode_id).stale_scenes == {}
+
+
+# --- where the pipeline rests until the later states are built ----------------------------
+
+
+def joining(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> Callable[[models.Episode], bool]:
+    return lambda current: (
+        current.state is S.RENDER and queued(sessions, episode_id) == ["render.join"]
+    )
+
+
+def test_the_episode_rests_after_the_render_and_queues_no_check_that_nothing_can_run(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any], as_built: None
+) -> None:
+    run_until(sessions, episode_id, joining(sessions, episode_id), spec=spec)
+
+    finish_one(sessions)
+
+    rested = episode(sessions, episode_id)
+    assert rested.state is S.RENDER
+    assert rested.awaiting_approval is False
+    assert rested.stale_from_state is None
+    assert queued(sessions, episode_id) == []
+    assert {job.status for job in jobs(sessions, episode_id)} == {JobStatus.SUCCEEDED}
+    assert pipeline.is_resting(rested, [JobStatus.SUCCEEDED])
+
+
+def test_a_rested_episode_cannot_be_advanced_and_says_why(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any], as_built: None
+) -> None:
+    run_until(sessions, episode_id, joining(sessions, episode_id), spec=spec)
+    finish_one(sessions)
+
+    with sessions.begin() as session, pytest.raises(PipelineError) as caught:
+        pipeline.advance(session, episode_id)
+
+    assert caught.value.code == "not_built"
+    assert "rendered" in str(caught.value)
+    assert queued(sessions, episode_id) == []
+
+
+def test_a_rested_episode_can_be_rendered_again(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any], as_built: None
+) -> None:
+    run_until(sessions, episode_id, joining(sessions, episode_id), spec=spec)
+    finish_one(sessions)
+
+    with sessions.begin() as session:
+        pipeline.rerun(session, episode_id, S.RENDER)
+
+    assert queued(sessions, episode_id) == ["render.scene"] * len(spec["scenes"])
+    assert not pipeline.is_resting(episode(sessions, episode_id), [JobStatus.QUEUED])

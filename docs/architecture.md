@@ -45,7 +45,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | `web` | `apps/web` | The interface. Talks only to `api`, through the generated typed client | App shell, status strip, Board with the episodes, New episode dialog, episode workspace with the Plan tab, model picker, Usage page |
 | `api` | `apps/api` | REST API under `/api/v1`, validation, pipeline state machine, enqueues jobs, serves files | Health endpoint, error shape, OpenAPI |
-| `worker` | `apps/worker` | Claims jobs and runs them: planner calls, images, voice, render, QC, export, and the client side of ComfyUI | Job loops and a no-op job |
+| `worker` | `apps/worker` | Claims jobs and runs them: planner calls, images, voice, render, QC, export, and the client side of ComfyUI | Job loops, the planning jobs, and the voice and render jobs. An episode rests after the render until quality checks exist (M4) |
 | `db` | Postgres 16 | All state: episodes, specs, assets, jobs, renders, reviews, usage | All 15 tables |
 | ComfyUI | on the host | Wan 2.2 image-to-video inference, driven over HTTP by the worker | Reachability probe only (clip adapter in M3) |
 | CLI bridge | `tools/cli_bridge`, on the host | Lets the worker use the owner's Claude and ChatGPT plans through the official command line tools | Not yet. Built in M2: `/health`, `/claude` and `/codex` on `127.0.0.1:8189` ([ADR 8](adr/0008-host-bridge-for-the-command-line-tools.md)) |

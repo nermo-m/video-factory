@@ -31,7 +31,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from packages.core import queue
+from packages.core import queue, stages
 from packages.core.db.models import Episode, Job, SpecVersion
 from packages.core.enums import EpisodeState, JobStatus
 from packages.core.stages import (
@@ -85,6 +85,12 @@ def advance(session: Session, episode_id: uuid.UUID, *, critic_enabled: bool = T
             "jobs_unfinished",
             f"The state '{episode.state.value}' still has jobs that have not succeeded: "
             f"{counted}. Retry the failed jobs or run the state again.",
+        )
+    if episode.state is stages.LAST_BUILT_STATE and stage + 1 >= stage_count(episode.state):
+        raise PipelineError(
+            "not_built",
+            "The video is rendered. The quality checks, the review and the export are not "
+            "built yet, so the episode rests here.",
         )
     _start_stage(session, episode, run, stage + 1, critic_enabled=critic_enabled)
     return episode
@@ -164,6 +170,25 @@ def spec_edited(
     if current is None or index_of(current) > index_of(first):
         episode.stale_from_state = first
     return marked
+
+
+def is_resting(episode: Episode, statuses: list[JobStatus]) -> bool:
+    """True when the episode has done everything that is built so far: it is in the last
+    built state and every job of that state's latest stage has succeeded.
+
+    `statuses` are the statuses of those jobs, as `current_jobs` returns them.
+    """
+    return (
+        episode.state is stages.LAST_BUILT_STATE
+        and not episode.awaiting_approval
+        and bool(statuses)
+        and all(status is JobStatus.SUCCEEDED for status in statuses)
+    )
+
+
+def current_jobs(session: Session, episode: Episode) -> list[JobStatus]:
+    """The statuses of the jobs of the latest stage of the episode's current run."""
+    return _current(session, episode)[2]
 
 
 # --- what the worker reports -------------------------------------------------------------
@@ -340,6 +365,9 @@ def _finish_state(session: Session, episode: Episode, *, critic_enabled: bool) -
 
     if state in GATES:
         episode.awaiting_approval = True
+        return
+    if state is stages.LAST_BUILT_STATE:
+        # Nothing after this state can run yet. The episode rests here.
         return
     following = next_state(state)
     if following is not None:
