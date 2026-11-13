@@ -41,7 +41,13 @@ from packages.core.queue import JobError, NeedsOwnerError
 from packages.core.storage import StorageAdapter
 from packages.render.encode import SceneEncoder, SceneFile, render_scene, render_video
 from packages.render.probe import format_problems, probe_video
-from packages.render.resolver import AssetFile, NarrationTiming, ResolveError, WordTiming, resolve
+from packages.render.resolver import (
+    AssetFile,
+    NarrationTiming,
+    ResolveError,
+    WordTiming,
+    resolve_to_fit,
+)
 from packages.render.theme import load_theme
 
 VOICE_JOB, SCENE_JOB, JOIN_JOB = "gen.voice", "render.scene", "render.join"
@@ -162,7 +168,9 @@ def resolve_with(
             "Run the voice step again, then the render."
         )
     try:
-        return resolve(authored, spoken, files)
+        # A video that is a little off its target is fitted by its pauses, so the owner
+        # is asked to shorten a script only when it is too long by more than that.
+        return resolve_to_fit(authored, spoken, files)
     except ResolveError as error:
         raise NeedsOwnerError(str(error)) from error
 

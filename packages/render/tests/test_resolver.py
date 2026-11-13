@@ -16,7 +16,9 @@ from packages.render.resolver import (
     NarrationTiming,
     ResolveError,
     WordTiming,
+    fit_pauses,
     resolve,
+    resolve_to_fit,
 )
 
 FIXTURES = schemas.SCHEMA_DIR / "fixtures" / "episode_spec" / "valid"
@@ -537,3 +539,104 @@ def test_the_resolver_module_lives_in_the_render_package() -> None:
     import packages.render.resolver as module
 
     assert Path(module.__file__).parent.name == "render"
+
+
+# --- fitting the length by its pauses ----------------------------------------------------
+
+
+def eight_scenes(target_duration_s: float, **first: Any) -> dict[str, Any]:
+    """Eight spoken scenes of ten words each: 5.7 seconds a scene, 45.6 in all."""
+    scenes = [scene(f"s{number:02d}_part", TEN_WORDS) for number in range(1, 9)]
+    scenes[0].update(first)
+    return spec(scenes, target_duration_s)
+
+
+def test_a_video_a_little_too_long_is_fitted_by_shortening_its_pauses() -> None:
+    """Seen in the third live video: 47.6 seconds for a 45 second target, because the
+    voice spoke a little slower than the script's estimate. Nobody should have to edit a
+    script over half a second."""
+    authored = eight_scenes(43)
+    with pytest.raises(DurationError):
+        resolve(authored, voice_for(authored), {})
+
+    resolved = resolve_to_fit(authored, voice_for(authored), {})
+
+    assert resolved["duration_s"] == pytest.approx(44.0, abs=0.01), "one second inside the limit"
+    assert resolved["format"]["target_duration_s"] == 43
+    lengths = [item["duration_s"] for item in resolved["scenes"]]
+    assert lengths == pytest.approx([5.5] * 8, abs=0.002), "every scene gives the same"
+    first = resolved["scenes"][0]
+    assert first["narration"]["start_s"] == pytest.approx(0.22, abs=0.002)
+    assert first["narration"]["duration_s"] == 5.0, "the speech itself is never touched"
+
+
+def test_a_video_a_little_too_short_is_fitted_by_lengthening_its_pauses() -> None:
+    authored = eight_scenes(48)
+
+    resolved = resolve_to_fit(authored, voice_for(authored), {})
+
+    assert resolved["duration_s"] == pytest.approx(47.0, abs=0.01)
+
+
+def test_a_video_that_already_fits_is_left_exactly_as_it_is() -> None:
+    authored = eight_scenes(45)
+
+    assert resolve_to_fit(authored, voice_for(authored), {}) == resolve(
+        authored, voice_for(authored), {}
+    )
+
+
+def test_a_pause_the_director_set_is_kept_and_the_others_give_more() -> None:
+    authored = eight_scenes(43, pad_before_s=0.3, pad_after_s=0.8)
+    # 0.4 seconds more than before, from the planned silence: 46.0 in all.
+
+    resolved = resolve_to_fit(authored, voice_for(authored), {})
+
+    first, second = resolved["scenes"][0], resolved["scenes"][1]
+    assert first["duration_s"] == pytest.approx(6.1, abs=0.001), "0.3 + 5.0 + 0.8, untouched"
+    assert second["duration_s"] < 5.5
+    assert resolved["duration_s"] == pytest.approx(44.0, abs=0.01)
+
+
+def test_pauses_never_go_below_a_tenth_of_a_second_so_a_long_script_is_still_refused() -> None:
+    authored = eight_scenes(39)
+
+    with pytest.raises(DurationError) as raised:
+        resolve_to_fit(authored, voice_for(authored), {})
+
+    assert "Shorten these scenes" in str(raised.value)
+    assert raised.value.total_s == 45.6, "the message gives the length as it was spoken"
+
+
+def test_a_scene_with_a_fixed_length_and_a_silent_scene_are_not_stretched() -> None:
+    scenes = [scene(f"s{number:02d}_part", TEN_WORDS) for number in range(1, 8)]
+    scenes.append(scene("s08_fixed", TEN_WORDS, duration_s=6.0))
+    scenes.append(
+        {
+            "id": "s09_pause",
+            "kind": "title",
+            "narration": "",
+            "duration_s": 1.5,
+            "text": [{"content": "TEXT", "style": "slam"}],
+        }
+    )
+    authored = spec(scenes, 44.5)
+    # 7 x 5.7 + 6.0 + 1.5 = 47.4 seconds.
+
+    resolved = resolve_to_fit(authored, voice_for(authored), {})
+
+    assert resolved["duration_s"] == pytest.approx(45.5, abs=0.01)
+    assert resolved["scenes"][7]["duration_s"] == 6.0
+    assert resolved["scenes"][8]["duration_s"] == 1.5
+
+
+def test_fitting_leaves_the_authored_spec_alone_and_says_what_it_changed() -> None:
+    authored = eight_scenes(43)
+    before = copy.deepcopy(authored)
+
+    fitted = fit_pauses(authored, total_s=45.6, target_s=43)
+
+    assert authored == before
+    assert fitted is not None
+    assert all("pad_before_s" in item and "pad_after_s" in item for item in fitted["scenes"])
+    assert fit_pauses(authored, total_s=60.0, target_s=43) is None

@@ -1352,3 +1352,27 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     replaces is kept.
   - **Download** is a link with the episode's title as the file name.
 - **Reverse:** `apps/web/src/components/workspace/assets-tab.tsx`.
+
+## D-046: A video a little off its target is fitted by its pauses
+
+- **Date:** 2026-11-13. **Card:** VFS-76.
+- **Problem:** The third live episode was spoken in 47.6 seconds for a 45 second target.
+  The resolver allows 2 seconds (section 5.2), so the render stopped and asked the owner
+  to shorten scenes, over 0.6 seconds. Measured on the owner's PC, the Kokoro voice speaks
+  2.32 to 2.39 words a second on three planned scripts and 2.65 on the sample's, so no
+  word budget can promise a fit.
+- **Choice:**
+  - **The render jobs fit the pauses** (`resolve_to_fit`). When the resolver refuses the
+    length, the default pauses around the spoken scenes are shortened or lengthened, all
+    by the same share, until the video lands one second inside the tolerance, and the
+    spec is resolved again.
+  - **What is never touched:** the speech, a pause the director set (the planned silence),
+    a scene with a fixed length, a silent scene, and the authored spec in the database.
+    The fitted pauses are visible in the resolved spec that is stored with the render.
+  - **Limits:** a pause goes down to 0.1 seconds, and up to 0.6 before and 0.9 after the
+    speech. For eight scenes that is 4 seconds either way. A video further off is refused
+    as before, with the scenes to shorten and the length as it was spoken.
+  - **The resolver's own rule is unchanged:** `resolve` still fails more than 2 seconds
+    off the target. The word budget of the script skill is unchanged too.
+- **Reverse:** call `resolve` instead of `resolve_to_fit` in
+  `apps/worker/handlers/produce.py`.

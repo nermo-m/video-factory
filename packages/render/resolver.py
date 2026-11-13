@@ -28,6 +28,12 @@ PAD_BEFORE_S = 0.3
 PAD_AFTER_S = 0.4
 OUTRO_HOLD_S = 2.0
 DURATION_TOLERANCE_S = 2.0
+# How far a pause may be shortened or lengthened to fit a video to its target, and how
+# far inside the tolerance a fitted video lands.
+MIN_PAD_S = 0.1
+MAX_PAD_BEFORE_S = 0.6
+MAX_PAD_AFTER_S = 0.9
+FIT_MARGIN_S = 1.0
 
 
 @dataclass(frozen=True)
@@ -413,3 +419,64 @@ def resolve(
     # The output is a contract too. A failure here is a bug in this module.
     schemas.validate_or_raise("resolved_spec", resolved)
     return resolved
+
+
+# --- fitting the length by its pauses ----------------------------------------------------
+
+
+def fit_pauses(
+    authored: Mapping[str, Any], *, total_s: float, target_s: float
+) -> dict[str, Any] | None:
+    """A copy of the spec whose pauses are shortened or lengthened so that the video
+    lands one second inside the tolerance, or None when pauses alone cannot do it.
+
+    The voice decides how long the narration is, and it speaks a little faster or slower
+    than any estimate. Only the default pauses around spoken scenes are changed, all by
+    the same share. A pause the director set, a scene with a fixed length, a silent scene
+    and the speech itself stay as they are.
+    """
+    over = total_s > target_s
+    aim = target_s + (FIT_MARGIN_S if over else -FIT_MARGIN_S)
+    change = abs(total_s - aim)
+
+    room: list[tuple[int, str, float, float]] = []  # scene, field, default, how far it can go
+    for index, scene in enumerate(authored["scenes"]):
+        if not scene["narration"].split() or "duration_s" in scene:
+            continue
+        for name, default, longest in (
+            ("pad_before_s", PAD_BEFORE_S, MAX_PAD_BEFORE_S),
+            ("pad_after_s", PAD_AFTER_S, MAX_PAD_AFTER_S),
+        ):
+            if name not in scene:
+                room.append(
+                    (index, name, default, default - MIN_PAD_S if over else longest - default)
+                )
+    capacity = sum(space for *_, space in room)
+    if capacity <= 0 or change > capacity:
+        return None
+
+    share = change / capacity
+    fitted = {**authored, "scenes": [dict(scene) for scene in authored["scenes"]]}
+    for index, name, default, space in room:
+        moved = share * space
+        fitted["scenes"][index][name] = round(default - moved if over else default + moved, 4)
+    return fitted
+
+
+def resolve_to_fit(
+    authored: Mapping[str, Any],
+    voice: Mapping[str, NarrationTiming],
+    files: Mapping[str, AssetFile],
+) -> dict[str, Any]:
+    """`resolve`, and when the video is a little too long or too short, once more with its
+    pauses fitted. Raises the first DurationError when pauses cannot make it fit."""
+    try:
+        return resolve(authored, voice, files)
+    except DurationError as too_far:
+        fitted = fit_pauses(authored, total_s=too_far.total_s, target_s=too_far.target_s)
+        if fitted is None:
+            raise
+        try:
+            return resolve(fitted, voice, files)
+        except DurationError:
+            raise too_far from None
