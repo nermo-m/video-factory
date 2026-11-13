@@ -415,3 +415,18 @@ def test_cancel_stops_a_queued_job_and_discards_a_running_result(
 
     with sessions.begin() as session:
         assert queue.cancel(session, running_id) is False, "a finished job cannot be cancelled"
+
+
+def test_a_job_of_an_episode_writes_below_that_episodes_folder() -> None:
+    """Two episodes queue jobs with the same type and input, for example the first join
+    of a render. Each must have a folder of its own, and a retry must find the same one."""
+    digest = queue.input_hash("render.join", {"state": "render", "stage": 1, "run": 1})
+    first, second = uuid.uuid4(), uuid.uuid4()
+
+    one = queue.job_output_path("render.join", digest, first)
+    other = queue.job_output_path("render.join", digest, second)
+
+    assert one != other
+    assert one == queue.job_output_path("render.join", digest, first)
+    assert one.as_posix() == f"episodes/{first}/jobs/render.join/{digest[:2]}/{digest}"
+    assert queue.job_output_path("noop", digest).as_posix() == f"jobs/noop/{digest[:2]}/{digest}"

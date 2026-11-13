@@ -82,7 +82,7 @@ def run_job(
         claim = queue.claim_next(session, JobTag.CPU)
     assert claim is not None
     handler = plan_handlers(sessions, lambda: llm)[job_type]
-    result = handler(JobContext(claim, queue.job_output_path(claim.type, claim.input_hash)))
+    result = handler(JobContext(claim, queue.output_path_of(claim)))
     output = dict(result or {})
     with sessions.begin() as session:
         queue.complete(session, claim, output)
@@ -275,9 +275,7 @@ def test_fr05_the_asset_plan_stores_the_library_and_a_row_for_every_picture_to_g
         with sessions.begin() as session:
             claim = queue.claim_next(session, JobTag.CPU)
         assert claim is not None
-        output = handlers[job_type](
-            JobContext(claim, queue.job_output_path(claim.type, claim.input_hash))
-        )
+        output = handlers[job_type](JobContext(claim, queue.output_path_of(claim)))
         with sessions.begin() as session:
             queue.complete(session, claim, dict(output or {}))
 

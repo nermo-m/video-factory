@@ -95,7 +95,7 @@ class Stage:
         with self.sessions.begin() as session:
             claim = queue.claim_next(session, tag)
         assert claim is not None
-        context = JobContext(claim, queue.job_output_path(claim.type, claim.input_hash))
+        context = JobContext(claim, queue.output_path_of(claim))
         output = dict(self.handlers[job_type](context) or {})
         with self.sessions.begin() as session:
             queue.complete(session, claim, output)
@@ -123,7 +123,7 @@ def test_fr06_a_picture_is_made_and_stored_as_a_version_with_its_prompt_and_mode
 
     now = picture(sessions, episode_id, spec, "a_harbour")
     assert output["made"] is True
-    assert output["file"].startswith("jobs/gen.image/")
+    assert output["file"].startswith(f"episodes/{episode_id}/jobs/gen.image/")
     assert output["file"].endswith("/a_harbour.png")
     assert (stage.data_dir / output["file"]).read_bytes()[:4] == b"\x89PNG"
     assert now.file == output["file"]

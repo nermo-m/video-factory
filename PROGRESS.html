@@ -532,6 +532,13 @@
       "note": "A video up to about four seconds off its target renders anyway: its default pauses are shortened or lengthened. Found in the third live episode. Merged in pull request #47."
     },
     {
+      "id": "VFS-77",
+      "order": 314.7,
+      "title": "Every episode keeps its own job files",
+      "status": "review",
+      "note": "A new episode's video overwrote the file of the one before, because job files were named by type and input only. A job of an episode now writes below that episode's folder. In review as a pull request."
+    },
+    {
       "id": "VFS-74",
       "order": 316,
       "title": "Browser tests use their own database",
@@ -576,7 +583,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1545 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 266 integration (Python), 19 Node, 189 browser tests with axe and screenshots"
+      "value": "1546 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 267 integration (Python), 19 Node, 189 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",

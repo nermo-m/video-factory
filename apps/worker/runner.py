@@ -121,7 +121,7 @@ class Worker:
                 message = f"No handler is registered for job type '{claim.type}'."
                 self._fail(claim, ErrorClass.BUG, message, ids)
                 return
-            context = JobContext(claim, queue.job_output_path(claim.type, claim.input_hash))
+            context = JobContext(claim, queue.output_path_of(claim))
             output = handler(context)
         except queue.JobError as error:
             self._fail(claim, error.error_class, str(error), ids, retry_at=error.retry_at)
