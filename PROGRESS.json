@@ -399,8 +399,8 @@
       "id": "VFS-75",
       "order": 315,
       "title": "A picture that is made again marks the video out of date",
-      "status": "review",
-      "note": "Make again on a picture now marks a video that shows it Out of date, and one Update button on the Render tab makes only those scenes again and joins the video. In review as a pull request."
+      "status": "done",
+      "note": "Make again on a picture now marks a video that shows it Out of date, and one Update button on the Render tab makes only those scenes again and joins the video. Merged in pull request #52."
     },
     {
       "id": "VFS-74",
