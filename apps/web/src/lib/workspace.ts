@@ -388,3 +388,7 @@ export function pictureType(file: { name: string; type: string }) {
 }
 
 export const NOT_A_PICTURE = "Choose a PNG, JPEG or WebP picture.";
+
+/** The largest file the API takes (MAX_BYTES in packages/core/uploads.py). */
+export const PICTURE_MAX_BYTES = 20 * 1024 * 1024;
+export const PICTURE_TOO_LARGE = "The file is larger than 20 MB. Make the picture smaller and choose it again.";

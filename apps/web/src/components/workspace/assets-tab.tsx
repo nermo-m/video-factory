@@ -16,6 +16,8 @@ import { primaryAction, quietAction } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import {
   NOT_A_PICTURE,
+  PICTURE_MAX_BYTES,
+  PICTURE_TOO_LARGE,
   PICTURE_TYPES,
   type Scene,
   pictureName,
@@ -133,11 +135,17 @@ function MakeAgain({
   );
 }
 
+/** A file that is refused here, before anything is sent. */
+class Refused extends Error {}
+
 /** Send one file as the new version of one picture. Throws what the API says. */
 async function sendPicture(episodeId: string, assetId: string, file: File) {
   const type = pictureType(file);
   if (!type) {
-    throw new Error(NOT_A_PICTURE);
+    throw new Refused(NOT_A_PICTURE);
+  }
+  if (file.size > PICTURE_MAX_BYTES) {
+    throw new Refused(PICTURE_TOO_LARGE);
   }
   unwrap(
     await postEpisodeAssetUpload({
@@ -149,8 +157,7 @@ async function sendPicture(episodeId: string, assetId: string, file: File) {
   );
 }
 
-const messageOf = (error: unknown) =>
-  error instanceof Error && error.message === NOT_A_PICTURE ? NOT_A_PICTURE : failureOf(error).message;
+const messageOf = (error: unknown) => (error instanceof Refused ? error.message : failureOf(error).message);
 
 /**
  * Upload your own: one file from the file picker becomes the picture's new version

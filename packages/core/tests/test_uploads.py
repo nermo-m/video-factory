@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import io
+import re
+from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -186,3 +188,14 @@ def test_fr07_matching_keeps_the_order_and_the_names_it_was_given() -> None:
 
 def test_fr07_a_name_is_never_used_as_a_path() -> None:
     assert matched("../../a_harbour.png", "..\\..\\etc\\passwd") == ["a_harbour", None]
+
+
+def test_the_web_forwarding_lets_through_every_file_the_api_accepts() -> None:
+    """The browser reaches the API through the web app's forwarding, which has a body limit
+    of its own (10 MB unless set). Found on 2026-11-13: an 11 MB photo got a bare 500."""
+    config = (Path(__file__).resolve().parents[3] / "apps/web/next.config.mjs").read_text("utf-8")
+
+    limit = re.search(r"proxyClientMaxBodySize: (\d+) \* 1024 \* 1024", config)
+
+    assert limit is not None, "the forwarding limit is set in next.config.mjs"
+    assert int(limit.group(1)) * 1024 * 1024 > uploads.MAX_BYTES

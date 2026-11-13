@@ -457,7 +457,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1570 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 293 integration (Python), 19 Node, 204 browser tests with axe and screenshots"
+      "value": "1571 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 293 integration (Python), 19 Node, 205 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",

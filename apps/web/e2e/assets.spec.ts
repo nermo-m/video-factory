@@ -326,6 +326,20 @@ test.describe("Your own pictures (FR-07)", () => {
     expect(uploads(fake)).toHaveLength(0);
   });
 
+  test("a file over 20 MB is refused before anything is sent", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page, atPictures());
+    await assetsTab(page);
+    const garden = card(page, "Garden dawn");
+
+    await garden
+      .locator("input[type=file]")
+      .setInputFiles({ name: "huge.png", mimeType: "image/png", buffer: Buffer.alloc(20 * 1024 * 1024 + 1) });
+
+    await expect(garden.getByRole("alert")).toContainText("The file is larger than 20 MB.");
+    expect(uploads(fake)).toHaveLength(0);
+  });
+
   test("FR-07 several files are matched by name and shown before anything is stored", async ({ page }) => {
     await page.setViewportSize(SIZES.desktop);
     const fake = await openWorkspace(page, atPictures());

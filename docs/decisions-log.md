@@ -1474,5 +1474,9 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - **An upload can replace a generated picture, never a library one.** The library is
     shared by every episode. A picture that is being made cannot be uploaded over.
   - **A video that shows the picture is marked out of date**, as in D-049.
+  - **The web app's forwarding to the API gets a body limit of 24 MB.** Its default is
+    10 MB, and a larger body was cut off and answered with a bare 500. That was found by
+    sending an 11 MB file through the built containers, not by a test, so a test now
+    compares the two limits. The interface also refuses a file over 20 MB before sending.
 - **Reverse:** `packages/core/uploads.py`, `upload` and `match` in `apps/api/episodes.py`,
   `UploadOwn` and `MatchFiles` in the Assets tab.
