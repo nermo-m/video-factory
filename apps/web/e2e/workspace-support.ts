@@ -126,6 +126,8 @@ export interface FakeEpisode {
   jobs: Json[];
   /** The episode's videos, newest first. */
   renders: Json[];
+  /** The episode's pictures, as GET /episodes/{id}/assets lists them. */
+  assets: Json[];
   requests: { method: string; path: string; body: unknown }[];
 }
 
@@ -196,7 +198,38 @@ export function fakeEpisode(fields: Partial<EpisodeRow> = {}): FakeEpisode {
     revisionReadsUntilReady: 1,
     jobs: [],
     renders: [],
+    assets: [],
     requests: [],
+  };
+}
+
+/** One picture of an episode, as GET /episodes/{id}/assets lists it. */
+export function picture(id: string, fields: Json = {}): Json {
+  return {
+    id,
+    kind: "image",
+    origin: "generated",
+    used_in: ["s02_garden"],
+    becomes_clip: false,
+    prompt: `A picture of ${id.slice(2).replaceAll("_", " ")}, flat paper-cut shapes.`,
+    filename: null,
+    resolved: true,
+    generating: false,
+    image_url: `/api/v1/files/jobs/gen.image/ab/abcdef/${id}.png`,
+    model: "codex image tool",
+    versions: 1,
+    licence: "Generated on the owner's ChatGPT plan (OpenAI terms of use)",
+    rights_status: "needs_review",
+    contains_third_party_ip: false,
+    ...fields,
+  };
+}
+
+function assetList(fake: FakeEpisode): Json {
+  return {
+    assets: fake.assets,
+    unresolved: fake.assets.filter((asset) => !asset.resolved).length,
+    rights_problems: [],
   };
 }
 
@@ -285,6 +318,16 @@ export async function mockEpisode(page: Page, fake: FakeEpisode) {
       }
       fake.version += 1;
       return route.fulfill({ json: specOut() });
+    }
+    if (method === "GET" && path === "/assets") {
+      return route.fulfill({ json: assetList(fake) });
+    }
+    const again = /^\/assets\/([a-z0-9_]+)\/regenerate$/.exec(path);
+    if (method === "POST" && again) {
+      fake.assets = fake.assets.map((asset) =>
+        asset.id === again[1] ? { ...asset, generating: true } : asset,
+      );
+      return route.fulfill({ status: 202, json: assetList(fake) });
     }
     if (method === "GET" && path === "/renders") {
       return route.fulfill({

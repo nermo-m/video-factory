@@ -11,6 +11,7 @@ import { useIsDesktop } from "@/lib/use-media";
 import { cn } from "@/lib/utils";
 import { type ChipTone, STEP_WORDS, type Spec, type StepState, chipOf, pipelineOf } from "@/lib/workspace";
 
+import { AssetsTab } from "./assets-tab";
 import { GateBar } from "./gate-bar";
 import { PlanTab } from "./plan-tab";
 import { DraftVideo, RenderTab, StepFailed } from "./render-tab";
@@ -82,8 +83,7 @@ function Pipeline({ episode }: { episode: EpisodeDetail }) {
 const TABS = ["Plan", "Assets", "Voice", "Render", "Export"] as const;
 type Tab = (typeof TABS)[number];
 
-const LATER: Record<Exclude<Tab, "Plan" | "Render">, string> = {
-  Assets: "The pictures and clips of this episode, with accept, regenerate and upload. They arrive with milestone M3.",
+const LATER: Record<Exclude<Tab, "Plan" | "Render" | "Assets">, string> = {
   Voice: "The narration of each scene, to play and to record again. It arrives with a later milestone.",
   Export: "Title, description, hashtags and the export pack. They arrive with milestone M4.",
 };
@@ -201,6 +201,13 @@ function Tabs({
       <div role="tabpanel" id={`${id}-panel-${tab}`} aria-labelledby={`${id}-tab-${tab}`} className="flex min-w-0 flex-col gap-4">
         {tab === "Render" ? (
           <RenderTab episode={data.episode} render={data.render} />
+        ) : tab === "Assets" ? (
+          <AssetsTab
+            episode={data.episode}
+            assets={data.assets}
+            scenes={(data.spec?.spec as Spec | undefined)?.scenes ?? []}
+            reload={reload}
+          />
         ) : tab !== "Plan" ? (
           <section className="flex max-w-xl flex-col gap-3 rounded-lg border bg-card p-5 sm:p-6">
             <h2 className="text-lg font-semibold">Not built yet</h2>

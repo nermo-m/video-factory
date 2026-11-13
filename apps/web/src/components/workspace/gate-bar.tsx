@@ -70,14 +70,13 @@ export function GateBar({ episode, reload }: { episode: EpisodeDetail; reload: (
     "sticky bottom-19 z-10 flex flex-col gap-3 rounded-lg border border-primary bg-card px-4 py-3.5 shadow-[0_-6px_18px_rgb(0_0_0/0.35)] sm:static sm:shadow-none";
 
   if (episode.gate === "assets") {
-    // The Assets tab, where each picture is looked at, arrives with the asset library.
-    // Until then a plan uses library pictures only, so there is nothing new to compare.
+    // The pictures themselves are in the Assets tab, where one can be made again.
     return (
       <div data-testid="gate-bar" className={frame}>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <p className="sm:min-w-56 sm:grow">
-            The pictures are ready. This plan uses pictures from the library, so nothing new was
-            made. Approving starts the voice and the render.
+            The pictures are ready. Look at them in the Assets tab. Approving starts the voice
+            and the render.
           </p>
           <button
             type="button"

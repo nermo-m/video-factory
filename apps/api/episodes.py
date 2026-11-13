@@ -16,6 +16,7 @@
     POST /episodes/{id}/revise/apply       apply a proposal the owner has seen
     GET  /episodes/{id}/renders            its videos, newest first, paged
     GET  /episodes/{id}/assets             its pictures: where each comes from and its file
+    POST /episodes/{id}/assets/{asset}/regenerate   make one generated picture again
 
 A revision is a model call, so it runs as a job in the worker like every other one: it is
 counted, it waits when the provider is limited, and the API stays quick. The proposal is
@@ -28,7 +29,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, Protocol
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Path, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -53,6 +54,7 @@ from packages.render.theme import check_capabilities, load_theme
 router = APIRouter(tags=["episodes"])
 
 REVISE_JOB = "plan.revise"
+IMAGE_JOB = "gen.image"
 BRIEF_JOB = "plan.brief"
 DEFAULT_CHANNEL = {"name": "My channel", "voice_id": "bm_george", "theme": "night_scrolls"}
 JOBS_SHOWN = 50
@@ -121,12 +123,21 @@ class AssetOut(BaseModel):
     prompt: str | None = Field(description="The prompt of a picture that is generated.")
     filename: str | None = Field(description="The file name asked for, when it is uploaded.")
     resolved: bool = Field(description="True when it has a file. A render needs all of them.")
+    generating: bool = Field(description="True while a job is making it, or waits to.")
     image_url: str | None = Field(description="Where its active file is served.")
     model: str | None = Field(description="What made the active file, when it was generated.")
     versions: int = Field(description="How many files it has had.")
     licence: str | None
     rights_status: RightsStatus | None = Field(description="Null while it has no asset row.")
     contains_third_party_ip: bool | None
+
+
+class RegenerateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    note: Annotated[str, Field(min_length=1, max_length=500, pattern=r"\S")] | None = Field(
+        default=None, description="What should be different, added to the picture's prompt."
+    )
 
 
 class AssetList(BaseModel):
@@ -269,6 +280,7 @@ class EpisodeService(Protocol):
     def apply(self, episode_id: uuid.UUID, job_id: uuid.UUID) -> SpecOut: ...
     def renders(self, episode_id: uuid.UUID, limit: int, offset: int) -> RenderList: ...
     def assets(self, episode_id: uuid.UUID) -> AssetList: ...
+    def regenerate(self, episode_id: uuid.UUID, asset_id: str, note: str | None) -> AssetList: ...
 
 
 def _not_found() -> ApiError:
@@ -630,6 +642,7 @@ class DatabaseEpisodeService:
             episode = self._episode(session, episode_id)
             spec = self._current(session, episode_id).body
             pictures = assets.resolve(session, episode, spec)
+            being_made = self._being_made(session, episode_id)
             counts = {
                 picture.asset.id: len(assets.versions(session, picture.asset))
                 for picture in pictures
@@ -646,6 +659,7 @@ class DatabaseEpisodeService:
                         prompt=picture.prompt,
                         filename=picture.filename,
                         resolved=picture.file is not None,
+                        generating=picture.id in being_made,
                         image_url=file_url(picture.file),
                         model=picture.version.model if picture.version else None,
                         versions=counts.get(picture.asset.id, 0) if picture.asset else 0,
@@ -660,6 +674,46 @@ class DatabaseEpisodeService:
                 unresolved=len(assets.files(pictures)[1]),
                 rights_problems=assets.rights_problems(pictures),
             )
+
+    def _being_made(self, session: Session, episode_id: uuid.UUID) -> set[str]:
+        """The pictures a job is making, or waits to make."""
+        inputs = session.scalars(
+            select(Job.input).where(
+                Job.episode_id == episode_id,
+                Job.type == IMAGE_JOB,
+                Job.status.in_((JobStatus.QUEUED, JobStatus.RUNNING)),
+            )
+        )
+        return {str(given.get("asset_id")) for given in inputs}
+
+    def regenerate(self, episode_id: uuid.UUID, asset_id: str, note: str | None) -> AssetList:
+        with self._sessions.begin() as session:
+            episode = session.get(Episode, episode_id, with_for_update=True)
+            if episode is None:
+                raise _not_found()
+            spec = self._current(session, episode_id).body
+            picture = next(
+                (item for item in assets.resolve(session, episode, spec) if item.id == asset_id),
+                None,
+            )
+            if picture is None:
+                raise ApiError(404, "asset_not_found", "This episode has no such picture.")
+            if picture.origin != AssetOrigin.GENERATED.value:
+                raise ApiError(
+                    409,
+                    "not_generated",
+                    f"This picture is {picture.origin}. "
+                    "Only a generated picture can be made again.",
+                )
+            if asset_id in self._being_made(session, episode_id):
+                raise ApiError(409, "already_generating", "This picture is already being made.")
+            payload: dict[str, Any] = {"asset_id": asset_id, "regenerate": True}
+            if note is not None:
+                payload["note"] = note.strip()
+            queue.enqueue(
+                session, job_type=IMAGE_JOB, tag=JobTag.CPU, payload=payload, episode_id=episode_id
+            )
+        return self.assets(episode_id)
 
     # --- renders ---
 
@@ -747,7 +801,7 @@ class MemoryEpisodeService:
         raise _not_found()
 
     advance = approve = reject = rerun = spec = replace_spec = plan = _missing
-    versions = diff = revise = revision = apply = renders = assets = _missing
+    versions = diff = revise = revision = apply = renders = assets = regenerate = _missing
 
 
 # --- Routes ------------------------------------------------------------------------------
@@ -934,3 +988,18 @@ def get_episode_renders(
 )
 def get_episode_assets(episode_id: uuid.UUID, request: Request) -> AssetList:
     return _service(request).assets(episode_id)
+
+
+@router.post(
+    "/episodes/{episode_id}/assets/{asset_id}/regenerate",
+    summary="Make one generated picture again, as a new version",
+    status_code=202,
+    responses={**NOT_FOUND, **CONFLICT, **BAD_BODY_RESPONSE},
+)
+def post_episode_asset_regenerate(
+    episode_id: uuid.UUID,
+    asset_id: Annotated[str, Path(pattern=r"^a_[a-z0-9_]{1,60}$")],
+    body: RegenerateRequest,
+    request: Request,
+) -> AssetList:
+    return _service(request).regenerate(episode_id, asset_id, body.note)

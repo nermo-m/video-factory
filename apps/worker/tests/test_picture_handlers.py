@@ -276,3 +276,17 @@ def test_a_licence_that_is_already_recorded_is_kept(
     kept = picture(sessions, episode_id, spec, "a_harbour").asset
     assert kept is not None
     assert kept.licence == "CC0, checked by the owner"
+
+
+def test_the_owners_note_is_added_to_the_prompt_of_a_picture_that_is_made_again(
+    stage: Stage, episode_id: uuid.UUID
+) -> None:
+    stage.run("gen.image", episode_id, asset_id="a_harbour")
+
+    stage.run("gen.image", episode_id, asset_id="a_harbour", regenerate=True, note="Make it dawn.")
+
+    first, second = (request.prompt for request in stage.images.requests)
+    assert "Make it dawn." not in first
+    assert "Prompt in the spec for a_harbour." in second
+    assert "Asked for by the owner: Make it dawn." in second
+    assert second.endswith(NO_TEXT)

@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  type AssetList,
   type EpisodeDetail,
   type PlanOut,
   type RenderOut,
   type SpecOut,
   getEpisode,
+  getEpisodeAssets,
   getEpisodePlan,
   getEpisodeRenders,
   getEpisodeSpec,
@@ -24,6 +26,8 @@ export interface WorkspaceData {
   plan: PlanOut | null;
   /** The newest video. Null until the episode has one. */
   render: RenderOut | null;
+  /** The episode's pictures. Null until the plan is approved. */
+  assets: AssetList | null;
 }
 
 export type WorkspaceState =
@@ -49,7 +53,11 @@ async function load(episodeId: string): Promise<WorkspaceData> {
         await getEpisodeRenders({ path, query: { limit: 1 } }),
         "The video could not be loaded. Try again.",
       );
-  return { episode, spec, plan, render: renders?.renders[0] ?? null };
+  const assets =
+    PLANNING.includes(episode.state) || spec === null
+      ? null
+      : unwrap(await getEpisodeAssets({ path }), "The pictures could not be loaded. Try again.");
+  return { episode, spec, plan, render: renders?.renders[0] ?? null, assets };
 }
 
 /**

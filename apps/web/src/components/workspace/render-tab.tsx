@@ -7,7 +7,7 @@ import { failureOf, unwrap } from "@/lib/api-error";
 import { displayTitle, stoppedOf, workingOn } from "@/lib/episodes";
 import { quietAction } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { makingOf, renderCaption } from "@/lib/workspace";
+import { makingOf, renderCaption, videoFileName } from "@/lib/workspace";
 
 const card = "flex max-w-xl flex-col gap-3 rounded-lg border bg-card p-5 sm:p-6";
 
@@ -135,11 +135,20 @@ export function RenderTab({ episode, render }: { episode: EpisodeDetail; render:
     <section data-testid="render-video" className="flex flex-col items-start gap-3">
       <DraftVideo render={render} title={displayTitle(episode)} />
       <p className="text-[0.8125rem] text-muted-foreground">{renderCaption(render)}</p>
-      {render.contact_sheet_url && (
-        <a href={render.contact_sheet_url} target="_blank" rel="noreferrer" className={quietAction}>
-          Open the contact sheet
+      <div className="flex flex-wrap gap-3">
+        <a
+          href={render.video_url}
+          download={videoFileName(displayTitle(episode))}
+          className={quietAction}
+        >
+          Download the video
         </a>
-      )}
+        {render.contact_sheet_url && (
+          <a href={render.contact_sheet_url} target="_blank" rel="noreferrer" className={quietAction}>
+            Open the contact sheet
+          </a>
+        )}
+      </div>
       <p className="max-w-xl text-[0.8125rem] text-muted-foreground">
         Quality checks, the review and the export are not built yet. This draft is where an episode
         ends for now.

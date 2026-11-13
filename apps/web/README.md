@@ -13,8 +13,9 @@ are in design doc section 11.5, and the mockups win where they differ.
   error states.
 - `src/components/workspace/`: the episode workspace at `/episodes/{id}`: pipeline, tabs,
   the Plan tab with scene cards, raw JSON, a change asked for in words, the gate bar for
-  the plan and the pictures, the Render tab with the draft video, and the reason a step
-  stopped with a way to run it again.
+  the plan and the pictures, the Assets tab with the pictures and Make again, the Render
+  tab with the draft video and its download, and the reason a step stopped with a way to
+  run it again.
 - `src/components/providers/`: the providers every screen shares (read again every half
   minute), the model picker, the Usage page at `/settings/usage` and the Settings page.
 - `src/lib/providers.ts`: how a provider's state and usage are worded.

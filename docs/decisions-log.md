@@ -1329,3 +1329,26 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **Reverse:** each fix is a few lines in `apps/worker/handlers/pictures.py`,
   `apps/worker/handlers/plan.py`, `packages/skills/rules.py` and
   `packages/render/frames.py`.
+
+## D-045: The Assets tab, first part
+
+- **Date:** 2026-11-13. **Card:** VFS-73, split off VFS-30.
+- **Choice:**
+  - **What the owner needs first:** see the pictures at the pictures gate, make one again,
+    and download the video. Upload, the rights flag, the Voice tab and the pronunciation
+    editor stay in VFS-30.
+  - **`POST /episodes/{id}/assets/{asset id}/regenerate`**, with an optional note of up to
+    500 characters. Section 10 has `POST /assets/{id}/regenerate` with the asset's row id.
+    The interface knows a picture by its id in the plan, and a picture may have no row
+    yet, so the route is below the episode.
+  - **Make again queues one `gen.image` job outside the pipeline's run**, like a revision:
+    it does not move the episode. The picture is refused while a job for it waits or
+    runs, and only a generated picture can be made again.
+  - **The owner's note is added to the prompt** for that one version, between the planned
+    prompt and the rule against text.
+  - **A picture is named after its id** ("a_garden_dawn" reads "Garden dawn") and says
+    which scenes show it by their number in the plan.
+  - **The form says what it costs:** one picture of the plan, and that the picture it
+    replaces is kept.
+  - **Download** is a link with the episode's title as the file name.
+- **Reverse:** `apps/web/src/components/workspace/assets-tab.tsx`.
