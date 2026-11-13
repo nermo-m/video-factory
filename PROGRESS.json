@@ -380,11 +380,18 @@
       "title": "Assets tab, first part: see the pictures, make one again, download the video",
       "status": "done",
       "note": "The Assets tab shows every picture of an episode, a generated one can be made again with a note, and the Render tab offers the video as a download. Merged in pull request #45."
+    },
+    {
+      "id": "VFS-76",
+      "order": 314.5,
+      "title": "A video a little off its target length is fitted by its pauses",
+      "status": "review",
+      "note": "A video up to about four seconds off its target renders anyway: its default pauses are shortened or lengthened. Found in the third live episode. In review as a pull request."
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-28 Uploads, filename matching and library, then the two small cards at Order 315 and 316"
+    "next": "Browser tests use their own database, and one command to start the studio"
   },
   "checklist": [
     {
@@ -419,7 +426,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1538 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 265 integration (Python), 19 Node, 189 browser tests with axe and screenshots"
+      "value": "1545 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 266 integration (Python), 19 Node, 189 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",

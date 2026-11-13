@@ -431,3 +431,20 @@ def test_the_real_voice_is_made_once_and_bundled_recordings_are_looked_for_again
     assert isinstance(second, SampleVoice)
     assert third is fourth, "once the model files are there, the loaded voice is kept"
     assert len(made) == 3
+
+
+def test_a_video_a_little_over_its_target_is_fitted_and_rendered(
+    stage: Stage, sessions: sessionmaker[Session], episode_id: uuid.UUID, sample: dict[str, Any]
+) -> None:
+    """The sample is 44.25 seconds long. Against a target of 41 it is 3.25 over, which the
+    resolver alone refuses. The render jobs fit its pauses and go on."""
+    stage.speak_all(episode_id, sample)
+    edit_spec(sessions, episode_id, sample, format={"target_duration_s": 41})
+
+    scene = stage.run("render.scene", episode_id, scene_id="s02_climb")
+    stage.run("render.join", episode_id)
+
+    assert scene["reused"] is False
+    resolved = stage.joiner.resolved[0]
+    assert resolved["duration_s"] == pytest.approx(42.0, abs=0.01)
+    assert resolved["format"]["target_duration_s"] == 41
