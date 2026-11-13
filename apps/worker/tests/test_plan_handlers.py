@@ -101,7 +101,7 @@ def test_fr16_the_three_planning_jobs_run_in_demo_mode_and_build_on_each_other(
     assert brief["document"] == example("brief")
     assert research["document"] == example("research")
     assert script["document"] == example("script")
-    assert (script["skill"], script["skill_version"]) == ("script", "1.0")
+    assert (script["skill"], script["skill_version"]) == ("script", "1.1")
     asked_brief, asked_research, asked_script = llm.requests
     assert "A keeper who climbs a hill." in asked_brief.prompt
     assert "The Baker" in asked_brief.prompt, "past episodes are named so they are not repeated"
@@ -119,7 +119,7 @@ def test_fr17_every_model_call_of_a_planning_job_is_stored_with_its_job(
         call = session.scalars(select(models.ModelCall)).one()
         counted = session.scalars(select(models.ProviderUsage)).one()
         job = session.scalars(select(models.Job)).one()
-    assert (call.skill, call.skill_version, call.job_id) == ("brief", "1.0", job.id)
+    assert (call.skill, call.skill_version, call.job_id) == ("brief", "1.1", job.id)
     assert (call.provider, call.billing, call.model) == (Provider.DEMO, Billing.DEMO, "recorded")
     assert (call.input_tokens, call.output_tokens) == (640, 150)
     assert counted.job_id == job.id
@@ -175,7 +175,7 @@ def test_fr03_the_direction_is_stored_as_the_episodes_first_spec_version(
         version = session.scalars(select(models.SpecVersion)).one()
     assert episode.current_spec_id == version.id
     assert (version.version, version.kind.value, version.author.value) == (1, "authored", "model")
-    assert (version.skill_version, version.parent_id) == ("1.1", None)
+    assert (version.skill_version, version.parent_id) == ("1.2", None)
     assert version.body == directed["document"]
     assert directed["spec_version"] == 1
 
@@ -316,3 +316,88 @@ def test_a_title_the_episode_already_has_is_kept(
         episode = session.get(models.Episode, episode_id)
         assert episode is not None
     assert episode.title == "My own title"
+
+
+# --- the owner's own lines (VFS-78) ---------------------------------------------------------
+
+OWNER_LINES = [
+    f"Line {number} is one the owner wrote and wants spoken just as it stands here today."
+    for number in ("one", "two", "three", "four", "five", "six", "seven", "eight")
+]
+OWNER_IDEA = "Father: late 40s, plain dark robe.\n" + "\n".join(
+    f"P{index:02d}\tClose-up of the board\t\u201c{line}\u201d"
+    for index, line in enumerate(OWNER_LINES, start=1)
+)
+
+
+class OwnerScript(Spy):
+    """The demo model, except that its script is the lines the owner wrote."""
+
+    def complete(self, request: LLMRequest) -> LLMResponse:
+        response = super().complete(request)
+        if request.skill != "script":
+            return response
+        scenes = [
+            {"id": f"s{index:02d}_shot", "beat": "story", "narration": line}
+            for index, line in enumerate(OWNER_LINES, start=1)
+        ]
+        return LLMResponse(
+            output={"scenes": scenes},
+            text="",
+            provider=response.provider,
+            model=response.model,
+            input_tokens=response.input_tokens,
+            output_tokens=response.output_tokens,
+            cost_usd=response.cost_usd,
+            latency_ms=response.latency_ms,
+        )
+
+
+def give_idea(sessions: sessionmaker[Session], episode_id: uuid.UUID, idea: str) -> None:
+    with sessions.begin() as session:
+        session.get_one(models.Episode, episode_id).idea = idea
+
+
+def test_vfs78_every_planning_step_that_writes_the_video_reads_the_owners_whole_idea(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    """Before, only the brief read it, and the script was written from the brief's summary."""
+    give_idea(sessions, episode_id, OWNER_IDEA)
+    llm = Spy()
+
+    for job_type in ("plan.brief", "plan.research", "plan.script", "plan.direct", "plan.assets"):
+        run_job(sessions, llm, job_type, episode_id)
+
+    asked = {request.skill: request.prompt for request in llm.requests}
+    for skill in ("brief", "script", "direct", "assets"):
+        assert "plain dark robe" in asked[skill], f"{skill} does not see the characters"
+        assert "wants spoken just as it stands" in asked[skill], f"{skill} does not see the lines"
+
+
+def test_vfs78_an_episode_takes_the_length_of_the_owners_lines(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    give_idea(sessions, episode_id, OWNER_IDEA)
+    llm = OwnerScript()
+    run_job(sessions, llm, "plan.brief", episode_id)
+    run_job(sessions, llm, "plan.research", episode_id)
+
+    script = run_job(sessions, llm, "plan.script", episode_id)
+
+    assert [scene["narration"] for scene in script["document"]["scenes"]] == OWNER_LINES
+    with sessions() as session:
+        assert session.get_one(models.Episode, episode_id).target_duration_s == 61
+
+
+def test_vfs78_a_script_the_model_wrote_leaves_the_length_alone(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    give_idea(sessions, episode_id, OWNER_IDEA)
+    llm = Spy()
+    run_job(sessions, llm, "plan.brief", episode_id)
+    run_job(sessions, llm, "plan.research", episode_id)
+
+    run_job(sessions, llm, "plan.script", episode_id)
+
+    with sessions() as session:
+        assert session.get_one(models.Episode, episode_id).target_duration_s is None

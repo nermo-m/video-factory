@@ -63,7 +63,13 @@ BRIEF = example("brief", "output")
 
 
 # The version of each skill's instructions. A changed instruction is a new version.
-VERSIONS = {**dict.fromkeys(SKILL_NAMES, "1.0"), "direct": "1.1"}
+VERSIONS = {
+    **dict.fromkeys(SKILL_NAMES, "1.0"),
+    "brief": "1.1",
+    "script": "1.1",
+    "direct": "1.2",
+    "assets": "1.1",
+}
 
 
 @pytest.mark.parametrize("name", SKILL_NAMES)
@@ -144,7 +150,7 @@ def test_a_skill_call_sends_the_instructions_the_input_and_the_schema() -> None:
     run_skill(llm, skill, example("brief", "input"))
 
     (request,) = llm.requests
-    assert (request.skill, request.skill_version) == ("brief", "1.0")
+    assert (request.skill, request.skill_version) == ("brief", "1.1")
     assert request.system == skill.instructions
     assert "A lighthouse keeper who does one small thing" in request.prompt
     assert request.output_schema == skill.output_schema
@@ -371,3 +377,123 @@ def test_a_script_may_use_a_claim_that_research_returned() -> None:
     inputs = {**SCRIPT_INPUT, "claims": {"claims": [CLAIM]}}
 
     assert script({"scenes": scenes}, inputs=inputs).output == {"scenes": scenes}
+
+
+# --- the owner's own lines (VFS-78) ---------------------------------------------------------
+
+# Eight lines of sixteen words: 128 words, where 45 seconds in 8 scenes allow 95.
+OWNER_LINES = [
+    f"Line {number} is one the owner wrote and wants spoken just as it stands here today."
+    for number in ("one", "two", "three", "four", "five", "six", "seven", "eight")
+]
+# The owner's text as it is pasted: a shot list, with curly quotes around what is spoken.
+OWNER_IDEA = "Characters: a father in a dark robe.\n" + "\n".join(
+    f"P{index:02d}\tClose-up of the board\t\u201c{line}\u201d"
+    for index, line in enumerate(OWNER_LINES, start=1)
+)
+
+
+def owner_script(lines: list[str]) -> dict[str, Any]:
+    return {
+        "scenes": [
+            {"id": f"s{index:02d}_shot", "beat": "story", "narration": line}
+            for index, line in enumerate(lines, start=1)
+        ]
+    }
+
+
+def test_vfs78_lines_found_in_the_idea_are_the_owners_own() -> None:
+    scenes = owner_script(OWNER_LINES)["scenes"]
+
+    assert rules.owner_lines(OWNER_IDEA, scenes) == 8
+    assert rules.follows_owner_lines(OWNER_IDEA, scenes)
+
+
+def test_vfs78_quotes_capitals_and_spacing_do_not_hide_an_owners_line() -> None:
+    idea = "He said: \u201cDon\u2019t  fix a man\u2019s pain.\nMake it safe to feel.\u201d"
+    scenes = [{"narration": "don't fix a man's pain. make it safe to feel."}]
+
+    assert rules.owner_lines(idea, scenes) == 1
+
+
+def test_vfs78_a_script_the_model_wrote_is_not_the_owners() -> None:
+    assert rules.owner_lines(OWNER_IDEA, SCRIPT["scenes"]) == 0
+    assert not rules.follows_owner_lines(OWNER_IDEA, SCRIPT["scenes"])
+    assert not rules.follows_owner_lines("", SCRIPT["scenes"])
+    # A line of one or two words is found in almost any text. It proves nothing.
+    assert rules.owner_lines("He said yes to it.", [{"narration": "yes"}]) == 0
+
+
+def test_vfs78_the_owners_own_lines_are_not_cut_to_the_word_budget() -> None:
+    written = owner_script(OWNER_LINES)
+    llm = FakeLLM(written)
+
+    result = run_skill(
+        llm,
+        load_skill("script"),
+        {**SCRIPT_INPUT, "idea": OWNER_IDEA},
+        check=rules.script_fits,
+    )
+
+    assert result.output == written
+    assert len(llm.requests) == 1, "it is not sent back"
+    assert "wants spoken just as it stands" in llm.requests[0].prompt
+
+
+def test_vfs78_one_changed_line_among_the_owners_is_still_the_owners_script() -> None:
+    """A name that belongs to someone else is replaced, and that line no longer matches."""
+    lines = ["He does what most of us do and he acts as if he were fine.", *OWNER_LINES[1:]]
+
+    given = {**SCRIPT_INPUT, "idea": OWNER_IDEA}
+
+    assert rules.script_fits(given, owner_script(lines), answer({})) == []
+
+
+def test_vfs78_a_long_script_of_the_models_own_is_still_sent_back() -> None:
+    llm = FakeLLM(long_script(20), SCRIPT)
+
+    run_skill(
+        llm, load_skill("script"), {**SCRIPT_INPUT, "idea": OWNER_IDEA}, check=rules.script_fits
+    )
+
+    assert "has 140 words" in llm.requests[1].prompt
+
+
+def test_vfs78_the_owners_lines_decide_the_length() -> None:
+    scenes = owner_script(OWNER_LINES)["scenes"]
+
+    # 128 words at 2.3 a second and a pause of 0.7 seconds for each of 8 scenes.
+    assert rules.owner_length(OWNER_IDEA, scenes) == 61
+    assert rules.owner_length(OWNER_IDEA, scenes, speed=1.2) == 52
+    assert rules.owner_length(OWNER_IDEA, SCRIPT["scenes"]) is None
+    assert rules.owner_length(OWNER_IDEA, owner_script(OWNER_LINES[:1] * 3)["scenes"]) == 23
+    many = owner_script([" ".join(["word"] * 80) + f" {n}" for n in range(8)])["scenes"]
+    idea = "\n".join(scene["narration"] for scene in many)
+    assert rules.owner_length(idea, many) == 180, "never longer than a spec may be"
+
+
+@pytest.mark.parametrize(
+    ("skill", "phrase"),
+    [
+        ("brief", "If the owner names the episode"),
+        ("script", "word for word"),
+        ("script", "the owner's own narration"),
+        ("script", "belongs to someone else is replaced"),
+        ("direct", "the owner's own shot list"),
+        ("direct", "one new `generated` asset for each shot"),
+        ("assets", "with the owner's words for it"),
+        ("assets", "A picture style the owner names"),
+        ("assets", "is never written into a prompt"),
+    ],
+)
+def test_vfs78_the_instructions_say_to_keep_what_the_owner_wrote(skill: str, phrase: str) -> None:
+    assert phrase in load_skill(skill).instructions
+
+
+@pytest.mark.parametrize("skill", ["script", "direct", "assets"])
+def test_vfs78_the_skills_after_the_brief_accept_the_owners_idea(skill: str) -> None:
+    given = {**example(skill, "input"), "idea": OWNER_IDEA}
+
+    result = run_skill(FakeLLM(example(skill, "output")), load_skill(skill), given)
+
+    assert result.output == example(skill, "output")

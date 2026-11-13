@@ -1502,3 +1502,37 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   the start. See `docs/gpu-setup.md`.
 - **Open for VFS-29:** section 8 says 4 steps on each model. ComfyUI's own template for
   the Lightning LoRA uses 2 and 2, which is what was tried. Question Q-076.
+
+## D-052: What the owner wrote in the idea is kept: lines, shots, characters and style
+
+- **Date:** 2026-11-13. **Card:** VFS-78. Reported by the owner in the chat: a finished
+  plan of 11 pictures with their narration and two described characters came back as
+  another story of 5 pictures, in another style and with other clothes.
+- **Cause:** only the brief skill read the idea. The script was written from the brief's
+  two-sentence angle, the direction from the script, and the picture prompts from the
+  spec's one-line prompts. Nothing the owner wrote beyond the gist could reach them. The
+  picture style was invented too: the channel's style block is empty.
+- **Choice:**
+  - **The idea is an input of the script, direct and assets skills as well.**
+  - **Lines the owner wrote are the script**, one scene per shot, word for word. They are
+    not cut to the word budget of section 6. The check that enforces this is not the
+    model's word: a script counts as the owner's when more than half of its scenes speak
+    a line that stands in the idea (`rules.follows_owner_lines`). Any other script is held
+    to the budget as before.
+  - **The episode takes the length those lines need** (`rules.owner_length`, 15 to 180
+    seconds), stored as the episode's own target when the script is done. The direction,
+    the Plan tab and the render then aim for one and the same length.
+  - **A shot list is directed shot by shot**: a `scroll` scene with its own generated
+    picture for each shot, in place of the title, steps and outro structure.
+  - **Characters, places and a named style are written into the picture prompts in the
+    owner's words.** With no style block and no style in the idea, the model chooses one
+    and keeps to it.
+  - **The rule about other people's characters stays.** A name that belongs to someone
+    else is replaced by a plain word in the narration and is never written into a picture
+    prompt. This is the one change made to an owner's line, and it is why "more than half"
+    is asked for and not "all".
+- **Not done here:** the theme `night_scrolls` shows a picture inside a scroll with a slow
+  pan and zoom. A camera move per shot, a full-frame picture, a sound such as a crash or a
+  piano are not among its capabilities, so the direction leaves them out. Question Q-077.
+- **Skill versions:** brief 1.1, script 1.1, direct 1.2, assets 1.1. The demo recordings
+  carry the new versions and are otherwise unchanged.

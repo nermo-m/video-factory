@@ -9,6 +9,10 @@
     "target_duration_s"
   ],
   "properties": {
+    "idea": {
+      "description": "The owner's own text for this episode, as it was typed in. What it fixes (lines, shots, characters, a style) is kept.",
+      "type": "string"
+    },
     "brief": {
       "type": "object",
       "required": [

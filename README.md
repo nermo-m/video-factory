@@ -55,7 +55,10 @@ Elsewhere, set `PROVIDER_MODE=subscription` in `.env`, then:
 make up       # starts the stack and the bridge to the two tools on this PC
 ```
 
-Open http://127.0.0.1:3000 and choose New episode. Type your idea and press Start. After
+Open http://127.0.0.1:3000 and choose New episode. Type your idea and press Start. An
+idea can be one sentence, or your own finished plan: a list of pictures with the line
+spoken over each, and a description of the characters. What you wrote is kept: your lines
+word for word, one picture for each of yours, and your characters as you described them. After
 about two minutes the plan needs you: read it, edit a scene or ask for a change in
 words, and approve it. The pictures are then made one by one, about 40 seconds each. Look
 at them in the Assets tab, make one again if you like, and approve them. A few minutes

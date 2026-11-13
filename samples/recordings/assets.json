@@ -1,6 +1,6 @@
 {
   "skill": "assets",
-  "skill_version": "1.0",
+  "skill_version": "1.1",
   "output": {
     "episode_id": "ep_lighthouse_keeper",
     "assets": [

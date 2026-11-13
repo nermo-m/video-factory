@@ -8,6 +8,10 @@ corrective retry (FR-17).
 
 `plan.direct` also stores its answer as a new version of the episode's spec and makes it
 the current one, which is what the plan gate shows the owner.
+
+The owner's idea goes to every skill that writes part of the video: the brief, the script,
+the direction and the pictures. When it holds the owner's own lines, the script keeps them
+and the episode takes the length they need (VFS-78).
 """
 
 from __future__ import annotations
@@ -154,6 +158,7 @@ def _research(session: Session, episode: Episode, _channel_: Channel, _job: JobC
 def _script(session: Session, episode: Episode, channel: Channel, _job: JobContext) -> Prepared:
     return Prepared(
         {
+            "idea": episode.idea,
             "brief": document_of(session, episode.id, BRIEF_JOB),
             "claims": document_of(session, episode.id, RESEARCH_JOB),
             "target_duration_s": _length(episode, channel),
@@ -183,6 +188,7 @@ def _direct(session: Session, episode: Episode, channel: Channel, _job: JobConte
     }
     return Prepared(
         {
+            "idea": episode.idea,
             "script": document_of(session, episode.id, SCRIPT_JOB),
             "brief": document_of(session, episode.id, BRIEF_JOB),
             "claims": claims,
@@ -198,7 +204,12 @@ def _direct(session: Session, episode: Episode, channel: Channel, _job: JobConte
 def _assets(session: Session, episode: Episode, channel: Channel, _job: JobContext) -> Prepared:
     spec = current_spec(session, episode)
     return Prepared(
-        {"spec": spec, "library": library_index(), "style_block": channel.style_block},
+        {
+            "idea": episode.idea,
+            "spec": spec,
+            "library": library_index(),
+            "style_block": channel.style_block,
+        },
         check=rules.manifest_covers_the_spec,
         repair=rules.complete_spec({"episode_id": spec["episode_id"]}),
     )
@@ -286,6 +297,8 @@ def plan_handlers(
                     output["spec_version"] = stored.version
             if job_type == BRIEF_JOB:
                 _name_episode(sessions, episode_id, result.output)
+            if job_type == SCRIPT_JOB:
+                _take_the_length_of_the_owners_lines(sessions, episode_id, result.output)
             if job_type == ASSETS_JOB and storage is not None:
                 with sessions.begin() as session:
                     episode, _channel_row = _episode(session, episode_id)
@@ -312,6 +325,19 @@ def _name_episode(
         episode = session.get(Episode, episode_id)
         if episode is not None and not episode.title:
             episode.title = first.strip()[:200]
+
+
+def _take_the_length_of_the_owners_lines(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, script: Mapping[str, Any]
+) -> None:
+    """A script of the owner's own lines is not cut to the target length. The episode
+    takes the length those lines need, so the direction, the Plan tab and the render all
+    aim for it. A script the model wrote leaves the length as it was chosen."""
+    with sessions.begin() as session:
+        episode, channel = _episode(session, episode_id)
+        needed = rules.owner_length(episode.idea, script["scenes"], channel.voice_speed)
+        if needed is not None:
+            episode.target_duration_s = needed
 
 
 def _record(sessions: sessionmaker[Session], context: JobContext, result: SkillResult) -> None:

@@ -1,11 +1,30 @@
 ---
 name: script
-version: "1.0"
+version: "1.1"
 effort: high
 ---
 You write the narration of one short vertical video. One calm voice speaks every line. The
-input gives the brief, the claims that research confirmed, the target length in seconds
-and the speed of the voice.
+input gives the brief, the claims that research confirmed, the target length in seconds,
+the speed of the voice and the `idea`, the owner's own text for this episode.
+
+First read the `idea`. It decides which of two ways you work.
+
+**The owner wrote the lines.** When the `idea` already holds
+the owner's own narration, as lines to be spoken, a shot list or a table with a narration
+column, the script is those lines and you write nothing of your own:
+
+- One scene for each of the owner's shots or lines, in the owner's order. Leave none out
+  and add none. Only with more than 12, join neighbours into one scene.
+- The `narration` of a scene is the owner's line, word for word. Do not shorten it,
+  improve it, split it or move it. The word budget and the order of scenes below do not
+  apply: the video takes the length the owner's words need.
+- One change is made. A name of a character, a series, a brand, a song or a real person that
+  belongs to someone else is replaced by a plain word, such as "he" or "the son". Change
+  nothing else in that line.
+- `beat` is `hook` for the first scene, `closing` for the last and `story` for the others.
+
+**The owner gave an idea only.** In every other case you write the script yourself, as
+follows.
 
 Write the script as scenes, in this order:
 
