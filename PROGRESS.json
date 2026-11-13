@@ -406,8 +406,8 @@
       "id": "VFS-78",
       "order": 315.5,
       "title": "An idea that is already a finished plan is followed as written",
-      "status": "active",
-      "note": "The owner's own lines are spoken word for word, every picture of a shot list gets its own scene, and described characters and a named style go into the picture prompts. Before, only the first planning step read the idea."
+      "status": "done",
+      "note": "The owner's own lines are spoken word for word, every picture of a shot list gets its own scene, and described characters and a named style go into the picture prompts. Before, only the first planning step read the idea. Merged in pull request #57."
     },
     {
       "id": "VFS-79",
@@ -432,11 +432,8 @@
     }
   ],
   "now_building": {
-    "status": "active",
-    "id": "VFS-78",
-    "title": "An idea that is already a finished plan is followed as written",
-    "started": "2026-11-13T16:10:00Z",
-    "resume": "Branch vfs-78-owner-shot-list. Next: merge the pull request, restart the studio so the worker has the new skills, and plan the owner's text again as a new episode. Verify: make lint types test, then pytest -m integration."
+    "status": "idle",
+    "next": "VFS-29: the ComfyUI clip adapter and workflow, so approved pictures marked as clips are animated on the graphics card. Then VFS-28 second part, the Library screen."
   },
   "checklist": [
     {
