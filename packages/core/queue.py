@@ -110,12 +110,25 @@ def input_hash(job_type: str, payload: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def job_output_path(job_type: str, digest: str) -> PurePosixPath:
+def job_output_path(
+    job_type: str, digest: str, episode_id: uuid.UUID | None = None
+) -> PurePosixPath:
     """Where a job writes its files, relative to the storage root.
 
-    The path comes from the input hash, so a retry overwrites the same files.
+    The path comes from the input hash, so a retry overwrites the same files. A job of an
+    episode writes below that episode's own folder: two episodes queue jobs with the same
+    type and input (the first join of a render, the voice of a scene named `s01_hook`),
+    and one must never overwrite the other's files.
     """
-    return PurePosixPath("jobs") / job_type / digest[:2] / digest
+    folder = PurePosixPath("jobs") / job_type / digest[:2] / digest
+    if episode_id is None:
+        return folder
+    return PurePosixPath("episodes") / str(episode_id) / folder
+
+
+def output_path_of(claim: ClaimedJob) -> PurePosixPath:
+    """Where a claimed job writes its files."""
+    return job_output_path(claim.type, claim.input_hash, claim.episode_id)
 
 
 def _in_seconds(seconds: float) -> ColumnElement[datetime]:

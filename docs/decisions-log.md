@@ -1400,3 +1400,24 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   - **The episodes the tests left behind were not deleted.** That is the owner's data
     folder, and deleting is the owner's decision.
 - **Reverse:** drop `-p video-factory-e2e` from `E2E_COMPOSE` in the Makefile.
+
+## D-048: Every episode keeps its own job files
+
+- **Date:** 2026-11-13. **Card:** VFS-77.
+- **Problem:** Section 4.3 writes a job's outputs "to a path derived from the job's input
+  hash", and the hash was made from the job's type and input only. The first join of a
+  render has the same type and input in every episode, and so has the voice of a scene
+  named `s01_hook`. A new episode's video therefore replaced the file of the episode
+  before it. On the owner's PC ten render rows pointed at two files. It showed when a
+  fourth live episode printed the same video address as the first demo episode.
+- **Choice:**
+  - **A job of an episode writes below `episodes/<episode id>/jobs/...`**, with the same
+    type and hash folders as before. A job without an episode keeps `jobs/...`. A retry
+    still writes the same files.
+  - **One function, `queue.output_path_of(claim)`**, is used by the worker and by the
+    tests, so the tests build a job's folder the way the worker does.
+  - **Rows that were already written are not rewritten.** Their paths still point at the
+    shared files. The owner's four real episodes were spoken and rendered again after
+    the fix, with the local voice and no plan usage, and each has its own video now. The
+    episodes that test runs left behind were left as they are.
+- **Reverse:** `job_output_path` in `packages/core/queue.py`.

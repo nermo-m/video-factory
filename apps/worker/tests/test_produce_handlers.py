@@ -141,7 +141,7 @@ class Stage:
         with self.sessions.begin() as session:
             claim = queue.claim_next(session, JobTag.CPU)
         assert claim is not None
-        context = JobContext(claim, queue.job_output_path(claim.type, claim.input_hash))
+        context = JobContext(claim, queue.output_path_of(claim))
         try:
             output = dict(self.handlers[job_type](context) or {})
         except JobError as error:
@@ -196,7 +196,9 @@ def test_fr10_a_scene_is_spoken_and_its_file_and_word_timings_are_kept(
     assert all(word["end_s"] >= word["start_s"] for word in output["words"])
     stored = stage.data_dir / output["audio_file"]
     assert stored.read_bytes()[:4] == b"RIFF"
-    assert output["audio_file"].startswith("jobs/gen.voice/"), "a retry writes the same file"
+    assert output["audio_file"].startswith(f"episodes/{episode_id}/jobs/gen.voice/"), (
+        "a retry writes the same file, and no other episode writes there"
+    )
 
 
 def test_a_narration_the_bundled_voice_does_not_know_is_an_owner_task(
@@ -342,7 +344,7 @@ def test_the_join_stores_the_video_as_a_draft_render_with_its_resolved_spec(
     assert render.kind is RenderKind.DRAFT
     assert render.file_path == output["video"]
     assert render.file_path is not None
-    assert render.file_path.startswith("jobs/render.join/")
+    assert render.file_path.startswith(f"episodes/{episode_id}/jobs/render.join/")
     assert render.file_path.endswith("/video.mp4")
     assert (stage.data_dir / render.file_path).read_bytes() == b"video"
     assert render.contact_sheet_path == output["contact_sheet"]
@@ -369,7 +371,7 @@ def test_a_join_that_is_run_again_for_the_same_job_stores_one_render(
     with sessions.begin() as session:
         claim = queue.claim_next(session, JobTag.CPU)
     assert claim is not None
-    context = JobContext(claim, queue.job_output_path(claim.type, claim.input_hash))
+    context = JobContext(claim, queue.output_path_of(claim))
 
     first = stage.handlers["render.join"](context)
     again = stage.handlers["render.join"](context)
@@ -448,3 +450,36 @@ def test_a_video_a_little_over_its_target_is_fitted_and_rendered(
     resolved = stage.joiner.resolved[0]
     assert resolved["duration_s"] == pytest.approx(42.0, abs=0.01)
     assert resolved["format"]["target_duration_s"] == 41
+
+
+def test_two_episodes_never_share_a_voice_file_or_a_video_file(
+    stage: Stage, sessions: sessionmaker[Session], episode_id: uuid.UUID, sample: dict[str, Any]
+) -> None:
+    """Seen on the owner's PC: every episode's first render wrote the same file, because
+    its join job has the same type and input in every episode. So did the voice of scenes
+    with the same id. Ten renders pointed at two files."""
+    with sessions.begin() as session:
+        first = session.get(models.Episode, episode_id)
+        assert first is not None
+        other = models.Episode(channel_id=first.channel_id, idea="Another idea.")
+        session.add(other)
+        session.flush()
+        store_spec(session, other.id, sample, author=SpecAuthor.MODEL)
+        assets.sync(session, other, sample)
+        other_id = other.id
+
+    voices = [
+        stage.run("gen.voice", each, scene_id="s01_hook")["audio_file"]
+        for each in (episode_id, other_id)
+    ]
+    for each in (episode_id, other_id):
+        stage.speak_all(each, sample)
+    videos = [stage.run("render.join", each)["video"] for each in (episode_id, other_id)]
+
+    assert voices[0] != voices[1]
+    assert videos[0] != videos[1]
+    assert videos[0].startswith(f"episodes/{episode_id}/")
+    assert videos[1].startswith(f"episodes/{other_id}/")
+    with sessions() as session:
+        stored = session.scalars(select(models.Render.file_path)).all()
+    assert set(stored) == set(videos), "each render row has a file of its own"
