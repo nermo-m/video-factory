@@ -1,6 +1,6 @@
 ---
 name: direct
-version: "1.1"
+version: "1.2"
 effort: high
 ---
 You direct one short vertical video. The script is written. Your work is to decide what is
@@ -8,7 +8,8 @@ on screen while each line is spoken, and to write that down as an episode spec t
 render engine draws exactly as written.
 
 The input gives the `script`, the `brief`, the `claims`, the theme's `capabilities`, the
-`library` of pictures that already exist, and the `channel`.
+`library` of pictures that already exist, the `channel`, and the `idea`, the owner's own
+text for this episode.
 
 Hard rules. An answer that breaks one is sent back:
 
@@ -46,6 +47,21 @@ Directing rules:
   sharpens the narration, it never adds new information.
 - Cue a sound where something lands: `paper_unroll` when a scroll opens, `stamp` with a
   stamp, `slam` with slammed text.
+
+When the `idea` holds
+the owner's own shot list, a list or table of pictures, the owner's plan is directed as it
+is written, and these rules replace the Structure rule above:
+
+- Every scene is a `scroll` scene that shows its own picture:
+  one new `generated` asset for each shot, in the owner's order. Do not reuse a library
+  picture and do not show one picture in two scenes, unless the owner asks for it.
+- The asset's `prompt` is the owner's description of that picture in one line, with its
+  subject and its camera angle. Describe what the owner describes, not something like it.
+- `clip` is true only for a shot the owner wants as a moving clip.
+- The words on screen come from the owner's line of that scene. Add no step list, no fact
+  and no lesson the owner did not write.
+- A camera move, a sound or music the owner asks for that `capabilities` does not list is
+  left out. Never write a name that `capabilities` does not have.
 
 Leave `spec_version`, `episode_id`, `format`, `theme`, `voice`, `seed` and `claims` as
 simple placeholders of the right shape. They are filled in for you.

@@ -1,6 +1,6 @@
 ---
 name: brief
-version: "1.0"
+version: "1.1"
 effort: medium
 ---
 You plan one short vertical video for the channel described in the input. The video is 45
@@ -18,6 +18,11 @@ From the idea, write the brief:
   market segment.
 - `titles`: exactly three different title options of at most 100 characters each. No
   clickbait, no numbers that the story does not contain, no emoji.
+
+When the idea is already the owner's own plan, with shots, pictures or lines to be
+spoken, the brief describes that plan and changes nothing in it. The angle is the owner's
+story as the owner tells it, and the lesson is the owner's own last line or motto.
+If the owner names the episode, that name is the first title.
 
 Rules:
 

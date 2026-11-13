@@ -4,13 +4,13 @@
   (FR-02). The model's word is not enough: the claim's source must be one of the pages the
   search really brought back.
 * script: "Word budget is target_duration_s times 2.3 words per second at speed 1.0, minus
-  pauses."
+  pauses." Lines the owner wrote are not cut to it: they decide the length (VFS-78).
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import unquote, urlsplit
@@ -23,6 +23,7 @@ from packages.core.lengths import (
     TOLERANCE_S,
     WORDS_PER_SECOND,
     count_words,
+    scene_seconds,
 )
 from packages.render.theme import check_capabilities
 from packages.skills.planner import Repair
@@ -72,6 +73,46 @@ def word_budget(target_duration_s: float, scenes: int, speed: float = 1.0) -> in
     return max(0, math.floor(speaking_s * WORDS_PER_SECOND * speed))
 
 
+# --- the owner's own lines ------------------------------------------------------------------
+
+# A line this short is found in almost any text, so it does not show whose line it is.
+MIN_WORDS_OF_A_LINE = 3
+# The longest and shortest video a spec may ask for (the episode's own length, section 9).
+SHORTEST_S, LONGEST_S = 15, 180
+_SAME_SIGN = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
+
+
+def _plain(text: str) -> str:
+    """A text as it is compared: one kind of quote, no capitals, single spaces."""
+    return " ".join(text.translate(_SAME_SIGN).lower().split())
+
+
+def owner_lines(idea: str, scenes: Sequence[Mapping[str, Any]]) -> int:
+    """How many scenes speak a line that stands in the owner's idea, word for word."""
+    written = _plain(idea)
+    found = 0
+    for scene in scenes:
+        line = _plain(str(scene.get("narration") or ""))
+        if count_words(line) >= MIN_WORDS_OF_A_LINE and line in written:
+            found += 1
+    return found
+
+
+def follows_owner_lines(idea: str, scenes: Sequence[Mapping[str, Any]]) -> bool:
+    """True when the script is the owner's own: most of its scenes speak the owner's lines.
+    Not all of them have to, because a name that belongs to someone else is replaced."""
+    return 2 * owner_lines(idea, scenes) > len(scenes)
+
+
+def owner_length(idea: str, scenes: Sequence[Mapping[str, Any]], speed: float = 1.0) -> int | None:
+    """The length in seconds a video of the owner's own lines needs, or None when the
+    script is not the owner's. The owner's words decide the length, not the other way."""
+    if not follows_owner_lines(idea, scenes):
+        return None
+    needed = sum(scene_seconds(str(scene["narration"]), speed) for scene in scenes)
+    return min(LONGEST_S, max(SHORTEST_S, round(needed)))
+
+
 def script_fits(
     inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
 ) -> list[str]:
@@ -82,7 +123,8 @@ def script_fits(
         float(inputs["target_duration_s"]), len(scenes), float(inputs.get("voice_speed", 1.0))
     )
     problems = []
-    if words > math.floor(budget * SLACK):
+    theirs = follows_owner_lines(str(inputs.get("idea") or ""), scenes)
+    if not theirs and words > math.floor(budget * SLACK):
         problems.append(
             f"The script has {words} words. For {inputs['target_duration_s']} seconds in "
             f"{len(scenes)} scenes the budget is {budget} words. Cut {words - budget}."
