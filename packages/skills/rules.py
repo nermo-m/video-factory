@@ -129,11 +129,36 @@ def spec_follows_the_plan(
         asset_id = scene.get("visual", {}).get("asset_id")
         if asset_id is not None and asset_id not in declared:
             problems.append(f"Scene {scene['id']} shows {asset_id}, which `assets` does not list.")
+        problems += _covers_its_picture(scene)
     for asset_id, asset in declared.items():
         if asset["origin"] == "library" and asset_id not in library:
             problems.append(
                 f"The asset {asset_id} is not in the library. Its origin is not library."
             )
+    return problems
+
+
+def _covers_its_picture(scene: Mapping[str, Any]) -> list[str]:
+    """What a scroll scene draws on top of its picture. Slammed text spans the whole scroll,
+    and a tag and a stamp share one corner of it."""
+    if scene.get("kind") != "scroll":
+        return []
+    problems = []
+    if scene.get("text"):
+        problems.append(
+            f"Scene {scene['id']} is a scroll scene and uses `text`, which is slammed across "
+            "its picture. Put the words into `title`, `label` and `sublabel`, or into one tag."
+        )
+    notes = [
+        overlay["type"]
+        for overlay in scene.get("overlays", [])
+        if overlay.get("type") in {"tag", "stamp"}
+    ]
+    if len(notes) > 1:
+        problems.append(
+            f"Scene {scene['id']} has {len(notes)} tags and stamps, which are drawn on top of "
+            "each other. Keep one tag or one stamp."
+        )
     return problems
 
 

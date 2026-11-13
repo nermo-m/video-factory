@@ -9,6 +9,7 @@ scroll, or slam text), hanging sprites, tags and stamps, captions, flash, smoke,
 
 from __future__ import annotations
 
+import itertools
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ from PIL import Image, ImageDraw
 
 from packages.render import primitives as draw
 from packages.render import text
+from packages.render.frames import frame_at
 from packages.render.primitives import Box, ClipFrames, Color
 from packages.render.theme import Theme
 
@@ -37,17 +39,16 @@ class RenderError(Exception):
 def scene_frame_counts(resolved: Mapping[str, Any]) -> list[int]:
     """How many frames each scene has.
 
-    A scene starts and ends on the frame nearest to its start and end time. Rounding each
-    scene's length on its own would add up to a video that is longer or shorter than its
-    sound. This way the total is exact and no scene is more than half a frame off.
+    A scene starts on the frame nearest to its start time and ends where the next scene
+    starts. Rounding each scene's length on its own would add up to a video that is longer
+    or shorter than its sound. This way the total is exactly the frames of the whole
+    length, and no scene is more than half a frame off.
     """
     fps: int = resolved["format"]["fps"]
-    counts: list[int] = []
-    for scene in resolved["scenes"]:
-        first = round(scene["start_s"] * fps)
-        after_last = round((scene["start_s"] + scene["duration_s"]) * fps)
-        counts.append(max(1, after_last - first))
-    return counts
+    scenes = resolved["scenes"]
+    edges = [frame_at(scene["start_s"], fps) for scene in scenes]
+    edges.append(frame_at(scenes[-1]["start_s"] + scenes[-1]["duration_s"], fps))
+    return [max(1, after - first) for first, after in itertools.pairwise(edges)]
 
 
 @dataclass(frozen=True)

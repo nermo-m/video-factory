@@ -364,8 +364,15 @@
       "id": "VFS-60",
       "order": 312,
       "title": "Image creation through the Codex CLI",
+      "status": "done",
+      "note": "In subscription mode pictures are made by Codex's image tool on the ChatGPT plan, through the host bridge. Checked with a real picture. Merged in pull request #43."
+    },
+    {
+      "id": "VFS-72",
+      "order": 313,
+      "title": "First video from a new idea in subscription mode: fixes from the live run",
       "status": "review",
-      "note": "In subscription mode pictures are made by Codex's image tool on the ChatGPT plan, through the host bridge. Checked with a real picture. In review as a pull request."
+      "note": "Two videos were made from new ideas on the owner's plans. Four things the runs found are fixed: licences of generated pictures, episode titles, text over pictures, and a one-frame rounding error. In review as a pull request."
     }
   ],
   "now_building": {
@@ -405,7 +412,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1480 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 251 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
+      "value": "1537 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 255 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -433,6 +440,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-13",
+      "text": "The first two videos from new ideas: planned on the Claude plan, pictures from the ChatGPT plan, voice by the local model, about seven minutes each from the idea to the finished 46 second video, with no API key."
+    },
     {
       "date": "2026-11-13",
       "text": "The app made its first real picture on the ChatGPT plan: the worker's adapter asks the host bridge, the bridge asks Codex's image tool, and a finished picture comes back in about 40 seconds, with no API key."

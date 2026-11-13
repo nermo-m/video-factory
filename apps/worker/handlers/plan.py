@@ -284,6 +284,8 @@ def plan_handlers(
                         skill_version=result.skill_version,
                     )
                     output["spec_version"] = stored.version
+            if job_type == BRIEF_JOB:
+                _name_episode(sessions, episode_id, result.output)
             if job_type == ASSETS_JOB and storage is not None:
                 with sessions.begin() as session:
                     episode, _channel_row = _episode(session, episode_id)
@@ -295,6 +297,21 @@ def plan_handlers(
         return run
 
     return {job_type: handler(job_type) for job_type in _JOBS}
+
+
+def _name_episode(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, brief: Mapping[str, Any]
+) -> None:
+    """Give an episode without a title the brief's first title. A title that is already
+    there, from an earlier brief or from the owner, is kept."""
+    titles = brief.get("titles")
+    first = titles[0] if isinstance(titles, list) and titles else None
+    if not isinstance(first, str) or not first.strip():
+        return
+    with sessions.begin() as session:
+        episode = session.get(Episode, episode_id)
+        if episode is not None and not episode.title:
+            episode.title = first.strip()[:200]
 
 
 def _record(sessions: sessionmaker[Session], context: JobContext, result: SkillResult) -> None:

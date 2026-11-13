@@ -11,6 +11,7 @@ import pytest
 from PIL import Image
 
 from packages.render.compositor import Compositor, RenderError, TextBox, scene_frame_counts
+from packages.render.frames import frame_at as nearest_frame
 from packages.render.tests import support
 from packages.render.theme import Theme, load_theme
 
@@ -248,3 +249,60 @@ def test_fr05_a_missing_asset_file_stops_the_render_with_its_name(
         nowhere.render(1, 30)
     # A scene without a picture needs no storage at all.
     assert nowhere.render(0, 10).size == (1080, 1920)
+
+
+# --- frames ------------------------------------------------------------------------------
+
+
+def _scenes(lengths_ms: list[int]) -> dict[str, Any]:
+    """A resolved spec's timing, as the resolver writes it: whole milliseconds, each scene
+    starting where the one before ends."""
+    scenes, start = [], 0
+    for length in lengths_ms:
+        scenes.append({"start_s": start / 1000, "duration_s": length / 1000})
+        start += length
+    return {"format": {"fps": 30}, "scenes": scenes}
+
+
+def test_a_boundary_exactly_between_two_frames_gives_both_scenes_the_same_frame() -> None:
+    """Seen in the second live video: 1381 frames were drawn where 1382 were expected.
+    A scene's end and the next scene's start are one moment and must be one frame."""
+    # 6.225 s, 13.775 s and 20.3 s all fall on half frames at 30 frames a second.
+    spec = _scenes([6225, 7550, 6525, 6225, 6700, 5925, 6925])
+    total_s = spec["scenes"][-1]["start_s"] + spec["scenes"][-1]["duration_s"]
+
+    counts = scene_frame_counts(spec)
+
+    assert sum(counts) == nearest_frame(total_s, 30)
+    assert all(count > 0 for count in counts)
+
+
+@pytest.mark.parametrize("seed", range(40))
+def test_the_scenes_frames_always_add_up_to_the_frames_of_the_whole_length(seed: int) -> None:
+    # Lengths spread over 0.4 to 9 seconds, different for every seed.
+    lengths = [(seed * 7919 + index * 104729) % 8600 + 400 for index in range(seed % 11 + 1)]
+    spec = _scenes(lengths)
+    total_s = spec["scenes"][-1]["start_s"] + spec["scenes"][-1]["duration_s"]
+
+    assert sum(scene_frame_counts(spec)) == nearest_frame(total_s, 30)
+
+
+@pytest.mark.parametrize(
+    ("seconds", "frame"),
+    [
+        (0.0, 0),
+        (0.016, 0),
+        (0.017, 1),
+        (1.0, 30),
+        (6.225, 187),
+        # Exactly between two frames: the even one, as `round` gives.
+        (0.05, 2),
+        (0.45, 14),
+        (0.75, 22),
+        (46.05, 1382),
+    ],
+)
+def test_a_time_falls_on_the_nearest_frame_and_a_tie_on_the_even_one(
+    seconds: float, frame: int
+) -> None:
+    assert nearest_frame(seconds, 30) == frame
