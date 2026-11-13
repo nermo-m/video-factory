@@ -95,6 +95,11 @@
             "description": "The file name asked for, when it is uploaded.",
             "title": "Filename"
           },
+          "generating": {
+            "description": "True while a job is making it, or waits to.",
+            "title": "Generating",
+            "type": "boolean"
+          },
           "id": {
             "description": "The picture's id in the spec, for example a_harbour.",
             "title": "Id",
@@ -192,6 +197,7 @@
           "prompt",
           "filename",
           "resolved",
+          "generating",
           "image_url",
           "model",
           "versions",
@@ -1111,6 +1117,28 @@
           "providers"
         ],
         "title": "ProvidersResponse",
+        "type": "object"
+      },
+      "RegenerateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What should be different, added to the picture's prompt.",
+            "title": "Note"
+          }
+        },
+        "title": "RegenerateRequest",
         "type": "object"
       },
       "RejectRequest": {
@@ -2065,6 +2093,109 @@
           }
         },
         "summary": "The pictures of an episode: where each comes from and its file",
+        "tags": [
+          "episodes"
+        ]
+      }
+    },
+    "/api/v1/episodes/{episode_id}/assets/{asset_id}/regenerate": {
+      "post": {
+        "operationId": "post_episode_asset_regenerate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "pattern": "^a_[a-z0-9_]{1,60}$",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request body could not be read."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode, or what was asked of it, does not exist."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode cannot do this in its current state."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Make one generated picture again, as a new version",
         "tags": [
           "episodes"
         ]

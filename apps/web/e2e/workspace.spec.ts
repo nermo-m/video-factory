@@ -93,9 +93,17 @@ test.describe("Workspace frame", () => {
     await expect(tabs).toHaveText(["Plan", "Assets", "Voice", "Render", "Export"]);
     await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
 
+    // Voice and Export are still to come, and say so.
+    await tabs.nth(2).click();
+    await expect(page.getByRole("tabpanel", { name: "Voice" })).toContainText("Not built yet");
+    await tabs.nth(4).click();
+    await expect(page.getByRole("tabpanel", { name: "Export" })).toContainText("Not built yet");
+
     await tabs.nth(1).click();
     await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("tabpanel", { name: "Assets" })).toContainText("Not built yet");
+    await expect(page.getByRole("tabpanel", { name: "Assets" })).toContainText(
+      "The pictures appear here after the plan is approved.",
+    );
     await expect(scene(page, 1)).toBeHidden();
 
     await tabs.nth(1).press("ArrowLeft");

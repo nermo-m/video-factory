@@ -65,6 +65,12 @@ export type AssetOut = {
      */
     filename: string | null;
     /**
+     * Generating
+     *
+     * True while a job is making it, or waits to.
+     */
+    generating: boolean;
+    /**
      * Id
      *
      * The picture's id in the spec, for example a_harbour.
@@ -637,6 +643,18 @@ export type ProvidersResponse = {
 };
 
 /**
+ * RegenerateRequest
+ */
+export type RegenerateRequest = {
+    /**
+     * Note
+     *
+     * What should be different, added to the picture's prompt.
+     */
+    note?: string | null;
+};
+
+/**
  * RejectRequest
  */
 export type RejectRequest = {
@@ -1206,6 +1224,56 @@ export type GetEpisodeAssetsResponses = {
 };
 
 export type GetEpisodeAssetsResponse = GetEpisodeAssetsResponses[keyof GetEpisodeAssetsResponses];
+
+export type PostEpisodeAssetRegenerateData = {
+    body: RegenerateRequest;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+        /**
+         * Asset Id
+         */
+        asset_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/assets/{asset_id}/regenerate';
+};
+
+export type PostEpisodeAssetRegenerateErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeAssetRegenerateError = PostEpisodeAssetRegenerateErrors[keyof PostEpisodeAssetRegenerateErrors];
+
+export type PostEpisodeAssetRegenerateResponses = {
+    /**
+     * Successful Response
+     */
+    202: AssetList;
+};
+
+export type PostEpisodeAssetRegenerateResponse = PostEpisodeAssetRegenerateResponses[keyof PostEpisodeAssetRegenerateResponses];
 
 export type GetEpisodePlanData = {
     body?: never;

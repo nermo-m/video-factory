@@ -35,9 +35,14 @@ IMAGE_JOB, CLIP_JOB = "gen.image", "gen.clip"
 NO_TEXT = "No text, letters, numbers, captions, logos or watermarks anywhere in the picture."
 
 
-def full_prompt(prompt: str) -> str:
-    """The prompt as it is sent: the planned prompt and the rule about text."""
-    return prompt if NO_TEXT in prompt else f"{prompt.rstrip()}\n\n{NO_TEXT}"
+def full_prompt(prompt: str, note: str | None = None) -> str:
+    """The prompt as it is sent: the planned prompt, what the owner asked to be different
+    when the picture is made again, and the rule about text."""
+    parts = [prompt.replace(NO_TEXT, "").rstrip()]
+    if note and note.strip():
+        parts.append(f"Asked for by the owner: {note.strip()}")
+    parts.append(NO_TEXT)
+    return "\n\n".join(parts)
 
 
 def _asset_id(context: JobContext) -> str:
@@ -97,7 +102,8 @@ def picture_handlers(
                     "Run the asset plan again.",
                     error_class=ErrorClass.NEEDS_OWNER,
                 )
-            prompt = full_prompt(picture.prompt)
+            note = context.job.input.get("note")
+            prompt = full_prompt(picture.prompt, note if isinstance(note, str) else None)
 
         result = image().create(ImageRequest(asset_id=asset_id, prompt=prompt))
         stored = context.output_path / f"{asset_id}.png"

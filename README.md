@@ -7,14 +7,15 @@ images, short clips and narration. A deterministic render engine assembles the v
 the spec. The owner approves the plan and the assets, reviews the result, and uploads the
 accepted video by hand. The app never posts anything itself.
 
-> **Status: early development (milestone M2, planning and pipeline).** In demo mode an
-> idea becomes a video in the browser: New episode on the Board turns an idea into a plan,
-> the episode's workspace shows it, lets you edit it or ask for changes in words, and
-> after you approve the plan and the pictures the worker speaks, draws and joins the
-> video, which plays in the Render tab. Demo mode always tells the bundled sample story,
-> and pictures of your own arrive with milestone M3. `make demo-render` renders the same
-> sample straight from its spec. This README grows with each milestone and is finished
-> in M8.
+> **Status: early development (milestone M3, assets).** An idea becomes a video in the
+> browser: New episode on the Board turns an idea into a plan, the episode's workspace
+> shows it, lets you edit it or ask for changes in words, and after you approve the plan
+> and the pictures the worker speaks, draws and joins the video, which plays in the Render
+> tab and can be downloaded. In demo mode that is always the bundled sample story, with
+> no keys and no accounts. In subscription mode it is your own idea, planned and
+> illustrated on your own Claude and ChatGPT plans. Quality checks, export packs, clips
+> and uploads of your own pictures are not built yet. This README grows with each
+> milestone and is finished in M8.
 
 ## Try it in the browser
 
@@ -29,6 +30,32 @@ change a title if you like, and approve it. Approve the pictures, and a few minu
 later the Render tab plays the video. Leave the narration as it is unless you have run
 `make models`: without the voice model, the bundled voice only knows the sample's words,
 and the episode page tells you so if you change them.
+
+## Make a video from your own idea
+
+This uses your own plans and no API key: Claude Code writes the plan, Codex makes the
+pictures, and the voice is spoken on your PC. Both command line tools must be installed
+and signed in with a plan (`claude auth login`, `codex login`).
+
+```bash
+make models   # once: download the Kokoro voice (354 MB), so any narration can be spoken
+```
+
+Set `PROVIDER_MODE=subscription` in `.env`, then:
+
+```bash
+make up       # starts the stack and the bridge to the two tools on this PC
+```
+
+Open http://127.0.0.1:3000 and choose New episode. Type your idea and press Start. After
+about two minutes the plan needs you: read it, edit a scene or ask for a change in
+words, and approve it. The pictures are then made one by one, about 40 seconds each. Look
+at them in the Assets tab, make one again if you like, and approve them. A few minutes
+later the Render tab plays the video and offers it as a download.
+
+One episode needs about five planning calls on the Claude plan and four pictures on the
+ChatGPT plan. The app counts its own use and pauses at your budget, which you set under
+Settings, Usage and limits. `make down` stops everything.
 
 ## Render the sample episode
 

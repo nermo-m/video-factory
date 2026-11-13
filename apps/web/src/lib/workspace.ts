@@ -1,7 +1,15 @@
 // How the episode workspace words things (design doc sections 11.2 and 11.5, and the
 // workspace mockups): the eight steps of the pipeline, what a scene shows, and how a
 // proposed change reads. No React and no requests here.
-import type { ChangeOut, EpisodeDetail, EpisodeOut, EpisodeState, JobOut, RenderOut } from "@/api/client";
+import type {
+  AssetOut,
+  ChangeOut,
+  EpisodeDetail,
+  EpisodeOut,
+  EpisodeState,
+  JobOut,
+  RenderOut,
+} from "@/api/client";
 
 import { jobsOfState, statusOf, stoppedOf, workingOn } from "./episodes";
 
@@ -277,4 +285,59 @@ export function safeLink(url: string | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+
+/** A picture's id as a name: `a_garden_dawn` reads "Garden dawn". */
+export function pictureName(id: string): string {
+  const words = id.replace(/^a_/, "").replaceAll("_", " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function listed(items: string[]): string {
+  if (items.length <= 1) {
+    return items.join("");
+  }
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+}
+
+/** Which scenes show a picture, by their number in the plan: "Shown in scenes 2 and 3". */
+export function shownIn(sceneIds: string[], scenes: Scene[]): string {
+  const numbers = sceneIds
+    .map((id) => scenes.findIndex((scene) => scene.id === id) + 1)
+    .filter((number) => number > 0)
+    .sort((a, b) => a - b)
+    .map(String);
+  if (numbers.length === 0) {
+    return "Not shown in any scene";
+  }
+  return `Shown in ${numbers.length === 1 ? "scene" : "scenes"} ${listed(numbers)}`;
+}
+
+/** The line above the pictures: how many there are, where they come from, what is missing. */
+export function picturesSummary(assets: AssetOut[]): string {
+  const count = (origin: AssetOut["origin"]) => assets.filter((asset) => asset.origin === origin).length;
+  const parts = [
+    count("generated") > 0 ? `${count("generated")} made for this episode` : "",
+    count("library") > 0 ? `${count("library")} from the library` : "",
+    count("uploaded") > 0 ? `${count("uploaded")} to upload` : "",
+  ].filter(Boolean);
+  const missing = assets.filter((asset) => !asset.resolved).length;
+  const total = `${assets.length} ${assets.length === 1 ? "picture" : "pictures"}`;
+  const summary = `${total}: ${parts.join(", ")}.`;
+  if (missing === 0) {
+    return summary;
+  }
+  return `${summary} ${missing} ${missing === 1 ? "is" : "are"} not there yet.`;
+}
+
+/** A file name for a download, from the episode's title: "the-lighthouse-keeper.mp4". */
+export function videoFileName(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return `${slug || "video"}.mp4`;
 }

@@ -371,13 +371,20 @@
       "id": "VFS-72",
       "order": 313,
       "title": "First video from a new idea in subscription mode: fixes from the live run",
+      "status": "done",
+      "note": "Two videos were made from new ideas on the owner's plans. Four things the runs found are fixed: licences of generated pictures, episode titles, text over pictures, and a one-frame rounding error. Merged in pull request #44."
+    },
+    {
+      "id": "VFS-73",
+      "order": 314,
+      "title": "Assets tab, first part: see the pictures, make one again, download the video",
       "status": "review",
-      "note": "Two videos were made from new ideas on the owner's plans. Four things the runs found are fixed: licences of generated pictures, episode titles, text over pictures, and a one-frame rounding error. In review as a pull request."
+      "note": "The Assets tab shows every picture of an episode, a generated one can be made again with a note, and the Render tab offers the video as a download. In review as a pull request."
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "The Assets tab: see the pictures before approving them (VFS-30)"
+    "next": "VFS-28 Uploads, filename matching and library"
   },
   "checklist": [
     {
@@ -412,7 +419,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1537 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 255 integration (Python), 19 Node, 172 browser tests with axe and screenshots"
+      "value": "1538 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 265 integration (Python), 19 Node, 189 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
