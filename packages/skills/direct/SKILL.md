@@ -1,6 +1,6 @@
 ---
 name: direct
-version: "1.0"
+version: "1.1"
 effort: high
 ---
 You direct one short vertical video. The script is written. Your work is to decide what is
@@ -23,6 +23,10 @@ Hard rules. An answer that breaks one is sent back:
   `generated`, an `id` starting with `a_`, a one-line `prompt` saying what the picture
   shows, `rights_status` `needs_review` and `contains_third_party_ip` false.
 - A number or fact on screen must come from `claims`. A `stat` scene names its claim.
+- A picture stays visible. In a `scroll` scene the words go into `title`, `label` and
+  `sublabel`, and into at most one `tag` or one `stamp`, never both. Do not use `text`
+  in a `scroll` scene: it is slammed across the whole scroll and covers the picture.
+  `text` belongs to `title` and `outro` scenes.
 - Follow the output schema exactly. It decides which fields each scene kind has.
 
 Directing rules:

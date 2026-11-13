@@ -62,6 +62,10 @@ BRIEF = example("brief", "output")
 # --- Skill folders ----------------------------------------------------------------------
 
 
+# The version of each skill's instructions. A changed instruction is a new version.
+VERSIONS = {**dict.fromkeys(SKILL_NAMES, "1.0"), "direct": "1.1"}
+
+
 @pytest.mark.parametrize("name", SKILL_NAMES)
 def test_every_skill_folder_is_complete(name: str) -> None:
     folder = SKILLS_DIR / name
@@ -70,7 +74,7 @@ def test_every_skill_folder_is_complete(name: str) -> None:
         assert (folder / part).exists(), f"{name}/{part} is missing"
     skill = load_skill(name)
     assert skill.name == name
-    assert skill.version == "1.0"
+    assert skill.version == VERSIONS[name]
     assert len(skill.instructions) > 400
     assert "JSON document" in skill.instructions
 
@@ -83,7 +87,7 @@ def test_every_skills_example_fits_its_own_schemas(name: str) -> None:
     result = run_skill(llm, skill, example(name, "input"))
 
     assert result.output == example(name, "output")
-    assert (result.skill, result.skill_version, len(result.calls)) == (name, "1.0", 1)
+    assert (result.skill, result.skill_version, len(result.calls)) == (name, VERSIONS[name], 1)
 
 
 def test_the_shared_schemas_are_the_skills_output_schemas() -> None:

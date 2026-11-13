@@ -175,7 +175,7 @@ def test_fr03_the_direction_is_stored_as_the_episodes_first_spec_version(
         version = session.scalars(select(models.SpecVersion)).one()
     assert episode.current_spec_id == version.id
     assert (version.version, version.kind.value, version.author.value) == (1, "authored", "model")
-    assert (version.skill_version, version.parent_id) == ("1.0", None)
+    assert (version.skill_version, version.parent_id) == ("1.1", None)
     assert version.body == directed["document"]
     assert directed["spec_version"] == 1
 
@@ -291,3 +291,30 @@ def test_fr05_the_asset_plan_stores_the_library_and_a_row_for_every_picture_to_g
     assert unresolved == []
     assert sorted(stored) == ["a_hill_dawn", "a_lamp_room", "a_lighthouse_beam", "a_storm_sea"]
     assert (tmp_path / "data" / stored["a_hill_dawn"].file).is_file()
+
+
+def test_an_episode_is_named_after_the_first_title_of_its_brief(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    run_job(sessions, Spy(), "plan.brief", episode_id)
+
+    with sessions() as session:
+        episode = session.get(models.Episode, episode_id)
+        assert episode is not None
+    assert episode.title == example("brief")["titles"][0]
+
+
+def test_a_title_the_episode_already_has_is_kept(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    with sessions.begin() as session:
+        episode = session.get(models.Episode, episode_id)
+        assert episode is not None
+        episode.title = "My own title"
+
+    run_job(sessions, Spy(), "plan.brief", episode_id)
+
+    with sessions() as session:
+        episode = session.get(models.Episode, episode_id)
+        assert episode is not None
+    assert episode.title == "My own title"

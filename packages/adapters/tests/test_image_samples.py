@@ -25,6 +25,7 @@ def test_the_demo_adapter_returns_the_bundled_picture_with_that_id() -> None:
         "bundled samples",
         Decimal("0"),
     )
+    assert result.licence == "MIT (bundled sample picture)"
 
 
 def test_an_unknown_picture_gets_a_bundled_stand_in_and_always_the_same_one() -> None:

@@ -21,6 +21,7 @@ DEFAULT_SAMPLES_DIR = (
     Path(__file__).resolve().parents[3] / "samples" / "lighthouse_keeper" / "assets"
 )
 MODEL = "bundled samples"
+LICENCE = "MIT (bundled sample picture)"
 
 
 class SampleImages:
@@ -56,4 +57,5 @@ class SampleImages:
             model=MODEL,
             cost_usd=Decimal("0"),
             latency_ms=round((time.perf_counter() - started) * 1000),
+            licence=LICENCE,
         )

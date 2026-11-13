@@ -57,6 +57,7 @@ def test_fr30_a_picture_comes_back_through_the_bridge_as_a_plan_picture(tmp_path
         "codex image tool",
         Decimal("0"),
     )
+    assert result.licence == "Generated on the owner's ChatGPT plan (OpenAI terms of use)"
     (run,) = calls(tmp_path / "record.jsonl")
     assert run["stdin"].endswith("A small harbour at first light.")
 

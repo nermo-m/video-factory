@@ -1297,3 +1297,35 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     and passes. Q-045 stays open: the owner sets the real numbers on the Usage page.
 - **Reverse:** `tools/cli_bridge/codex.py`, `packages/adapters/image/codex_cli.py`, and
   `_PLAN_DEFAULT` in `packages/core/limits.py`.
+
+## D-044: The first videos from new ideas, and what the live runs changed
+
+- **Date:** 2026-11-13. **Card:** VFS-72.
+- **What was run:** two episodes from new ideas in subscription mode on the owner's PC:
+  planned through Claude Code, pictures through Codex's image tool, voice by the local
+  Kokoro model. Each took about seven minutes from the idea to the video, with five
+  planner calls and three or four pictures on the plans. No API key was used.
+- **What the runs found, and the choice for each:**
+  - **A generated picture had no licence, and the render refuses an asset without one**
+    (section 5.2). A picture adapter now says under which terms its picture exists, and
+    the picture job records that on the asset when it has none: "Generated on the owner's
+    ChatGPT plan (OpenAI terms of use)", or "MIT (bundled sample picture)" in demo mode.
+    This says where the picture came from. It does not clear its rights: `rights_status`
+    stays as the plan marked it, `needs_review`, for the owner (FR-08).
+  - **An episode never got a title.** The first title of its brief is taken when it has
+    none. A title that is there is kept.
+  - **The director slammed text across the pictures** of the story scenes and put a tag
+    and a stamp on top of each other. The `direct` skill is at version 1.1: in a `scroll`
+    scene the words go into title, label and sublabel and into one tag or one stamp, and
+    `text` is for `title` and `outro` scenes. The same rule is checked on the answer, so
+    an answer that breaks it is sent back once. The demo recording already followed the
+    rule and is marked as version 1.1.
+  - **The finished video had one frame less than its length asked for**, and the format
+    check refused it. A scene's end was computed as `start + duration` in floating point
+    and could round to another frame than the next scene's start, which is the same
+    moment. Frames are now computed in whole milliseconds by one function, and a scene
+    ends where the next one starts. A tie goes to the even frame as before, so no
+    existing frame count or golden frame changed.
+- **Reverse:** each fix is a few lines in `apps/worker/handlers/pictures.py`,
+  `apps/worker/handlers/plan.py`, `packages/skills/rules.py` and
+  `packages/render/frames.py`.

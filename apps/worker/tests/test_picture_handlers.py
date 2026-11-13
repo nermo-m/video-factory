@@ -48,6 +48,7 @@ class FakeImages:
             model="codex image tool",
             cost_usd=Decimal("0"),
             latency_ms=43000,
+            licence="Generated on the owner's ChatGPT plan (OpenAI terms of use)",
         )
 
 
@@ -243,3 +244,35 @@ def test_a_clip_job_finishes_without_a_clip_and_says_why(
     assert output["scene_id"] == "s04_storm"
     assert "still picture" in output["why"]
     assert stage.images.requests == []
+
+
+def test_a_generated_picture_records_where_it_came_from_and_keeps_its_rights_for_review(
+    stage: Stage, sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any]
+) -> None:
+    """Section 5.2: every asset has a licence, and the render refuses one without. The
+    licence says where the picture came from. Clearing its rights stays with the owner."""
+    before = picture(sessions, episode_id, spec, "a_harbour")
+    assert before.asset is not None
+    assert before.asset.licence is None
+
+    stage.run("gen.image", episode_id, asset_id="a_harbour")
+
+    after = picture(sessions, episode_id, spec, "a_harbour")
+    assert after.asset is not None
+    assert after.asset.licence == "Generated on the owner's ChatGPT plan (OpenAI terms of use)"
+    assert after.asset.rights_status is before.asset.rights_status
+
+
+def test_a_licence_that_is_already_recorded_is_kept(
+    stage: Stage, sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any]
+) -> None:
+    with sessions.begin() as session:
+        row = session.get(models.Asset, picture(sessions, episode_id, spec, "a_harbour").asset.id)  # type: ignore[union-attr]
+        assert row is not None
+        row.licence = "CC0, checked by the owner"
+
+    stage.run("gen.image", episode_id, asset_id="a_harbour")
+
+    kept = picture(sessions, episode_id, spec, "a_harbour").asset
+    assert kept is not None
+    assert kept.licence == "CC0, checked by the owner"

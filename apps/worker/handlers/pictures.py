@@ -122,6 +122,10 @@ def picture_handlers(
                 height=result.height,
                 cost_usd=result.cost_usd,
             )
+            if not picture.asset.licence:
+                # Where the picture came from (section 5.2: every asset has a licence).
+                # Its rights stay as the plan marked them, for the owner to review.
+                picture.asset.licence = result.licence
             # The picture counts towards the provider's 5 hour and 7 day windows (FR-31).
             limits.record_usage(
                 session,

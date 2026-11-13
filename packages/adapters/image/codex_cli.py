@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Seconds for one picture. A picture took 43 seconds when this was measured (ADR 10).
 IMAGE_TIMEOUT_S = 600.0
 MODEL = "codex image tool"
+LICENCE = "Generated on the owner's ChatGPT plan (OpenAI terms of use)"
 
 
 class CodexImages(BridgeClient):
@@ -79,6 +80,7 @@ class CodexImages(BridgeClient):
             # Covered by the owner's plan.
             cost_usd=Decimal("0"),
             latency_ms=round((time.perf_counter() - started) * 1000),
+            licence=LICENCE,
         )
         # Numbers only: never the prompt.
         logger.info(

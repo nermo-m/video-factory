@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from packages.render.frames import frame_at
+
 FFPROBE = "ffprobe"
 VIDEO_CODEC = "h264"
 PIXEL_FORMAT = "yuv420p"
@@ -138,7 +140,7 @@ def format_problems(
         )
     if not facts.faststart:
         problems.append("The index is at the end of the file (no faststart).")
-    expected_frames = round(duration_s * fps)
+    expected_frames = frame_at(duration_s, fps)
     if facts.frames != expected_frames:
         problems.append(f"The video has {facts.frames} frames, not {expected_frames}.")
     if abs(facts.duration_s - duration_s) > 1.5 / fps:

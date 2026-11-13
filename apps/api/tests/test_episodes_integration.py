@@ -143,7 +143,7 @@ def test_fr16_in_demo_mode_an_idea_reaches_the_plan_gate_by_itself(client: TestC
         "plan.direct": "succeeded",
     }
     spec = client.get(f"/api/v1/episodes/{episode_id}/spec").json()
-    assert (spec["version"], spec["author"], spec["skill_version"]) == (1, "model", "1.0")
+    assert (spec["version"], spec["author"], spec["skill_version"]) == (1, "model", "1.1")
     assert spec["spec"]["episode_id"] == episode_id
     assert spec["spec"]["scenes"][0]["id"] == "s01_hook"
 

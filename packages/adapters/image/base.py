@@ -34,6 +34,9 @@ class ImageResult:
     model: str
     cost_usd: Decimal
     latency_ms: int
+    # Under which terms the picture exists, in words. It says where the picture came
+    # from. It does not say that its rights are cleared: that is the owner's review.
+    licence: str
     seed: int | None = None
 
 
