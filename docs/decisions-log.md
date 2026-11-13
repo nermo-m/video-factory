@@ -1441,3 +1441,42 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     until the new one replaces it.
 - **Reverse:** `asset_changed` in `packages/core/pipeline.py` and its one call in
   `apps/worker/handlers/pictures.py`. `VideoOutOfDate` in the Render tab.
+
+## D-050: The owner's own pictures: one file per request, matched by name on the server
+
+- **Date:** 2026-11-13. **Card:** VFS-28 (first part: uploads and matching. The Library
+  screen is the second part).
+- **Problem:** Section 10 lists `POST /assets/{id}/upload` as "Multipart upload as a new
+  version" and `POST /episodes/{id}/assets/match` as "Upload many files, match by filename
+  to asset keys". Section 11.2 wants the matches shown before anything is saved. A
+  multipart form needs one more package in the API, and one request with many files
+  either stores them before the owner has seen the matches or has to be sent twice.
+- **Choice:**
+  - **An upload is the picture file itself as the request body**, sent as `image/png`,
+    `image/jpeg` or `image/webp`, to `POST /episodes/{id}/assets/{asset_id}/upload`. The
+    address follows Q-072 (a picture is known by its id in the plan). No form, so no new
+    package.
+  - **Matching takes file names and stores nothing.** `POST /episodes/{id}/assets/match`
+    answers which name belongs to which picture and why a name belongs to none. The
+    interface shows that, and Use sends each matched file through the upload address,
+    one at a time. The rule lives in one place, `match_filenames`: the name without its
+    ending is the picture's id, the id without `a_`, or the file name the plan asks for.
+    Case, spaces and dashes make no difference, and the first file that matches a picture
+    gets it.
+  - **An upload is untrusted.** Pillow must read it as PNG, JPEG or WebP, at most 20 MB
+    and 50 megapixels, at least 256 pixels on its short side. It is stored again as a
+    plain PNG: turned upright, without the camera's metadata (which can hold a
+    location), and scaled down to 4096 pixels at most. Pillow moves into the API's
+    package group for this. It was already in the worker's, at the same version.
+  - **A new file resets the rights.** The picture's licence becomes "Uploaded by the
+    owner" and its rights go back to needs review, because what was decided about the
+    file before says nothing about this one.
+  - **An upload can replace a generated picture, never a library one.** The library is
+    shared by every episode. A picture that is being made cannot be uploaded over.
+  - **A video that shows the picture is marked out of date**, as in D-049.
+  - **The web app's forwarding to the API gets a body limit of 24 MB.** Its default is
+    10 MB, and a larger body was cut off and answered with a bare 500. That was found by
+    sending an 11 MB file through the built containers, not by a test, so a test now
+    compares the two limits. The interface also refuses a file over 20 MB before sending.
+- **Reverse:** `packages/core/uploads.py`, `upload` and `match` in `apps/api/episodes.py`,
+  `UploadOwn` and `MatchFiles` in the Assets tab.

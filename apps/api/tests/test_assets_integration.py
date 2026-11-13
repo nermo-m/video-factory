@@ -111,6 +111,7 @@ def test_the_pictures_of_an_episode_are_listed_with_where_they_come_from_and_the
         "generating": False,
         "image_url": "/api/v1/files/library/a_hill_dawn/v1.png",
         "model": None,
+        "uploaded": False,
         "versions": 1,
         "licence": "MIT",
         "rights_status": "cleared",

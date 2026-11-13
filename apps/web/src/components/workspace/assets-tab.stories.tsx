@@ -41,6 +41,7 @@ function picture(id: string, fields: Partial<AssetOut> = {}): AssetOut {
     // No file is behind this address in Storybook: the picture shows its name instead.
     image_url: `/api/v1/files/jobs/gen.image/ab/abcdef/${id}.png`,
     model: "codex image tool",
+    uploaded: false,
     versions: 1,
     licence: "Generated on the owner's ChatGPT plan (OpenAI terms of use)",
     rights_status: "needs_review",

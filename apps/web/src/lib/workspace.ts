@@ -366,3 +366,29 @@ export function videoFileName(title: string): string {
     .slice(0, 60);
   return `${slug || "video"}.mp4`;
 }
+
+
+/** The picture files the studio takes, as the file picker is told. */
+export const PICTURE_TYPES = "image/png,image/jpeg,image/webp";
+
+const TYPE_BY_ENDING: Record<string, "image/png" | "image/jpeg" | "image/webp"> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+};
+
+/**
+ * What a chosen file is sent as: its own type when the browser knows it, its ending
+ * otherwise. Null for a file the studio does not take.
+ */
+export function pictureType(file: { name: string; type: string }) {
+  const known = Object.values(TYPE_BY_ENDING).find((type) => type === file.type);
+  return known ?? TYPE_BY_ENDING[file.name.split(".").pop()?.toLowerCase() ?? ""] ?? null;
+}
+
+export const NOT_A_PICTURE = "Choose a PNG, JPEG or WebP picture.";
+
+/** The largest file the API takes (MAX_BYTES in packages/core/uploads.py). */
+export const PICTURE_MAX_BYTES = 20 * 1024 * 1024;
+export const PICTURE_TOO_LARGE = "The file is larger than 20 MB. Make the picture smaller and choose it again.";

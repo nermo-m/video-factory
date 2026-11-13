@@ -55,7 +55,9 @@ def create_app(
             sessions, settings.provider_mode, ProviderProbe(settings)
         )
         episode_service = episode_service or DatabaseEpisodeService(
-            sessions, critic_enabled=settings.critic_enabled
+            sessions,
+            critic_enabled=settings.critic_enabled,
+            storage=LocalStorage(settings.data_dir),
         )
 
     @asynccontextmanager

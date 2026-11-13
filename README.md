@@ -61,6 +61,12 @@ words, and approve it. The pictures are then made one by one, about 40 seconds e
 at them in the Assets tab, make one again if you like, and approve them. A few minutes
 later the Render tab plays the video and offers it as a download.
 
+Your own pictures work too. In the Assets tab, Upload your own puts a PNG, JPEG or WebP
+file in the place of one picture. To place several at once, name each file after its
+picture (`harbour.jpg` for Harbour), choose them together, and check the matches before
+they are stored. A picture that changes after the video was made marks the video Out of
+date, and Update on the Render tab makes only the scenes that show it again.
+
 One episode needs about five planning calls on the Claude plan and four pictures on the
 ChatGPT plan. The app counts its own use and pauses at your budget, which you set under
 Settings, Usage and limits. `make down` stops everything.

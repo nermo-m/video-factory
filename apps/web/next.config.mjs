@@ -19,6 +19,13 @@ const nextConfig = {
   async rewrites() {
     return [{ source: "/api/v1/:path*", destination: `${apiUrl}/api/v1/:path*` }];
   },
+  experimental: {
+    // An uploaded picture passes through this forwarding. Its default limit is 10 MB, and
+    // a larger body is cut off and answered with a bare 500. The API takes pictures up to
+    // 20 MB (MAX_BYTES in packages/core/uploads.py) and refuses larger ones in words, so
+    // this limit sits above it.
+    proxyClientMaxBodySize: 24 * 1024 * 1024,
+  },
   reactStrictMode: true,
 };
 

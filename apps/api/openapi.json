@@ -174,6 +174,11 @@
             ],
             "description": "Null while it has no asset row."
           },
+          "uploaded": {
+            "description": "True when the active file is one the owner uploaded.",
+            "title": "Uploaded",
+            "type": "boolean"
+          },
           "used_in": {
             "description": "The scenes that show it.",
             "items": {
@@ -200,6 +205,7 @@
           "generating",
           "image_url",
           "model",
+          "uploaded",
           "versions",
           "licence",
           "rights_status",
@@ -913,6 +919,84 @@
         ],
         "title": "JobStatus",
         "type": "string"
+      },
+      "MatchList": {
+        "properties": {
+          "matches": {
+            "description": "One per file name, in the order given.",
+            "items": {
+              "$ref": "#/components/schemas/MatchOut"
+            },
+            "title": "Matches",
+            "type": "array"
+          }
+        },
+        "required": [
+          "matches"
+        ],
+        "title": "MatchList",
+        "type": "object"
+      },
+      "MatchOut": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The picture this file belongs to, if any.",
+            "title": "Asset Id"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why it belongs to no picture. Null when it matched.",
+            "title": "Why"
+          }
+        },
+        "required": [
+          "filename",
+          "asset_id",
+          "why"
+        ],
+        "title": "MatchOut",
+        "type": "object"
+      },
+      "MatchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "filenames": {
+            "description": "The names of the files the owner chose.",
+            "items": {
+              "maxLength": 260,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Filenames",
+            "type": "array"
+          }
+        },
+        "required": [
+          "filenames"
+        ],
+        "title": "MatchRequest",
+        "type": "object"
       },
       "PlanOut": {
         "description": "What the Plan tab shows beside the spec itself.",
@@ -2098,6 +2182,89 @@
         ]
       }
     },
+    "/api/v1/episodes/{episode_id}/assets/match": {
+      "post": {
+        "operationId": "post_episode_assets_match",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request body could not be read."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode, or what was asked of it, does not exist."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Which of these file names belong to which picture. Nothing is stored",
+        "tags": [
+          "episodes"
+        ]
+      }
+    },
     "/api/v1/episodes/{episode_id}/assets/{asset_id}/regenerate": {
       "post": {
         "operationId": "post_episode_asset_regenerate",
@@ -2196,6 +2363,143 @@
           }
         },
         "summary": "Make one generated picture again, as a new version",
+        "tags": [
+          "episodes"
+        ]
+      }
+    },
+    "/api/v1/episodes/{episode_id}/assets/{asset_id}/upload": {
+      "post": {
+        "operationId": "post_episode_asset_upload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "pattern": "^a_[a-z0-9_]{1,60}$",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            },
+            "image/webp": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "description": "The picture file itself, not a form.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode, or what was asked of it, does not exist."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode cannot do this in its current state."
+          },
+          "411": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request does not say how long it is."
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The file or the picture is too large."
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The file is not sent as PNG, JPEG or WebP."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Store the owner's own picture as a new version of one picture",
         "tags": [
           "episodes"
         ]

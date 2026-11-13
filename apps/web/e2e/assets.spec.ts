@@ -248,3 +248,161 @@ test.describe("Assets tab at every size", () => {
     });
   }
 });
+
+test.describe("Your own pictures (FR-07)", () => {
+  const file = (name: string, mimeType = "image/png") => ({ name, mimeType, buffer: PIXEL });
+  const own = (page: Page) => page.getByTestId("match-files");
+  const uploads = (fake: FakeEpisode) => fake.requests.filter((request) => request.path.endsWith("/upload"));
+
+  test("Upload your own stores the file as the picture and says where it comes from", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page, atPictures());
+    await assetsTab(page);
+    const garden = card(page, "Garden dawn");
+    await expect(garden).toContainText("Generated");
+
+    await garden
+      .getByLabel("Upload your own picture for Garden dawn")
+      .setInputFiles(file("anything.jpg", "image/jpeg"));
+
+    await expect(garden).toContainText("Your upload");
+    expect(sent(fake, "POST", "/assets/a_garden_dawn/upload")[0]?.body).toEqual({ sent_as: "image/jpeg" });
+  });
+
+  test("a library picture has no upload, and a picture that waits for one asks for it", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = atPictures();
+    fake.assets.push(
+      picture("a_my_photo", {
+        origin: "uploaded",
+        prompt: null,
+        filename: "my_photo.png",
+        resolved: false,
+        image_url: null,
+        model: null,
+        versions: 0,
+      }),
+    );
+    await openWorkspace(page, fake);
+    await assetsTab(page);
+
+    await expect(card(page, "Hill dawn").locator("input[type=file]")).toHaveCount(0);
+    await expect(card(page, "My photo")).toContainText("Upload this picture");
+    await expect(card(page, "My photo").getByRole("button", { name: "Make again" })).toHaveCount(0);
+  });
+
+  test("UX-06 a file the API refuses shows the reason and the picture stays as it was", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = atPictures();
+    fake.refuseUpload = {
+      status: 422,
+      body: {
+        error: {
+          code: "too_small",
+          message: "The picture is 120 by 200 pixels. Its short side must be at least 256 pixels.",
+          details: {},
+        },
+      },
+    };
+    await openWorkspace(page, fake);
+    await assetsTab(page);
+    const garden = card(page, "Garden dawn");
+
+    await garden.locator("input[type=file]").setInputFiles(file("small.png"));
+
+    await expect(garden.getByRole("alert")).toContainText("120 by 200 pixels");
+    await expect(garden).toContainText("Generated");
+  });
+
+  test("a file that is not a picture is refused before anything is sent", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page, atPictures());
+    await assetsTab(page);
+    const garden = card(page, "Garden dawn");
+
+    await garden.locator("input[type=file]").setInputFiles(file("notes.txt", "text/plain"));
+
+    await expect(garden.getByRole("alert")).toHaveText("Choose a PNG, JPEG or WebP picture.");
+    expect(uploads(fake)).toHaveLength(0);
+  });
+
+  test("a file over 20 MB is refused before anything is sent", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page, atPictures());
+    await assetsTab(page);
+    const garden = card(page, "Garden dawn");
+
+    await garden
+      .locator("input[type=file]")
+      .setInputFiles({ name: "huge.png", mimeType: "image/png", buffer: Buffer.alloc(20 * 1024 * 1024 + 1) });
+
+    await expect(garden.getByRole("alert")).toContainText("The file is larger than 20 MB.");
+    expect(uploads(fake)).toHaveLength(0);
+  });
+
+  test("FR-07 several files are matched by name and shown before anything is stored", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page, atPictures());
+    await assetsTab(page);
+
+    await own(page)
+      .getByLabel("Choose your own pictures")
+      .setInputFiles([file("Garden Dawn.png"), file("holiday.png"), file("watering-can.png")]);
+
+    const matches = own(page).getByRole("list", { name: "Matches" }).getByRole("listitem");
+    await expect(matches).toHaveText([
+      /Garden Dawn\.png\s*goes to Garden dawn/,
+      /holiday\.png\s*is left out\. No picture of this episode has this name\./,
+      /watering-can\.png\s*goes to Watering can/,
+    ]);
+    expect(sent(fake, "POST", "/assets/match")[0]?.body).toEqual({
+      filenames: ["Garden Dawn.png", "holiday.png", "watering-can.png"],
+    });
+    expect(uploads(fake)).toHaveLength(0);
+
+    await own(page).getByRole("button", { name: "Use 2 pictures" }).click();
+
+    await expect(own(page).getByRole("status")).toHaveText("2 pictures stored.");
+    await expect(card(page, "Garden dawn")).toContainText("Your upload");
+    await expect(card(page, "Watering can")).toContainText("Your upload");
+    expect(uploads(fake).map((request) => request.path)).toEqual([
+      "/assets/a_garden_dawn/upload",
+      "/assets/a_watering_can/upload",
+    ]);
+  });
+
+  test("FR-07 Cancel stores nothing, and nothing can be stored when no file matches", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page, atPictures());
+    await assetsTab(page);
+    const choose = own(page).getByLabel("Choose your own pictures");
+
+    await choose.setInputFiles([file("holiday.png")]);
+    await expect(own(page).getByRole("button", { name: "Use 0 pictures" })).toBeDisabled();
+    await own(page).getByRole("button", { name: "Cancel" }).click();
+
+    await expect(own(page).getByRole("list", { name: "Matches" })).toBeHidden();
+    await expect(choose).toBeAttached();
+    expect(uploads(fake)).toHaveLength(0);
+  });
+
+  for (const [size, viewport] of Object.entries(SIZES)) {
+    test(`UX-05 the matches have no accessibility violations and fit on ${size}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await openWorkspace(page, atPictures());
+      await assetsTab(page);
+      await own(page)
+        .getByLabel("Choose your own pictures")
+        .setInputFiles([
+          file("garden_dawn.png"),
+          file("a-very-long-file-name-that-matches-no-picture-of-this-episode.png"),
+        ]);
+      await expect(own(page).getByRole("list", { name: "Matches" })).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+
+      expect(results.violations).toEqual([]);
+      expect(await sidewaysOverflow(page)).toBe(0);
+    });
+  }
+});
