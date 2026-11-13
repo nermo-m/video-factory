@@ -392,8 +392,8 @@
       "id": "VFS-77",
       "order": 314.7,
       "title": "Every episode keeps its own job files",
-      "status": "review",
-      "note": "A new episode's video overwrote the file of the one before, because job files were named by type and input only. A job of an episode now writes below that episode's folder. In review as a pull request."
+      "status": "done",
+      "note": "A new episode's video overwrote the file of the one before, because job files were named by type and input only. A job of an episode now writes below that episode's folder. Merged in pull request #50."
     },
     {
       "id": "VFS-74",
