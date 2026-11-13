@@ -128,6 +128,8 @@ export interface FakeEpisode {
   renders: Json[];
   /** The episode's pictures, as GET /episodes/{id}/assets lists them. */
   assets: Json[];
+  /** What an upload answers with instead of storing, when set. */
+  refuseUpload: { status: number; body: Json } | null;
   requests: { method: string; path: string; body: unknown }[];
 }
 
@@ -199,6 +201,7 @@ export function fakeEpisode(fields: Partial<EpisodeRow> = {}): FakeEpisode {
     jobs: [],
     renders: [],
     assets: [],
+    refuseUpload: null,
     requests: [],
   };
 }
@@ -217,6 +220,7 @@ export function picture(id: string, fields: Json = {}): Json {
     generating: false,
     image_url: `/api/v1/files/jobs/gen.image/ab/abcdef/${id}.png`,
     model: "codex image tool",
+    uploaded: false,
     versions: 1,
     licence: "Generated on the owner's ChatGPT plan (OpenAI terms of use)",
     rights_status: "needs_review",
@@ -277,7 +281,13 @@ export async function mockEpisode(page: Page, fake: FakeEpisode) {
     const request = route.request();
     const path = new URL(request.url()).pathname.split(`/episodes/${fake.episode.id}`)[1] ?? "";
     const method = request.method();
-    const body: unknown = method === "GET" ? null : request.postDataJSON();
+    // An upload sends the picture file itself: its type is what is remembered of it.
+    const body: unknown =
+      method === "GET"
+        ? null
+        : path.endsWith("/upload")
+          ? { sent_as: request.headers()["content-type"] ?? null }
+          : request.postDataJSON();
     if (method !== "GET") {
       fake.requests.push({ method, path, body });
     }
@@ -328,6 +338,50 @@ export async function mockEpisode(page: Page, fake: FakeEpisode) {
         asset.id === again[1] ? { ...asset, generating: true } : asset,
       );
       return route.fulfill({ status: 202, json: assetList(fake) });
+    }
+    if (method === "POST" && path === "/assets/match") {
+      const stem = (name: string) =>
+        name
+          .replace(/\.[^.]+$/, "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_");
+      const taken = new Set<string>();
+      const matches = (body as { filenames: string[] }).filenames.map((filename) => {
+        const found = fake.assets.find(
+          (asset) =>
+            asset.origin !== "library" &&
+            !taken.has(String(asset.id)) &&
+            [String(asset.id), String(asset.id).slice(2)].includes(stem(filename)),
+        );
+        if (found) {
+          taken.add(String(found.id));
+        }
+        return {
+          filename,
+          asset_id: found ? found.id : null,
+          why: found ? null : "No picture of this episode has this name.",
+        };
+      });
+      return route.fulfill({ json: { matches } });
+    }
+    const uploaded = /^\/assets\/([a-z0-9_]+)\/upload$/.exec(path);
+    if (method === "POST" && uploaded) {
+      if (fake.refuseUpload) {
+        return route.fulfill({ status: fake.refuseUpload.status, json: fake.refuseUpload.body });
+      }
+      fake.assets = fake.assets.map((asset) =>
+        asset.id === uploaded[1]
+          ? {
+              ...asset,
+              uploaded: true,
+              resolved: true,
+              model: null,
+              versions: Number(asset.versions) + 1,
+              image_url: `/api/v1/files/episodes/${EPISODE_ID}/uploads/${uploaded[1]}/abc.png`,
+            }
+          : asset,
+      );
+      return route.fulfill({ json: assetList(fake) });
     }
     if (method === "GET" && path === "/renders") {
       return route.fulfill({

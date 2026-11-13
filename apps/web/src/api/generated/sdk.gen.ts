@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetEpisodeAssetsData, GetEpisodeAssetsErrors, GetEpisodeAssetsResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodePlanData, GetEpisodePlanErrors, GetEpisodePlanResponses, GetEpisodeRendersData, GetEpisodeRendersErrors, GetEpisodeRendersResponses, GetEpisodeResponses, GetEpisodeRevisionData, GetEpisodeRevisionErrors, GetEpisodeRevisionResponses, GetEpisodesData, GetEpisodesErrors, GetEpisodeSpecData, GetEpisodeSpecDiffData, GetEpisodeSpecDiffErrors, GetEpisodeSpecDiffResponses, GetEpisodeSpecErrors, GetEpisodeSpecResponses, GetEpisodeSpecVersionsData, GetEpisodeSpecVersionsErrors, GetEpisodeSpecVersionsResponses, GetEpisodesResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetProvidersData, GetProvidersErrors, GetProvidersResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PostEpisodeAdvanceData, PostEpisodeAdvanceErrors, PostEpisodeAdvanceResponses, PostEpisodeApproveData, PostEpisodeApproveErrors, PostEpisodeApproveResponses, PostEpisodeAssetRegenerateData, PostEpisodeAssetRegenerateErrors, PostEpisodeAssetRegenerateResponses, PostEpisodeData, PostEpisodeErrors, PostEpisodeRejectData, PostEpisodeRejectErrors, PostEpisodeRejectResponses, PostEpisodeRerunData, PostEpisodeRerunErrors, PostEpisodeRerunResponses, PostEpisodeResponses, PostEpisodeReviseApplyData, PostEpisodeReviseApplyErrors, PostEpisodeReviseApplyResponses, PostEpisodeReviseData, PostEpisodeReviseErrors, PostEpisodeReviseResponses, PostProviderContinueData, PostProviderContinueErrors, PostProviderContinueResponses, PostProvidersCheckData, PostProvidersCheckErrors, PostProvidersCheckResponses, PutEpisodeSpecData, PutEpisodeSpecErrors, PutEpisodeSpecResponses, PutProviderBudgetData, PutProviderBudgetErrors, PutProviderBudgetResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
+import type { GetEpisodeAssetsData, GetEpisodeAssetsErrors, GetEpisodeAssetsResponses, GetEpisodeData, GetEpisodeErrors, GetEpisodePlanData, GetEpisodePlanErrors, GetEpisodePlanResponses, GetEpisodeRendersData, GetEpisodeRendersErrors, GetEpisodeRendersResponses, GetEpisodeResponses, GetEpisodeRevisionData, GetEpisodeRevisionErrors, GetEpisodeRevisionResponses, GetEpisodesData, GetEpisodesErrors, GetEpisodeSpecData, GetEpisodeSpecDiffData, GetEpisodeSpecDiffErrors, GetEpisodeSpecDiffResponses, GetEpisodeSpecErrors, GetEpisodeSpecResponses, GetEpisodeSpecVersionsData, GetEpisodeSpecVersionsErrors, GetEpisodeSpecVersionsResponses, GetEpisodesResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetProvidersData, GetProvidersErrors, GetProvidersResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, PostEpisodeAdvanceData, PostEpisodeAdvanceErrors, PostEpisodeAdvanceResponses, PostEpisodeApproveData, PostEpisodeApproveErrors, PostEpisodeApproveResponses, PostEpisodeAssetRegenerateData, PostEpisodeAssetRegenerateErrors, PostEpisodeAssetRegenerateResponses, PostEpisodeAssetsMatchData, PostEpisodeAssetsMatchErrors, PostEpisodeAssetsMatchResponses, PostEpisodeAssetUploadData, PostEpisodeAssetUploadErrors, PostEpisodeAssetUploadResponses, PostEpisodeData, PostEpisodeErrors, PostEpisodeRejectData, PostEpisodeRejectErrors, PostEpisodeRejectResponses, PostEpisodeRerunData, PostEpisodeRerunErrors, PostEpisodeRerunResponses, PostEpisodeResponses, PostEpisodeReviseApplyData, PostEpisodeReviseApplyErrors, PostEpisodeReviseApplyResponses, PostEpisodeReviseData, PostEpisodeReviseErrors, PostEpisodeReviseResponses, PostProviderContinueData, PostProviderContinueErrors, PostProviderContinueResponses, PostProvidersCheckData, PostProvidersCheckErrors, PostProvidersCheckResponses, PutEpisodeSpecData, PutEpisodeSpecErrors, PutEpisodeSpecResponses, PutProviderBudgetData, PutProviderBudgetErrors, PutProviderBudgetResponses, PutSettingsData, PutSettingsErrors, PutSettingsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -56,6 +56,18 @@ export const postEpisodeApprove = <ThrowOnError extends boolean = false>(options
 export const getEpisodeAssets = <ThrowOnError extends boolean = false>(options: Options<GetEpisodeAssetsData, ThrowOnError>): RequestResult<GetEpisodeAssetsResponses, GetEpisodeAssetsErrors, ThrowOnError> => (options.client ?? client).get<GetEpisodeAssetsResponses, GetEpisodeAssetsErrors, ThrowOnError>({ url: '/api/v1/episodes/{episode_id}/assets', ...options });
 
 /**
+ * Which of these file names belong to which picture. Nothing is stored
+ */
+export const postEpisodeAssetsMatch = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeAssetsMatchData, ThrowOnError>): RequestResult<PostEpisodeAssetsMatchResponses, PostEpisodeAssetsMatchErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeAssetsMatchResponses, PostEpisodeAssetsMatchErrors, ThrowOnError>({
+    url: '/api/v1/episodes/{episode_id}/assets/match',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Make one generated picture again, as a new version
  */
 export const postEpisodeAssetRegenerate = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeAssetRegenerateData, ThrowOnError>): RequestResult<PostEpisodeAssetRegenerateResponses, PostEpisodeAssetRegenerateErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeAssetRegenerateResponses, PostEpisodeAssetRegenerateErrors, ThrowOnError>({
@@ -63,6 +75,19 @@ export const postEpisodeAssetRegenerate = <ThrowOnError extends boolean = false>
     ...options,
     headers: {
         'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Store the owner's own picture as a new version of one picture
+ */
+export const postEpisodeAssetUpload = <ThrowOnError extends boolean = false>(options: Options<PostEpisodeAssetUploadData, ThrowOnError>): RequestResult<PostEpisodeAssetUploadResponses, PostEpisodeAssetUploadErrors, ThrowOnError> => (options.client ?? client).post<PostEpisodeAssetUploadResponses, PostEpisodeAssetUploadErrors, ThrowOnError>({
+    bodySerializer: null,
+    url: '/api/v1/episodes/{episode_id}/assets/{asset_id}/upload',
+    ...options,
+    headers: {
+        'Content-Type': 'image/jpeg',
         ...options.headers
     }
 });

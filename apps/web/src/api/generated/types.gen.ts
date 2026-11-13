@@ -111,6 +111,12 @@ export type AssetOut = {
      */
     rights_status: RightsStatus | null;
     /**
+     * Uploaded
+     *
+     * True when the active file is one the owner uploaded.
+     */
+    uploaded: boolean;
+    /**
      * Used In
      *
      * The scenes that show it.
@@ -518,6 +524,52 @@ export type JobOut = {
  * JobStatus
  */
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+
+/**
+ * MatchList
+ */
+export type MatchList = {
+    /**
+     * Matches
+     *
+     * One per file name, in the order given.
+     */
+    matches: Array<MatchOut>;
+};
+
+/**
+ * MatchOut
+ */
+export type MatchOut = {
+    /**
+     * Asset Id
+     *
+     * The picture this file belongs to, if any.
+     */
+    asset_id: string | null;
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Why
+     *
+     * Why it belongs to no picture. Null when it matched.
+     */
+    why: string | null;
+};
+
+/**
+ * MatchRequest
+ */
+export type MatchRequest = {
+    /**
+     * Filenames
+     *
+     * The names of the files the owner chose.
+     */
+    filenames: Array<string>;
+};
 
 /**
  * PlanOut
@@ -1225,6 +1277,48 @@ export type GetEpisodeAssetsResponses = {
 
 export type GetEpisodeAssetsResponse = GetEpisodeAssetsResponses[keyof GetEpisodeAssetsResponses];
 
+export type PostEpisodeAssetsMatchData = {
+    body: MatchRequest;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/assets/match';
+};
+
+export type PostEpisodeAssetsMatchErrors = {
+    /**
+     * The request body could not be read.
+     */
+    400: ErrorResponse;
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeAssetsMatchError = PostEpisodeAssetsMatchErrors[keyof PostEpisodeAssetsMatchErrors];
+
+export type PostEpisodeAssetsMatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: MatchList;
+};
+
+export type PostEpisodeAssetsMatchResponse = PostEpisodeAssetsMatchResponses[keyof PostEpisodeAssetsMatchResponses];
+
 export type PostEpisodeAssetRegenerateData = {
     body: RegenerateRequest;
     path: {
@@ -1274,6 +1368,67 @@ export type PostEpisodeAssetRegenerateResponses = {
 };
 
 export type PostEpisodeAssetRegenerateResponse = PostEpisodeAssetRegenerateResponses[keyof PostEpisodeAssetRegenerateResponses];
+
+export type PostEpisodeAssetUploadData = {
+    /**
+     * The picture file itself, not a form.
+     */
+    body: Blob | File;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+        /**
+         * Asset Id
+         */
+        asset_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/assets/{asset_id}/upload';
+};
+
+export type PostEpisodeAssetUploadErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request does not say how long it is.
+     */
+    411: ErrorResponse;
+    /**
+     * The file or the picture is too large.
+     */
+    413: ErrorResponse;
+    /**
+     * The file is not sent as PNG, JPEG or WebP.
+     */
+    415: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeAssetUploadError = PostEpisodeAssetUploadErrors[keyof PostEpisodeAssetUploadErrors];
+
+export type PostEpisodeAssetUploadResponses = {
+    /**
+     * Successful Response
+     */
+    200: AssetList;
+};
+
+export type PostEpisodeAssetUploadResponse = PostEpisodeAssetUploadResponses[keyof PostEpisodeAssetUploadResponses];
 
 export type GetEpisodePlanData = {
     body?: never;

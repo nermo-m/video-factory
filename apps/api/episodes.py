@@ -17,6 +17,8 @@
     GET  /episodes/{id}/renders            its videos, newest first, paged
     GET  /episodes/{id}/assets             its pictures: where each comes from and its file
     POST /episodes/{id}/assets/{asset}/regenerate   make one generated picture again
+    POST /episodes/{id}/assets/{asset}/upload       the owner's own picture, as a new version
+    POST /episodes/{id}/assets/match                which file names belong to which picture
 
 A revision is a model call, so it runs as a job in the worker like every other one: it is
 counted, it waits when the provider is limited, and the API stays quick. The proposal is
@@ -25,18 +27,21 @@ applied only if the spec is still the version it was written for.
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from datetime import UTC, datetime
+from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal, Protocol
 
 from fastapi import APIRouter, Path, Query, Request
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.api.errors import BAD_BODY_RESPONSE, ApiError, ErrorResponse
 from apps.api.files import file_url
-from packages.core import assets, lengths, pipeline, queue, schemas, specs, stages
+from packages.core import assets, lengths, pipeline, queue, schemas, specs, stages, uploads
 from packages.core.db.models import Channel, Episode, Job, Render, SpecVersion
 from packages.core.enums import (
     AssetKind,
@@ -49,6 +54,7 @@ from packages.core.enums import (
     SpecAuthor,
 )
 from packages.core.stages import GATES
+from packages.core.storage import StorageAdapter
 from packages.render.theme import check_capabilities, load_theme
 
 router = APIRouter(tags=["episodes"])
@@ -126,6 +132,7 @@ class AssetOut(BaseModel):
     generating: bool = Field(description="True while a job is making it, or waits to.")
     image_url: str | None = Field(description="Where its active file is served.")
     model: str | None = Field(description="What made the active file, when it was generated.")
+    uploaded: bool = Field(description="True when the active file is one the owner uploaded.")
     versions: int = Field(description="How many files it has had.")
     licence: str | None
     rights_status: RightsStatus | None = Field(description="Null while it has no asset row.")
@@ -138,6 +145,24 @@ class RegenerateRequest(BaseModel):
     note: Annotated[str, Field(min_length=1, max_length=500, pattern=r"\S")] | None = Field(
         default=None, description="What should be different, added to the picture's prompt."
     )
+
+
+class MatchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    filenames: list[Annotated[str, Field(min_length=1, max_length=260)]] = Field(
+        min_length=1, max_length=200, description="The names of the files the owner chose."
+    )
+
+
+class MatchOut(BaseModel):
+    filename: str
+    asset_id: str | None = Field(description="The picture this file belongs to, if any.")
+    why: str | None = Field(description="Why it belongs to no picture. Null when it matched.")
+
+
+class MatchList(BaseModel):
+    matches: list[MatchOut] = Field(description="One per file name, in the order given.")
 
 
 class AssetList(BaseModel):
@@ -281,10 +306,22 @@ class EpisodeService(Protocol):
     def renders(self, episode_id: uuid.UUID, limit: int, offset: int) -> RenderList: ...
     def assets(self, episode_id: uuid.UUID) -> AssetList: ...
     def regenerate(self, episode_id: uuid.UUID, asset_id: str, note: str | None) -> AssetList: ...
+    def upload(self, episode_id: uuid.UUID, asset_id: str, data: bytes) -> AssetList: ...
+    def match(self, episode_id: uuid.UUID, filenames: list[str]) -> MatchList: ...
 
 
 def _not_found() -> ApiError:
     return ApiError(404, "episode_not_found", "This episode does not exist.")
+
+
+def _is_upload(picture: assets.Picture) -> bool:
+    """True when the picture's active file is one the owner uploaded: a file of the
+    episode's own that no model made."""
+    return (
+        picture.origin != AssetOrigin.LIBRARY.value
+        and picture.version is not None
+        and picture.version.model is None
+    )
 
 
 def _spec_error(error: specs.SpecError) -> ApiError:
@@ -323,9 +360,16 @@ def _changes(old: Any, new: Any) -> list[ChangeOut]:
 
 
 class DatabaseEpisodeService:
-    def __init__(self, sessions: sessionmaker[Session], *, critic_enabled: bool = True) -> None:
+    def __init__(
+        self,
+        sessions: sessionmaker[Session],
+        *,
+        critic_enabled: bool = True,
+        storage: StorageAdapter | None = None,
+    ) -> None:
         self._sessions = sessions
         self._critic = critic_enabled
+        self._storage = storage
 
     # --- reading ---
 
@@ -662,6 +706,7 @@ class DatabaseEpisodeService:
                         generating=picture.id in being_made,
                         image_url=file_url(picture.file),
                         model=picture.version.model if picture.version else None,
+                        uploaded=_is_upload(picture),
                         versions=counts.get(picture.asset.id, 0) if picture.asset else 0,
                         licence=picture.asset.licence if picture.asset else None,
                         rights_status=picture.asset.rights_status if picture.asset else None,
@@ -714,6 +759,77 @@ class DatabaseEpisodeService:
                 session, job_type=IMAGE_JOB, tag=JobTag.CPU, payload=payload, episode_id=episode_id
             )
         return self.assets(episode_id)
+
+    def upload(self, episode_id: uuid.UUID, asset_id: str, data: bytes) -> AssetList:
+        if self._storage is None:
+            raise ApiError(503, "no_storage", "The studio has no storage to keep the picture in.")
+        try:
+            prepared = uploads.prepare_picture(data)
+        except uploads.UploadError as error:
+            status = 413 if error.code == "too_large" else 422
+            raise ApiError(status, error.code, str(error)) from error
+        # Named by what it holds: the same picture uploaded twice is one file.
+        digest = hashlib.sha256(prepared.data).hexdigest()[:20]
+        stored = PurePosixPath(f"episodes/{episode_id}/uploads/{asset_id}/{digest}.png")
+
+        with self._sessions.begin() as session:
+            episode = session.get(Episode, episode_id, with_for_update=True)
+            if episode is None:
+                raise _not_found()
+            spec = self._current(session, episode_id).body
+            # A picture that entered the plan after the asset plan ran gets its row here.
+            assets.sync(session, episode, spec)
+            picture = next(
+                (item for item in assets.resolve(session, episode, spec) if item.id == asset_id),
+                None,
+            )
+            if picture is None:
+                raise ApiError(404, "asset_not_found", "This episode has no such picture.")
+            if picture.origin == AssetOrigin.LIBRARY.value or picture.asset is None:
+                raise ApiError(
+                    409,
+                    "library_picture",
+                    "This picture comes from the library, which every episode shares. "
+                    "It cannot be replaced for one episode.",
+                )
+            if asset_id in self._being_made(session, episode_id):
+                raise ApiError(
+                    409,
+                    "already_generating",
+                    "This picture is being made right now. Upload yours when it is done.",
+                )
+            self._storage.write_bytes(stored, prepared.data)
+            assets.add_version(
+                session,
+                picture.asset,
+                file_path=stored.as_posix(),
+                width=prepared.width,
+                height=prepared.height,
+            )
+            # A new file: where it comes from is the owner, and what was decided about the
+            # rights of the file before it says nothing about this one (section 3.5).
+            picture.asset.licence = uploads.UPLOAD_LICENCE
+            picture.asset.rights_status = RightsStatus.NEEDS_REVIEW
+            picture.asset.contains_third_party_ip = False
+            # A video that already shows this picture is out of date now (section 4.2).
+            pipeline.asset_changed(session, episode_id, asset_id)
+        return self.assets(episode_id)
+
+    def match(self, episode_id: uuid.UUID, filenames: list[str]) -> MatchList:
+        with self._sessions.begin() as session:
+            episode = self._episode(session, episode_id)
+            spec = self._current(session, episode_id).body
+            wanted = [
+                uploads.Wanted(picture.id, picture.filename)
+                for picture in assets.resolve(session, episode, spec)
+                if picture.origin != AssetOrigin.LIBRARY.value
+            ]
+        return MatchList(
+            matches=[
+                MatchOut(filename=match.filename, asset_id=match.asset_id, why=match.why)
+                for match in uploads.match_filenames(filenames, wanted)
+            ]
+        )
 
     # --- renders ---
 
@@ -802,6 +918,7 @@ class MemoryEpisodeService:
 
     advance = approve = reject = rerun = spec = replace_spec = plan = _missing
     versions = diff = revise = revision = apply = renders = assets = regenerate = _missing
+    upload = match = _missing
 
 
 # --- Routes ------------------------------------------------------------------------------
@@ -1003,3 +1120,66 @@ def post_episode_asset_regenerate(
     request: Request,
 ) -> AssetList:
     return _service(request).regenerate(episode_id, asset_id, body.note)
+
+
+PICTURE_BODY = {
+    "requestBody": {
+        "required": True,
+        "description": "The picture file itself, not a form.",
+        "content": {
+            media: {"schema": {"type": "string", "format": "binary"}}
+            for media in uploads.FORMATS.values()
+        },
+    }
+}
+UPLOAD_ERRORS: dict[int | str, dict[str, Any]] = {
+    411: {"model": ErrorResponse, "description": "The request does not say how long it is."},
+    413: {"model": ErrorResponse, "description": "The file or the picture is too large."},
+    415: {"model": ErrorResponse, "description": "The file is not sent as PNG, JPEG or WebP."},
+}
+
+
+async def _picture_body(request: Request) -> bytes:
+    """The uploaded file, read only as far as the size limit allows."""
+    sent_as = request.headers.get("content-type", "").split(";")[0].strip().lower()
+    if sent_as not in uploads.FORMATS.values():
+        raise ApiError(
+            415, "unsupported_type", "Send the picture as image/png, image/jpeg or image/webp."
+        )
+    limit = uploads.MAX_BYTES
+    too_large = ApiError(413, "too_large", f"The file is larger than {limit // (1024 * 1024)} MB.")
+    announced = request.headers.get("content-length")
+    if announced is not None and announced.isdigit() and int(announced) > limit:
+        raise too_large
+    received = bytearray()
+    async for chunk in request.stream():
+        received += chunk
+        if len(received) > limit:
+            raise too_large
+    return bytes(received)
+
+
+@router.post(
+    "/episodes/{episode_id}/assets/match",
+    summary="Which of these file names belong to which picture. Nothing is stored",
+    responses={**NOT_FOUND, **BAD_BODY_RESPONSE},
+)
+def post_episode_assets_match(
+    episode_id: uuid.UUID, body: MatchRequest, request: Request
+) -> MatchList:
+    return _service(request).match(episode_id, body.filenames)
+
+
+@router.post(
+    "/episodes/{episode_id}/assets/{asset_id}/upload",
+    summary="Store the owner's own picture as a new version of one picture",
+    responses={**NOT_FOUND, **CONFLICT, **UPLOAD_ERRORS},
+    openapi_extra=PICTURE_BODY,
+)
+async def post_episode_asset_upload(
+    episode_id: uuid.UUID,
+    asset_id: Annotated[str, Path(pattern=r"^a_[a-z0-9_]{1,60}$")],
+    request: Request,
+) -> AssetList:
+    data = await _picture_body(request)
+    return await run_in_threadpool(_service(request).upload, episode_id, asset_id, data)

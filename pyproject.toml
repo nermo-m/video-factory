@@ -21,6 +21,8 @@ core = [
 api = [
     { include-group = "core" },
     "fastapi==0.162.4",
+    # An uploaded picture is checked and stored again as a plain PNG (packages/core/uploads).
+    "pillow==13.0.0",
     "uvicorn==0.54.0",
 ]
 worker = [
