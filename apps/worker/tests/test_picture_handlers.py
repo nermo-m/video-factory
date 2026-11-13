@@ -290,3 +290,34 @@ def test_the_owners_note_is_added_to_the_prompt_of_a_picture_that_is_made_again(
     assert "Prompt in the spec for a_harbour." in second
     assert "Asked for by the owner: Make it dawn." in second
     assert second.endswith(NO_TEXT)
+
+
+def test_a_picture_made_again_marks_the_video_that_shows_it_out_of_date(
+    stage: Stage, sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any]
+) -> None:
+    """Section 4.2: "visual or asset changed marks render stale for that scene"."""
+    stage.run("gen.image", episode_id, asset_id="a_harbour")
+    with sessions() as session:
+        assert session.get_one(models.Episode, episode_id).stale_scenes == {}, "no video yet"
+    # The episode has a video: a render job of it has succeeded.
+    with sessions.begin() as session:
+        queue.enqueue(
+            session,
+            job_type="render.join",
+            tag=JobTag.CPU,
+            payload={"state": "render", "stage": 1, "run": 1},
+            episode_id=episode_id,
+        )
+    with sessions.begin() as session:
+        claim = queue.claim_next(session, JobTag.CPU)
+        assert claim is not None
+        queue.complete(session, claim, {})
+
+    stage.run("gen.image", episode_id, asset_id="a_harbour", regenerate=True)
+
+    shown = [s["id"] for s in spec["scenes"] if s.get("visual", {}).get("asset_id") == "a_harbour"]
+    with sessions() as session:
+        episode = session.get_one(models.Episode, episode_id)
+        assert shown
+        assert episode.stale_scenes == {"voice": [], "render": shown}
+        assert episode.stale_from_state == "render"

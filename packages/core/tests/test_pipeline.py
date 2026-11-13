@@ -812,3 +812,84 @@ def test_a_rested_episode_can_be_rendered_again(
 
     assert queued(sessions, episode_id) == ["render.scene"] * len(spec["scenes"])
     assert not pipeline.is_resting(episode(sessions, episode_id), [JobStatus.QUEUED])
+
+
+# --- "visual or asset changed marks render stale for that scene" (section 4.2) -----------
+
+
+def shown_in(spec: dict[str, Any], asset_id: str) -> tuple[str, ...]:
+    return tuple(
+        scene["id"]
+        for scene in spec["scenes"]
+        if scene.get("visual", {}).get("asset_id") == asset_id
+    )
+
+
+def a_picture(spec: dict[str, Any]) -> str:
+    return str(next(s["visual"]["asset_id"] for s in spec["scenes"] if "visual" in s))
+
+
+def test_a_picture_made_again_before_the_render_makes_nothing_stale(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any]
+) -> None:
+    run_until(sessions, episode_id, at_gate(S.ASSET_GEN), spec=spec)
+
+    with sessions.begin() as session:
+        stale = pipeline.asset_changed(session, episode_id, a_picture(spec))
+
+    assert stale == StaleScenes()
+    current = episode(sessions, episode_id)
+    assert (current.stale_scenes, current.stale_from_state) == ({}, None)
+
+
+def test_a_picture_made_again_marks_the_render_of_the_scenes_that_show_it(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any]
+) -> None:
+    run_until(sessions, episode_id, at_gate(S.CRITIQUE), spec=spec)
+    asset_id = a_picture(spec)
+    scenes = shown_in(spec, asset_id)
+
+    with sessions.begin() as session:
+        stale = pipeline.asset_changed(session, episode_id, asset_id)
+
+    assert scenes, "the sample shows this picture somewhere"
+    assert stale == StaleScenes(render=scenes)
+    current = episode(sessions, episode_id)
+    assert current.stale_scenes == {"voice": [], "render": list(scenes)}
+    assert current.stale_from_state is S.RENDER
+    # Marking is all it does. Nothing runs until the owner asks for it.
+    assert queued(sessions, episode_id) == []
+
+
+def test_fr12_update_encodes_only_the_scenes_of_the_new_picture_and_joins(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any]
+) -> None:
+    run_until(sessions, episode_id, at_gate(S.CRITIQUE), spec=spec)
+    asset_id = a_picture(spec)
+    with sessions.begin() as session:
+        pipeline.asset_changed(session, episode_id, asset_id)
+
+    with sessions.begin() as session:
+        pipeline.rerun(session, episode_id, S.RENDER)
+
+    again = jobs(sessions, episode_id, status=JobStatus.QUEUED)
+    assert {job.type for job in again} == {"render.scene"}
+    assert tuple(job.input["scene_id"] for job in again) == shown_in(spec, asset_id)
+    while finish_one(sessions) is not None:
+        pass
+    joined = [job for job in jobs(sessions, episode_id) if job.type == "render.join"]
+    assert len(joined) == 2, "the video is joined again"
+    current = episode(sessions, episode_id)
+    assert (current.stale_scenes, current.stale_from_state) == ({}, None)
+
+
+def test_a_picture_no_scene_shows_makes_nothing_stale(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, spec: dict[str, Any]
+) -> None:
+    run_until(sessions, episode_id, at_gate(S.CRITIQUE), spec=spec)
+
+    with sessions.begin() as session:
+        stale = pipeline.asset_changed(session, episode_id, "a_not_shown_anywhere")
+
+    assert stale == StaleScenes()
+    assert episode(sessions, episode_id).stale_from_state is None

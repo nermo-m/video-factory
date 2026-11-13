@@ -120,6 +120,31 @@ export interface SceneProgress {
 const count = (jobs: JobOut[], type: string, status?: string) =>
   jobs.filter((job) => job.type === type && (status === undefined || job.status === status)).length;
 
+/** What a video that is out of date needs: the state to run again and what to say. */
+export interface OutOfDate {
+  state: "voice" | "render";
+  text: string;
+}
+
+/**
+ * A video is out of date when its plan or one of its pictures changed after it was made
+ * (design doc section 4.2). Null while nothing is out of date, and while the episode is
+ * out of date from a planning state, which the Plan tab handles.
+ */
+export function outOfDateOf(episode: EpisodeDetail): OutOfDate | null {
+  const state = episode.stale_from_state;
+  if (state !== "voice" && state !== "render") {
+    return null;
+  }
+  const scenes = new Set([...(episode.stale_scenes.voice ?? []), ...(episode.stale_scenes.render ?? [])]).size;
+  const what =
+    scenes === 0 ? "every scene" : scenes === 1 ? "the one scene that changed" : `the ${scenes} scenes that changed`;
+  return {
+    state,
+    text: `This video was made before the last change. Update makes ${what} again and joins the video. The other scenes are kept.`,
+  };
+}
+
 /**
  * What the Render tab says while the video is being made: null before the voice starts
  * and once the video is there.

@@ -1421,3 +1421,23 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     the fix, with the local voice and no plan usage, and each has its own video now. The
     episodes that test runs left behind were left as they are.
 - **Reverse:** `job_output_path` in `packages/core/queue.py`.
+
+## D-049: A picture that is made again marks the video, and Update makes only its scenes
+
+- **Date:** 2026-11-13. **Card:** VFS-75.
+- **Problem:** Section 4.2 says "visual or asset changed marks render stale for that scene".
+  An edit of the plan already did that. Make again (VFS-73) stores a new file of a picture
+  without changing the plan, so a video that was already made kept showing the old picture
+  and nothing said so.
+- **Choice:**
+  - **The picture job marks, it does not render.** When `gen.image` stores a new version,
+    `pipeline.asset_changed` marks the render of every scene that shows the picture, the
+    same way `spec_edited` does. Nothing runs until the owner presses Update, because a
+    render takes minutes and the owner may want to make more pictures again first.
+  - **Before the first render nothing is marked.** The render ahead uses the new file anyway.
+  - **The Render tab shows the notice, with one Update button.** It runs the state the
+    episode is out of date from (voice or render) again. The pipeline already makes only
+    the marked scenes and always joins. The old video stays playable and downloadable
+    until the new one replaces it.
+- **Reverse:** `asset_changed` in `packages/core/pipeline.py` and its one call in
+  `apps/worker/handlers/pictures.py`. `VideoOutOfDate` in the Render tab.

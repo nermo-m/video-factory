@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from apps.worker.handlers.plan import current_spec
 from apps.worker.runner import Handler, JobContext
 from packages.adapters.image import ImageAdapter, ImageRequest
-from packages.core import assets, limits
+from packages.core import assets, limits, pipeline
 from packages.core.db.models import Episode
 from packages.core.enums import AssetOrigin, ErrorClass, UsageKind
 from packages.core.queue import JobError
@@ -128,6 +128,9 @@ def picture_handlers(
                 height=result.height,
                 cost_usd=result.cost_usd,
             )
+            # A video that already shows this picture is out of date now (section 4.2).
+            # Nothing is rendered until the owner asks for it.
+            pipeline.asset_changed(session, episode.id, asset_id)
             if not picture.asset.licence:
                 # Where the picture came from (section 5.2: every asset has a licence).
                 # Its rights stay as the plan marked them, for the owner to review.
