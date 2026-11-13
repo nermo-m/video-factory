@@ -1480,3 +1480,25 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     compares the two limits. The interface also refuses a file over 20 MB before sending.
 - **Reverse:** `packages/core/uploads.py`, `upload` and `match` in `apps/api/episodes.py`,
   `UploadOwn` and `MatchFiles` in the Assets tab.
+
+## D-051: ComfyUI is installed from source next to the studio, and starts with it
+
+- **Date:** 2026-11-13. **Card:** VFS-29 (preparation). Asked for by the owner in the chat:
+  "install it for me, I give you full permission to do so".
+- **Choice:**
+  - **ComfyUI 0.45.0 from its repository in `E:\ComfyUI`, with its own Python 3.13
+    environment made by uv**, and PyTorch 2.14.1 for CUDA 13.0, which ComfyUI's README
+    asks for on 20 series cards and newer. Not the desktop app and not the portable
+    archive: this way the versions are written down and it starts from a script.
+  - **The six Wan 2.2 files of design decision D6** (image-to-video 14B, fp8, 4-step
+    Lightning LoRA), from the repackaged repository of ComfyUI's makers. 36 GB.
+  - **It is a program of its own on the host** (D3). The repository holds none of its
+    code and none of the model files, only `docs/gpu-setup.md`.
+  - **`tools/start-studio.ps1` starts it** when the environment variable `COMFYUI_DIR`
+    says where it is, and stops only the one it started. Without the variable the script
+    says that clips are not set up and carries on. The path is not written into the
+    repository, because it belongs to one PC.
+- **Measured:** one 5 second clip in 374 seconds on the RTX 3090, the first one after
+  the start. See `docs/gpu-setup.md`.
+- **Open for VFS-29:** section 8 says 4 steps on each model. ComfyUI's own template for
+  the Lightning LoRA uses 2 and 2, which is what was tried. Question Q-076.
