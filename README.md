@@ -41,7 +41,15 @@ and signed in with a plan (`claude auth login`, `codex login`).
 make models   # once: download the Kokoro voice (354 MB), so any narration can be spoken
 ```
 
-Set `PROVIDER_MODE=subscription` in `.env`, then:
+On Windows, one command in PowerShell starts everything, also Docker Desktop when it is
+not running:
+
+```powershell
+.\tools\start-studio.ps1          # your own ideas, on your plans
+.\tools\start-studio.ps1 -Stop    # stop it. Episodes and videos are kept
+```
+
+Elsewhere, set `PROVIDER_MODE=subscription` in `.env`, then:
 
 ```bash
 make up       # starts the stack and the bridge to the two tools on this PC
@@ -153,7 +161,7 @@ make demo-render  # render the sample episode into export/demo
 make models       # download the Kokoro voice model into the models volume (354 MB, once)
 make voice-test   # run the real voice inside the worker image (needs make models)
 make render-test  # golden frames, audio and encode tests with FFmpeg in the worker image
-make e2e          # browser tests (Playwright and axe) in the pinned Linux image
+make e2e          # browser tests (Playwright and axe) in the pinned Linux image, in a stack and database of their own
 make down         # stop (data volumes are kept)
 ```
 

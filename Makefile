@@ -3,7 +3,7 @@
 # "C:/Program Files/Git/export/demo"). The paths in these recipes are meant for the inside
 # of containers, so that rewriting is switched off. Other systems ignore the variable.
 export MSYS_NO_PATHCONV := 1
-.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update storybook coverage audit secret-scan render-test render-golden-update models voice-test sample-voice demo-render bridge bridge-start bridge-stop bridge-status bridge-flags
+.PHONY: help setup lint format types test check-assets precommit check progress env up down ps logs test-integration migrate noop-job generate-api e2e e2e-update e2e-down storybook coverage audit secret-scan render-test render-golden-update models voice-test sample-voice demo-render bridge bridge-start bridge-stop bridge-status bridge-flags
 
 help: ## Show the available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -44,15 +44,21 @@ generate-api: ## Rewrite apps/api/openapi.json and the typed web client from the
 	uv run python -m apps.api.openapi
 	pnpm --filter web generate:api
 
-E2E_COMPOSE = docker compose -f docker-compose.yml -f docker-compose.e2e.yml
+# The browser tests run in a Compose project of their own: own database, own ports on
+# 127.0.0.1, always demo mode. The stack the owner uses is left alone.
+E2E_COMPOSE = DB_HOST_PORT=15433 API_HOST_PORT=18000 WEB_HOST_PORT=13000 \
+	docker compose -p video-factory-e2e -f docker-compose.yml -f docker-compose.e2e.yml
 
-e2e: env ## Run the browser tests (Playwright and axe) against the stack in the Linux test image
+e2e: env ## Run the browser tests (Playwright and axe) against a stack of their own in the Linux test image
 	$(E2E_COMPOSE) up --build --detach --wait db api worker web
 	$(E2E_COMPOSE) run --rm --build e2e
 
 e2e-update: env ## Rewrite the approved screenshots after an intended visual change
 	$(E2E_COMPOSE) up --build --detach --wait db api worker web
 	$(E2E_COMPOSE) run --rm --build e2e --update-snapshots
+
+e2e-down: ## Stop the browser tests' own stack and remove its data
+	$(E2E_COMPOSE) down --volumes
 
 storybook: ## Browse the interface components at http://127.0.0.1:6006
 	pnpm --filter web storybook

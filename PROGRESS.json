@@ -385,13 +385,20 @@
       "id": "VFS-76",
       "order": 314.5,
       "title": "A video a little off its target length is fitted by its pauses",
+      "status": "done",
+      "note": "A video up to about four seconds off its target renders anyway: its default pauses are shortened or lengthened. Found in the third live episode. Merged in pull request #47."
+    },
+    {
+      "id": "VFS-74",
+      "order": 316,
+      "title": "Browser tests use their own database",
       "status": "review",
-      "note": "A video up to about four seconds off its target renders anyway: its default pauses are shortened or lengthened. Found in the third live episode. In review as a pull request."
+      "note": "The browser tests run in a Compose project of their own, so they no longer write into the owner's database or switch the owner's studio to demo mode. One PowerShell command starts the studio. In review as a pull request."
     }
   ],
   "now_building": {
     "status": "idle",
-    "next": "Browser tests use their own database, and one command to start the studio"
+    "next": "VFS-28 Uploads, filename matching and library"
   },
   "checklist": [
     {

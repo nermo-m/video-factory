@@ -1,9 +1,22 @@
-# Browser tests against the running stack. Used on top of docker-compose.yml:
+# Browser tests, against a stack of their own. Used on top of docker-compose.yml, as its
+# own Compose project:
 #
-#   docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --build e2e
+#   docker compose -p video-factory-e2e -f docker-compose.yml -f docker-compose.e2e.yml ...
 #
 # `make e2e` does this, and `make e2e-update` rewrites the approved screenshots.
+#
+# The project name gives the tests their own containers, network and volumes, so they
+# never write into the database the owner uses. `make e2e` also gives the stack its own
+# ports on 127.0.0.1 (DB_HOST_PORT, API_HOST_PORT, WEB_HOST_PORT), so it runs next to the
+# owner's stack. It is always in demo mode, whatever .env says, so it cannot spend plan
+# usage.
 services:
+  api:
+    environment:
+      PROVIDER_MODE: demo
+  worker:
+    environment:
+      PROVIDER_MODE: demo
   e2e:
     build:
       context: .

@@ -1376,3 +1376,27 @@ to reverse it. Questions about the design itself are in [questions.md](questions
     off the target. The word budget of the script skill is unchanged too.
 - **Reverse:** call `resolve` instead of `resolve_to_fit` in
   `apps/worker/handlers/produce.py`.
+
+## D-047: The browser tests get a stack of their own, and one command starts the studio
+
+- **Date:** 2026-11-13. **Card:** VFS-74.
+- **Problem:** `make e2e` ran against the stack the owner uses. Every run left its
+  episodes on the owner's Board (38 were there, 28 of them waiting at a gate), and it
+  rebuilt the stack in the mode of `.env`, which put a studio running in subscription
+  mode back into demo mode.
+- **Choice:**
+  - **`make e2e` uses its own Compose project**, `video-factory-e2e`: own containers,
+    network, database and data volume, and its own ports on 127.0.0.1 (15433, 18000 and
+    13000). It is always in demo mode, whatever `.env` says, so it runs next to the
+    owner's stack and cannot spend plan usage. `make e2e-down` stops it and removes its
+    data. The ports of the api and the web are settings now (`API_HOST_PORT`,
+    `WEB_HOST_PORT`), as the database's already was.
+  - **CI** runs the same command. Its log collection reads both projects.
+  - **`tools/start-studio.ps1`** starts the studio from PowerShell without `make`: Docker
+    Desktop when it is not running, the stack, and in subscription mode the bridge. It
+    starts in subscription mode unless `-Mode demo` is given, and does not change `.env`.
+    `-Stop` stops it. The owner's PC has neither `make` nor `uv` on its PATH, and after a
+    restart nothing was running.
+  - **The episodes the tests left behind were not deleted.** That is the owner's data
+    folder, and deleting is the owner's decision.
+- **Reverse:** drop `-p video-factory-e2e` from `E2E_COMPOSE` in the Makefile.
