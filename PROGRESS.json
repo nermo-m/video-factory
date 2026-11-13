@@ -396,6 +396,13 @@
       "note": "A new episode's video overwrote the file of the one before, because job files were named by type and input only. A job of an episode now writes below that episode's folder. Merged in pull request #50."
     },
     {
+      "id": "VFS-75",
+      "order": 315,
+      "title": "A picture that is made again marks the video out of date",
+      "status": "review",
+      "note": "Make again on a picture now marks a video that shows it Out of date, and one Update button on the Render tab makes only those scenes again and joins the video. In review as a pull request."
+    },
+    {
       "id": "VFS-74",
       "order": 316,
       "title": "Browser tests use their own database",
@@ -440,7 +447,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1546 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 267 integration (Python), 19 Node, 189 browser tests with axe and screenshots"
+      "value": "1546 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 272 integration (Python), 19 Node, 195 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",

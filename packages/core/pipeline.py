@@ -172,6 +172,36 @@ def spec_edited(
     return marked
 
 
+def asset_changed(session: Session, episode_id: uuid.UUID, asset_id: str) -> StaleScenes:
+    """Record that a picture has a new active file: the render of every scene that shows it
+    is out of date (section 4.2, "visual or asset changed marks render stale for that
+    scene").
+
+    Only marks, like `spec_edited`. While the episode has no render yet there is nothing to
+    mark: the render ahead will use the new file anyway. Returns what was marked.
+    """
+    episode = _locked(session, episode_id)
+    spec = _spec(session, episode)
+    if spec is None or not _has_outputs(session, episode, EpisodeState.RENDER):
+        return StaleScenes()
+    order = [scene["id"] for scene in spec["scenes"]]
+    marked = StaleScenes(
+        render=tuple(
+            scene["id"]
+            for scene in spec["scenes"]
+            if scene.get("visual", {}).get("asset_id") == asset_id
+        )
+    )
+    if not marked:
+        return marked
+    episode.stale_scenes = (
+        StaleScenes.from_json(episode.stale_scenes).merged(marked, order=order).to_json()
+    )
+    if episode.stale_from_state is None:
+        episode.stale_from_state = EpisodeState.RENDER
+    return marked
+
+
 def is_resting(episode: Episode, statuses: list[JobStatus]) -> bool:
     """True when the episode has done everything that is built so far: it is in the last
     built state and every job of that state's latest stage has succeeded.

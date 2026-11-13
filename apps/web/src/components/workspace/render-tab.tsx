@@ -5,9 +5,9 @@ import { useState } from "react";
 import { type EpisodeDetail, type RenderOut, postEpisodeRerun } from "@/api/client";
 import { failureOf, unwrap } from "@/lib/api-error";
 import { displayTitle, stoppedOf, workingOn } from "@/lib/episodes";
-import { quietAction } from "@/lib/styles";
+import { primaryAction, quietAction } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { makingOf, renderCaption, videoFileName } from "@/lib/workspace";
+import { makingOf, outOfDateOf, renderCaption, videoFileName } from "@/lib/workspace";
 
 const card = "flex max-w-xl flex-col gap-3 rounded-lg border bg-card p-5 sm:p-6";
 
@@ -84,8 +84,67 @@ export function StepFailed({ episode, reload }: { episode: EpisodeDetail; reload
   );
 }
 
+/**
+ * A video that is older than its plan or its pictures, with the one button that brings it
+ * up to date (design doc section 4.2). Only the scenes that changed are made again.
+ */
+export function VideoOutOfDate({ episode, reload }: { episode: EpisodeDetail; reload: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const stale = outOfDateOf(episode);
+  if (!stale) {
+    return null;
+  }
+  const from = stale.state;
+
+  async function update() {
+    setBusy(true);
+    setFailure(null);
+    try {
+      unwrap(
+        await postEpisodeRerun({ path: { episode_id: episode.id }, body: { state: from } }),
+        "The video could not be updated. Try again.",
+      );
+      await reload();
+    } catch (error) {
+      setFailure(failureOf(error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section
+      data-testid="video-out-of-date"
+      aria-label="Out of date"
+      className="flex max-w-xl flex-col items-start gap-3 rounded-lg border border-warning/50 bg-chip-out-of-date p-4 sm:p-5"
+    >
+      <span className="rounded-full border border-warning/50 px-2 py-0.5 text-[0.6875rem] font-semibold text-warning">
+        Out of date
+      </span>
+      <p>{stale.text}</p>
+      <button type="button" onClick={() => void update()} disabled={busy} className={primaryAction}>
+        {busy ? "Updating…" : "Update"}
+      </button>
+      {failure && (
+        <p role="alert" className="font-semibold text-danger">
+          {failure}
+        </p>
+      )}
+    </section>
+  );
+}
+
 /** The Render tab: nothing yet, how far the making is, or the draft video. */
-export function RenderTab({ episode, render }: { episode: EpisodeDetail; render: RenderOut | null }) {
+export function RenderTab({
+  episode,
+  render,
+  reload,
+}: {
+  episode: EpisodeDetail;
+  render: RenderOut | null;
+  reload: () => Promise<void>;
+}) {
   const making = makingOf(episode);
 
   if (making && !stoppedOf(episode)) {
@@ -133,6 +192,7 @@ export function RenderTab({ episode, render }: { episode: EpisodeDetail; render:
 
   return (
     <section data-testid="render-video" className="flex flex-col items-start gap-3">
+      <VideoOutOfDate episode={episode} reload={reload} />
       <DraftVideo render={render} title={displayTitle(episode)} />
       <p className="text-[0.8125rem] text-muted-foreground">{renderCaption(render)}</p>
       <div className="flex flex-wrap gap-3">

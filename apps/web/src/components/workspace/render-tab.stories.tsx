@@ -54,7 +54,11 @@ const many = (type: string, statuses: JobOut["status"][]) => statuses.map((statu
 const meta = {
   title: "Workspace/Render tab",
   component: RenderTab,
-  args: { episode: episode({ state: "direction", awaiting_approval: true, gate: "plan" }), render: null },
+  args: {
+    episode: episode({ state: "direction", awaiting_approval: true, gate: "plan" }),
+    render: null,
+    reload: () => Promise.resolve(),
+  },
   decorators: [
     (Story) => (
       <div className="p-4 sm:p-6">
@@ -97,6 +101,19 @@ const DONE = { episode: episode({ resting: true, jobs: [job("render.join", "succ
 export const Video: Story = { args: DONE };
 export const VideoPhone: Story = { args: DONE, globals: PHONE };
 export const VideoTablet: Story = { args: DONE, globals: TABLET };
+
+/** A picture was made again after the video: one scene is out of date. */
+const OLD = {
+  episode: episode({
+    resting: true,
+    stale_from_state: "render",
+    stale_scenes: { voice: [], render: ["s02_story"] },
+    jobs: [job("render.join", "succeeded")],
+  }),
+  render: RENDER,
+};
+export const VideoOutOfDate: Story = { args: OLD };
+export const VideoOutOfDatePhone: Story = { args: OLD, globals: PHONE };
 
 const STOPPED = episode({
   state: "voice",

@@ -331,3 +331,68 @@ test.describe("Render tab at every size", () => {
     });
   }
 });
+
+
+test.describe("A video that is out of date (section 4.2)", () => {
+  const notice = (page: Page) => page.getByTestId("video-out-of-date");
+
+  function outOfDate(scenes: string[]): FakeEpisode {
+    const fake = rendered();
+    fake.episode = {
+      ...fake.episode,
+      stale_from_state: "render",
+      stale_scenes: { voice: [], render: scenes },
+    };
+    return fake;
+  }
+
+  test("a video that is up to date shows no notice", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    await openWorkspace(page, rendered());
+
+    const tab = await renderTab(page);
+
+    await expect(tab.getByTestId("render-video")).toBeVisible();
+    await expect(notice(page)).toBeHidden();
+  });
+
+  test("a picture made again shows Out of date and says how much is made again", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    await openWorkspace(page, outOfDate(["s02_story"]));
+
+    const tab = await renderTab(page);
+
+    await expect(notice(page)).toContainText("Out of date");
+    await expect(notice(page)).toContainText("Update makes the one scene that changed again and joins the video.");
+    await expect(notice(page).getByRole("button")).toHaveText(["Update"]);
+    await expect(tab.getByRole("link", { name: "Download the video" })).toBeVisible();
+  });
+
+  test("Update runs the render again and the notice goes", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page, outOfDate(["s02_story", "s03_turn"]));
+    await renderTab(page);
+    await expect(notice(page)).toContainText("the 2 scenes that changed");
+
+    await notice(page).getByRole("button", { name: "Update" }).click();
+
+    await expect(notice(page)).toBeHidden();
+    expect(sent(fake, "POST", "/rerun")[0]?.body).toEqual({ state: "render" });
+  });
+
+  for (const [size, viewport] of Object.entries(SIZES)) {
+    test(`the notice has no accessibility violations and fits at ${viewport.width} px (${size})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await openWorkspace(page, outOfDate(["s02_story"]));
+      await renderTab(page);
+      await expect(notice(page)).toBeVisible();
+
+      const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+
+      expect(results.violations).toEqual([]);
+      expect(await sidewaysOverflow(page)).toBe(0);
+    });
+  }
+});

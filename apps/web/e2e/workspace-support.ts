@@ -340,7 +340,13 @@ export async function mockEpisode(page: Page, fake: FakeEpisode) {
       return route.fulfill({ json: detail() });
     }
     if (method === "POST" && path === "/rerun") {
-      fake.episode = { ...fake.episode, state: (body as { state: string }).state };
+      fake.episode = {
+        ...fake.episode,
+        state: (body as { state: string }).state,
+        resting: false,
+        stale_from_state: null,
+        stale_scenes: {},
+      };
       fake.jobs = [job("gen.voice", "queued")];
       return route.fulfill({ json: detail() });
     }

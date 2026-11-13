@@ -200,7 +200,7 @@ function Tabs({
 
       <div role="tabpanel" id={`${id}-panel-${tab}`} aria-labelledby={`${id}-tab-${tab}`} className="flex min-w-0 flex-col gap-4">
         {tab === "Render" ? (
-          <RenderTab episode={data.episode} render={data.render} />
+          <RenderTab episode={data.episode} render={data.render} reload={reload} />
         ) : tab === "Assets" ? (
           <AssetsTab
             episode={data.episode}
