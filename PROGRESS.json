@@ -389,18 +389,18 @@
       "note": "A video up to about four seconds off its target renders anyway: its default pauses are shortened or lengthened. Found in the third live episode. Merged in pull request #47."
     },
     {
-      "id": "VFS-74",
-      "order": 316,
-      "title": "Browser tests use their own database",
-      "status": "done",
-      "note": "The browser tests run in a Compose project of their own, so they no longer write into the owner's database or switch the owner's studio to demo mode. One PowerShell command starts the studio. Merged in pull request #48."
-    },
-    {
       "id": "VFS-77",
       "order": 314.7,
       "title": "Every episode keeps its own job files",
       "status": "review",
       "note": "A new episode's video overwrote the file of the one before, because job files were named by type and input only. A job of an episode now writes below that episode's folder. In review as a pull request."
+    },
+    {
+      "id": "VFS-74",
+      "order": 316,
+      "title": "Browser tests use their own database",
+      "status": "done",
+      "note": "The browser tests run in a Compose project of their own, so they no longer write into the owner's database or switch the owner's studio to demo mode. One PowerShell command starts the studio. Merged in pull request #48."
     }
   ],
   "now_building": {
