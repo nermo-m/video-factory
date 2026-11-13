@@ -392,8 +392,8 @@
       "id": "VFS-74",
       "order": 316,
       "title": "Browser tests use their own database",
-      "status": "review",
-      "note": "The browser tests run in a Compose project of their own, so they no longer write into the owner's database or switch the owner's studio to demo mode. One PowerShell command starts the studio. In review as a pull request."
+      "status": "done",
+      "note": "The browser tests run in a Compose project of their own, so they no longer write into the owner's database or switch the owner's studio to demo mode. One PowerShell command starts the studio. Merged in pull request #48."
     }
   ],
   "now_building": {
@@ -461,6 +461,10 @@
     }
   ],
   "wins": [
+    {
+      "date": "2026-11-13",
+      "text": "The studio starts with one command and stays the owner's: the browser tests run in a stack of their own, and a video that comes out a little long or short is fitted by its pauses instead of stopping."
+    },
     {
       "date": "2026-11-13",
       "text": "The owner can make a video from an own idea in the browser: plan, pictures in the Assets tab with Make again, voice, render and download, on the owner's own Claude and ChatGPT plans."
