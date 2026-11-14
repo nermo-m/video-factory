@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "required": ["spec_version", "episode_id", "format", "theme", "voice", "seed", "duration_s", "scenes", "claims", "assets"],
   "properties": {
-    "spec_version": { "const": "2.0" },
+    "spec_version": { "enum": ["2.0", "2.1"] },
     "episode_id": { "$ref": "episode_spec.schema.json#/$defs/episode_id" },
     "format": { "$ref": "episode_spec.schema.json#/$defs/format" },
     "theme": { "$ref": "episode_spec.schema.json#/$defs/name" },
@@ -32,6 +32,14 @@
     "assets": {
       "type": "array",
       "items": { "$ref": "#/$defs/asset" }
+    },
+    "captions": {
+      "description": "Whether the spoken words are drawn as captions. A plan without it has captions.",
+      "type": "boolean"
+    },
+    "music": {
+      "description": "Whether the music bed plays. A plan without it has music.",
+      "type": "boolean"
     }
   },
   "$defs": {
@@ -87,7 +95,8 @@
       "properties": {
         "content": { "type": "string", "minLength": 1, "maxLength": 80 },
         "style": { "$ref": "episode_spec.schema.json#/$defs/name" },
-        "at_s": { "$ref": "#/$defs/at_s" }
+        "at_s": { "$ref": "#/$defs/at_s" },
+        "position": { "enum": ["top", "middle", "bottom"] }
       }
     },
     "overlay": {
@@ -160,7 +169,7 @@
       "required": ["id", "kind", "start_s", "duration_s", "narration", "text", "overlays", "sound"],
       "properties": {
         "id": { "$ref": "episode_spec.schema.json#/$defs/scene_id" },
-        "kind": { "enum": ["title", "scroll", "stat", "steps", "outro"] },
+        "kind": { "enum": ["title", "scroll", "stat", "steps", "outro", "shot"] },
         "start_s": { "$ref": "#/$defs/at_s" },
         "duration_s": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 },
         "narration": { "$ref": "#/$defs/narration" },
@@ -228,6 +237,13 @@
             "required": ["hold_s"],
             "properties": { "text": { "minItems": 1 }, "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" } }
           }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "shot" } }, "required": ["kind"] },
+          "then": {
+            "required": ["visual"],
+            "properties": { "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" }, "hold_s": { "$ref": "#/$defs/not_allowed" } }
+          }
         }
       ]
     },
@@ -241,7 +257,7 @@
         "id": { "$ref": "episode_spec.schema.json#/$defs/asset_id" },
         "kind": { "$ref": "episode_spec.schema.json#/$defs/asset_kind" },
         "origin": { "$ref": "episode_spec.schema.json#/$defs/asset_origin" },
-        "prompt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 4000 },
         "licence": { "type": "string", "minLength": 1, "maxLength": 120 },
         "contains_third_party_ip": { "type": "boolean" },
         "rights_status": { "$ref": "episode_spec.schema.json#/$defs/rights_status" },

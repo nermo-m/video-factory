@@ -640,3 +640,158 @@ def test_fitting_leaves_the_authored_spec_alone_and_says_what_it_changed() -> No
     assert fitted is not None
     assert all("pad_before_s" in item and "pad_after_s" in item for item in fitted["scenes"])
     assert fit_pauses(authored, total_s=60.0, target_s=43) is None
+
+
+# --- shots (plan schema 2.1) ---------------------------------------------------------------
+
+
+def shot(scene_id: str, narration: str, **fields: Any) -> dict[str, Any]:
+    return {
+        "id": scene_id,
+        "kind": "shot",
+        "narration": narration,
+        "visual": {"asset_id": "a_picture"},
+        **fields,
+    }
+
+
+def shots(scenes: list[dict[str, Any]], target_duration_s: float = 15, **fields: Any) -> Any:
+    picture = {
+        "id": "a_picture",
+        "kind": "image",
+        "origin": "generated",
+        "prompt": "A hill at dusk.",
+        "characters": ["keeper"],
+        "text_in_picture": False,
+        "licence": "made for this test",
+        "contains_third_party_ip": False,
+        "rights_status": "cleared",
+    }
+    return {
+        **spec(scenes, target_duration_s, **fields),
+        "spec_version": "2.1",
+        "theme": "plain",
+        "assets": [picture],
+    }
+
+
+FILES = {"a_picture": AssetFile(file="episodes/ep/a_picture.png")}
+LINE = "Every evening she climbed the hill."
+
+
+def test_a_shot_lasts_as_long_as_its_line() -> None:
+    authored = shots([shot("s1", LINE)])
+
+    resolved = resolve(authored, {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    # 0.3 s before the line, 3 s of speech, 0.4 s after it.
+    assert resolved["scenes"][0]["duration_s"] == 3.7
+    assert resolved["spec_version"] == "2.1"
+
+
+def test_a_shot_given_fewer_seconds_than_its_line_takes_is_as_long_as_the_line() -> None:
+    authored = shots([shot("s1", LINE, duration_s=2)])
+
+    resolved = resolve(authored, {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    assert resolved["scenes"][0]["duration_s"] == 3.7
+
+
+def test_a_shot_given_more_seconds_than_its_line_takes_keeps_them() -> None:
+    authored = shots([shot("s1", LINE, duration_s=8)])
+
+    resolved = resolve(authored, {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    assert resolved["scenes"][0]["duration_s"] == 8
+
+
+def test_a_silent_shot_takes_its_seconds() -> None:
+    authored = shots([shot("s1", "", duration_s=4)])
+
+    resolved = resolve(authored, {}, FILES)
+
+    assert resolved["scenes"][0]["duration_s"] == 4
+    assert resolved["scenes"][0]["narration"]["words"] == []
+
+
+def test_a_2_1_spec_is_not_held_to_its_target_length() -> None:
+    authored = shots([shot("s1", LINE), shot("s2", "", duration_s=20)], target_duration_s=15)
+
+    resolved = resolve_to_fit(authored, {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    assert resolved["duration_s"] == 23.7
+    # The pauses are the default ones: nothing was fitted.
+    assert resolved["scenes"][0]["narration"]["start_s"] == 0.3
+
+
+def test_a_2_0_spec_is_still_held_to_its_target_length() -> None:
+    authored = spec([scene("s1", LINE)], target_duration_s=30)
+
+    with pytest.raises(DurationError):
+        resolve(authored, {"s1": timing(LINE, 3.0, "s1")}, {})
+
+
+def test_a_shot_keeps_its_camera_its_motion_and_where_its_text_sits() -> None:
+    authored = shots(
+        [
+            shot(
+                "s1",
+                LINE,
+                visual={"asset_id": "a_picture", "clip": True, "camera": "pan_left", "motion": "x"},
+                text=[
+                    {"content": "Every evening", "style": "plain", "position": "top"},
+                    {"content": "the hill", "style": "plain", "cue": {"word": 4}},
+                ],
+                transition_out="fade",
+            )
+        ]
+    )
+
+    resolved = resolve(authored, {"s1": timing(LINE, 3.0, "s1")}, FILES)["scenes"][0]
+
+    assert resolved["visual"] == {
+        "asset_id": "a_picture",
+        "clip": True,
+        "camera": "pan_left",
+        "motion": "x",
+    }
+    assert [(item["content"], item["position"]) for item in resolved["text"]] == [
+        ("Every evening", "top"),
+        ("the hill", "bottom"),
+    ]
+    assert resolved["transition_out"] == "fade"
+
+
+def test_a_shot_without_a_camera_gets_the_slow_push_in() -> None:
+    resolved = resolve(shots([shot("s1", LINE)]), {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    assert resolved["scenes"][0]["visual"]["camera"] == "push_in"
+
+
+def test_captions_and_music_switches_reach_the_resolved_plan() -> None:
+    authored = shots([shot("s1", LINE)], captions=False, music=False)
+
+    resolved = resolve(authored, {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    assert (resolved["captions"], resolved["music"]) == (False, False)
+
+
+def test_a_plan_without_the_switches_has_captions_and_music() -> None:
+    resolved = resolve(shots([shot("s1", LINE)]), {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    assert (resolved["captions"], resolved["music"]) == (True, True)
+
+
+def test_the_style_the_characters_and_the_change_list_stay_out_of_the_resolved_plan() -> None:
+    authored = shots(
+        [shot("s1", LINE)],
+        style="Watercolour.",
+        characters=[{"id": "keeper", "name": "The keeper", "description": "Grey braid."}],
+        changes=[{"kind": "added", "what": "Light.", "why": "None was given."}],
+    )
+
+    resolved = resolve(authored, {"s1": timing(LINE, 3.0, "s1")}, FILES)
+
+    # The render engine draws. What the pictures were made from is not its business.
+    assert not {"style", "characters", "changes"} & set(resolved)
+    assert "characters" not in resolved["assets"][0]
