@@ -21,7 +21,10 @@ from packages.adapters.llm.base import LLMResponse
 from packages.core import json_patch, schemas
 from packages.core.enums import Provider
 from packages.core.lengths import (
+    LONGEST_S,
     PAUSE_PER_SCENE_S,
+    SHORTEST_S,
+    SILENT_SHOT_S,
     SLACK,
     TOLERANCE_S,
     WORDS_PER_SECOND,
@@ -80,8 +83,6 @@ def word_budget(target_duration_s: float, scenes: int, speed: float = 1.0) -> in
 
 # A line this short is found in almost any text, so it does not show whose line it is.
 MIN_WORDS_OF_A_LINE = 3
-# The longest and shortest video a spec may ask for (the episode's own length, section 9).
-SHORTEST_S, LONGEST_S = 15, 180
 _SAME_SIGN = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
 
 
@@ -298,8 +299,6 @@ def patch_leaves_a_valid_spec(
 
 # --- Director mode: the owner's prompt is the plan ------------------------------------------
 
-# A silent shot that was given no length.
-SILENT_SHOT_S = 3.0
 # Labels in front of a line that is meant to be spoken.
 _SPOKEN_LABEL = re.compile(
     r"(?:^|[\s.;,(])(?:VO|V\.O\.?|Voice[\s-]?over|Narration|Narrator)[\s]*:[ \t]*([^\n]+)",

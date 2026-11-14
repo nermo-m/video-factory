@@ -22,6 +22,7 @@ export interface EpisodeRow {
   stale_scenes: Record<string, string[]>;
   resting: boolean;
   target_duration_s: number;
+  options: Record<string, boolean>;
   created_at: string;
 }
 
@@ -38,6 +39,7 @@ export function episode(number: number, fields: Partial<EpisodeRow> = {}): Episo
     stale_scenes: {},
     resting: false,
     target_duration_s: 45,
+    options: { research: false, captions: true, music: true },
     created_at: "2026-11-12T08:00:00Z",
     ...fields,
   };

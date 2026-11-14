@@ -160,7 +160,7 @@ def test_the_shot_list_job_stores_a_2_1_plan_names_the_episode_and_creates_its_p
         assert version is not None
         pictures = assets.resolve(session, episode, plan)
     assert episode.title == "The Keeper's Hill"
-    # 66 words at 2.3 a second, four pauses of 0.7 seconds and the 3 silent seconds.
+    # 67 words at 2.3 a second, four pauses of 0.7 seconds and the 3 silent seconds.
     assert episode.target_duration_s == plan["format"]["target_duration_s"] == 35
     assert (version.author, version.skill_version) == (SpecAuthor.MODEL, "1.0")
     assert [picture.id for picture in pictures] == [asset["id"] for asset in plan["assets"]]
@@ -350,3 +350,28 @@ def test_without_research_there_are_no_claims(sessions: sessionmaker[Session]) -
     run(sessions, Model(example("output")), episode_id)
 
     assert plan_of(sessions, episode_id)["claims"] == []
+
+
+# --- a change asked for in words ------------------------------------------------------------
+
+
+def test_a_revision_of_a_plan_of_shots_is_checked_against_the_plain_look(
+    sessions: sessionmaker[Session],
+) -> None:
+    """The channel's look is the scrolls. The plan's look is plain, and that is the one a
+    proposed change has to fit."""
+    episode_id = new_episode(sessions)
+    recorded = RecordedLLM(RECORDINGS)
+    run(sessions, recorded, episode_id)
+
+    proposal = run(
+        sessions,
+        recorded,
+        episode_id,
+        job_type="plan.revise",
+        payload={"comment": "End the first scene with a cut."},
+    )
+
+    assert proposal["document"]["patch"] == [
+        {"op": "add", "path": "/scenes/0/transition_out", "value": "cut"}
+    ]

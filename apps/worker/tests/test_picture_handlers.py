@@ -321,3 +321,90 @@ def test_a_picture_made_again_marks_the_video_that_shows_it_out_of_date(
         assert shown
         assert episode.stale_scenes == {"voice": [], "render": shown}
         assert episode.stale_from_state == "render"
+
+
+# --- Director mode: a plan of shots (schema 2.1) --------------------------------------------
+
+SHOTS = Path(__file__).resolve().parents[3] / "schemas/fixtures/episode_spec/valid/shots.json"
+
+
+@pytest.fixture
+def shots_episode(sessions: sessionmaker[Session]) -> uuid.UUID:
+    import json
+
+    plan = json.loads(SHOTS.read_text(encoding="utf-8"))
+    with sessions.begin() as session:
+        channel = models.Channel(
+            name="My channel",
+            voice_id="bm_george",
+            theme="night_scrolls",
+            style_block="Always in the house style of the channel.",
+        )
+        session.add(channel)
+        session.flush()
+        episode = models.Episode(channel_id=channel.id, idea="A keeper who climbs a hill.")
+        session.add(episode)
+        session.flush()
+        store_spec(session, episode.id, plan, author=SpecAuthor.MODEL)
+        assets.sync(session, episode, plan, manifest={})
+        return episode.id
+
+
+def test_the_picture_prompt_carries_style_and_characters(
+    stage: Stage, shots_episode: uuid.UUID
+) -> None:
+    stage.run("gen.image", shots_episode, asset_id="a_s01_hill")
+
+    (request,) = stage.images.requests
+    assert request.prompt == (
+        "Soft watercolour, muted blues, grain of rough paper.\n\n"
+        "The keeper: A woman of about sixty, grey braid, yellow oilskin coat, lean and upright.\n\n"
+        "A steep green hill at dusk, a narrow path, a lighthouse at the top, seen from below.\n\n"
+        f"{NO_TEXT}"
+    )
+
+
+def test_the_channel_style_block_is_not_added_to_a_2_1_plan(
+    stage: Stage, shots_episode: uuid.UUID
+) -> None:
+    stage.run("gen.image", shots_episode, asset_id="a_s01_hill")
+
+    assert "house style of the channel" not in stage.images.requests[0].prompt
+
+
+def test_no_text_rule_is_left_out_when_the_picture_asks_for_text(
+    stage: Stage, shots_episode: uuid.UUID
+) -> None:
+    stage.run("gen.image", shots_episode, asset_id="a_s02_lamp")
+
+    (request,) = stage.images.requests
+    assert NO_TEXT not in request.prompt
+    assert request.prompt.endswith("a brass plate that reads KEEP THE LIGHT.")
+
+
+def test_the_owners_note_follows_the_whole_prompt_of_a_shot(
+    stage: Stage, shots_episode: uuid.UUID
+) -> None:
+    stage.run("gen.image", shots_episode, asset_id="a_s01_hill")
+
+    stage.run(
+        "gen.image", shots_episode, asset_id="a_s01_hill", regenerate=True, note="Make it night."
+    )
+
+    again = stage.images.requests[1].prompt
+    assert again.index("The keeper: A woman") < again.index(
+        "Asked for by the owner: Make it night."
+    )
+    assert again.endswith(NO_TEXT)
+
+
+def test_the_stored_version_keeps_the_prompt_as_it_was_sent(
+    stage: Stage, sessions: sessionmaker[Session], shots_episode: uuid.UUID
+) -> None:
+    stage.run("gen.image", shots_episode, asset_id="a_s01_hill")
+
+    with sessions() as session:
+        version = session.scalars(select(models.AssetVersion)).one()
+    assert version.prompt == stage.images.requests[0].prompt
+    assert version.prompt is not None
+    assert version.prompt.startswith("Soft watercolour")

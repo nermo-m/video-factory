@@ -165,3 +165,62 @@ def test_stale_scenes_can_be_added_together_and_stored() -> None:
     assert merged == StaleScenes(voice=("s02",), render=("s01", "s02", "s03"))
     assert StaleScenes.from_json(merged.to_json()) == merged
     assert StaleScenes.from_json({}) == StaleScenes()
+
+
+# --- a plan of shots: characters and the style are written once ----------------------------
+
+
+@pytest.fixture
+def shots() -> dict[str, Any]:
+    path = schemas.SCHEMA_DIR / "fixtures" / "episode_spec" / "valid" / "shots.json"
+    loaded: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    return loaded
+
+
+def test_editing_a_character_marks_the_scenes_that_show_it(shots: dict[str, Any]) -> None:
+    edited = copy.deepcopy(shots)
+    edited["characters"][0]["description"] = "A woman of about sixty in a red coat."
+
+    # Only the first picture shows the keeper.
+    assert affected_scenes(shots, edited) == StaleScenes(render=("s01_hill",))
+
+
+def test_editing_the_style_marks_every_picture_scene(shots: dict[str, Any]) -> None:
+    edited = copy.deepcopy(shots)
+    edited["style"] = "Ink and wash, black on cream."
+
+    assert affected_scenes(shots, edited) == StaleScenes(render=("s01_hill", "s02_lamp"))
+
+
+def test_renaming_a_character_everywhere_changes_no_picture(shots: dict[str, Any]) -> None:
+    edited = copy.deepcopy(shots)
+    edited["characters"][0]["id"] = "the_keeper"
+    edited["assets"][0]["characters"] = ["the_keeper"]
+
+    assert affected_scenes(shots, edited) == StaleScenes()
+
+
+def test_the_change_list_and_whose_line_it_is_are_never_drawn(shots: dict[str, Any]) -> None:
+    edited = copy.deepcopy(shots)
+    edited["changes"] = []
+    edited["scenes"][0]["narration_from"] = "studio"
+
+    assert affected_scenes(shots, edited) == StaleScenes()
+
+
+def test_a_shots_camera_and_text_are_part_of_what_it_shows(shots: dict[str, Any]) -> None:
+    edited = copy.deepcopy(shots)
+    edited["scenes"][0]["visual"]["camera"] = "pan_left"
+    edited["scenes"][1]["text"] = [{"content": "Later", "style": "plain", "position": "top"}]
+
+    assert affected_scenes(shots, edited) == StaleScenes(render=("s01_hill", "s02_lamp"))
+
+
+def test_switching_captions_or_music_draws_and_mixes_the_whole_video_again(
+    shots: dict[str, Any],
+) -> None:
+    without_captions = {**copy.deepcopy(shots), "captions": False}
+    without_music = {**copy.deepcopy(shots), "music": True}
+
+    assert affected_scenes(shots, without_captions) == StaleScenes(render=("s01_hill", "s02_lamp"))
+    assert affected_scenes(shots, without_music) == StaleScenes(render=("s01_hill", "s02_lamp"))

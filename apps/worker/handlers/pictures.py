@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from apps.worker.handlers.plan import current_spec
 from apps.worker.runner import Handler, JobContext
 from packages.adapters.image import ImageAdapter, ImageRequest
-from packages.core import assets, limits, pipeline
+from packages.core import assets, limits, pipeline, prompts
 from packages.core.db.models import Episode
 from packages.core.enums import AssetOrigin, ErrorClass, UsageKind
 from packages.core.queue import JobError
@@ -35,13 +35,15 @@ IMAGE_JOB, CLIP_JOB = "gen.image", "gen.clip"
 NO_TEXT = "No text, letters, numbers, captions, logos or watermarks anywhere in the picture."
 
 
-def full_prompt(prompt: str, note: str | None = None) -> str:
+def full_prompt(prompt: str, note: str | None = None, *, text_in_picture: bool = False) -> str:
     """The prompt as it is sent: the planned prompt, what the owner asked to be different
-    when the picture is made again, and the rule about text."""
+    when the picture is made again, and the rule about text. A picture that is meant to
+    show written words, such as a sign, is made without that rule."""
     parts = [prompt.replace(NO_TEXT, "").rstrip()]
     if note and note.strip():
         parts.append(f"Asked for by the owner: {note.strip()}")
-    parts.append(NO_TEXT)
+    if not text_in_picture:
+        parts.append(NO_TEXT)
     return "\n\n".join(parts)
 
 
@@ -103,7 +105,22 @@ def picture_handlers(
                     error_class=ErrorClass.NEEDS_OWNER,
                 )
             note = context.job.input.get("note")
-            prompt = full_prompt(picture.prompt, note if isinstance(note, str) else None)
+            entry: Mapping[str, Any] = next(
+                (asset for asset in spec["assets"] if asset["id"] == asset_id), {}
+            )
+            # In a plan of shots the style and the characters are written once and put
+            # in front of the scene's own prompt here (`core/prompts.py`). An older plan
+            # has neither, and its prompt is the one the asset plan wrote.
+            planned = (
+                picture.prompt
+                if spec.get("spec_version") == "2.0"
+                else prompts.compose(spec, entry) or picture.prompt
+            )
+            prompt = full_prompt(
+                planned,
+                note if isinstance(note, str) else None,
+                text_in_picture=bool(entry.get("text_in_picture")),
+            )
 
         result = image().create(ImageRequest(asset_id=asset_id, prompt=prompt))
         stored = context.output_path / f"{asset_id}.png"

@@ -63,6 +63,7 @@ from packages.core.enums import (
     RightsStatus,
     SpecAuthor,
 )
+from packages.core.options import options_of
 from packages.core.stages import GATES
 from packages.core.storage import StorageAdapter
 from packages.render.theme import check_capabilities, load_theme
@@ -102,7 +103,13 @@ class EpisodeOut(BaseModel):
     gate: str | None = Field(description="plan, assets or review while it waits for approval.")
     stale_from_state: EpisodeState | None
     stale_scenes: dict[str, list[str]]
-    target_duration_s: int
+    target_duration_s: int = Field(
+        description="How long the video is planned to be. A plan of shots is as long as "
+        "its scenes need."
+    )
+    options: dict[str, bool] = Field(
+        description="What the owner switched on or off for this video: research, captions, music."
+    )
     spec_version: int | None = Field(description="The current version of its spec, if it has one.")
     resting: bool = Field(
         description="True when everything that is built so far is done: the video is "
@@ -194,11 +201,29 @@ class EpisodeList(BaseModel):
     offset: int
 
 
+class OptionsIn(BaseModel):
+    """What the owner switches on or off for one video. A switch that is left out has
+    its default: no research, captions on, music on."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    research: StrictBool | None = Field(
+        default=None, description="Look facts up, with sources, before the plan is written."
+    )
+    captions: StrictBool | None = Field(
+        default=None, description="Show the spoken words as captions."
+    )
+    music: StrictBool | None = Field(
+        default=None, description="Play the studio's music bed under the video."
+    )
+
+
 class EpisodeCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     idea: Annotated[str, Field(min_length=1, max_length=4000, pattern=r"\S")]
     target_duration_s: Literal[45, 60] = 45
+    options: OptionsIn | None = None
     start: StrictBool = Field(default=True, description="Start planning at once.")
 
 
@@ -353,6 +378,15 @@ def _cannot_draw(body: dict[str, Any]) -> list[str]:
     return [str(found) for found in check_capabilities(body, theme.capabilities)]
 
 
+def _length(episode: Episode, channel: Channel | None, version: SpecVersion | None) -> int:
+    """How long the video is planned to be. A plan of shots is as long as its scenes
+    need. Before there is one, and for a plan of the first design, it is the length that
+    was chosen for the episode or its channel."""
+    if version is not None and specs.is_owners_plan(version.body):
+        return lengths.shown_length(version.body)
+    return episode.target_duration_s or (channel.target_duration_s if channel else 45)
+
+
 def _spec_out(version: SpecVersion) -> SpecOut:
     return SpecOut(
         version=version.version,
@@ -405,8 +439,8 @@ class DatabaseEpisodeService:
             "gate": GATES.get(episode.state) if episode.awaiting_approval else None,
             "stale_from_state": episode.stale_from_state,
             "stale_scenes": dict(episode.stale_scenes or {}),
-            "target_duration_s": episode.target_duration_s
-            or (channel.target_duration_s if channel else 45),
+            "target_duration_s": _length(episode, channel, version),
+            "options": options_of(episode.options).to_json(),
             "spec_version": version.version if version else None,
             "resting": episode.state is stages.LAST_BUILT_STATE
             and pipeline.is_resting(episode, pipeline.current_jobs(session, episode)),
@@ -479,10 +513,12 @@ class DatabaseEpisodeService:
                 channel = Channel(**DEFAULT_CHANNEL)
                 session.add(channel)
                 session.flush()
+            chosen = body.options.model_dump(exclude_none=True) if body.options else {}
             episode = Episode(
                 channel_id=channel.id,
                 idea=body.idea.strip(),
                 target_duration_s=body.target_duration_s,
+                options=options_of(chosen).to_json(),
             )
             session.add(episode)
             session.flush()
@@ -563,6 +599,7 @@ class DatabaseEpisodeService:
             version = specs.current(session, episode_id)
             body = dict(version.body) if version is not None else None
         low, high = lengths.accepted_range(target)
+        owners_plan = body is not None and specs.is_owners_plan(body)
         scenes: list[ScenePlan] = []
         total: float | None = None
         if body is not None:
@@ -577,6 +614,18 @@ class DatabaseEpisodeService:
                 for scene, seconds in exact
             ]
             total = sum(seconds for _, seconds in exact)
+        if owners_plan and body is not None and total is not None:
+            # A plan of shots is the owner's own. It is as long as its scenes need, and
+            # the only limit is how long a video can be. Nothing is cut to a target.
+            return PlanOut(
+                brief=None,
+                scenes=scenes,
+                estimated_total_s=round(total, 1),
+                target_duration_s=lengths.shown_length(body),
+                shortest_s=lengths.SHORTEST_S,
+                longest_s=lengths.LONGEST_S,
+                fits=total <= lengths.LONGEST_S,
+            )
         return PlanOut(
             brief=document if isinstance(document, dict) else None,
             scenes=scenes,
@@ -598,6 +647,10 @@ class DatabaseEpisodeService:
             )
         except specs.SpecError as error:
             raise _spec_error(error) from error
+        if specs.is_owners_plan(body):
+            # A picture the owner added to the plan gets its row at once, so the Assets
+            # tab shows it. A plan of shots has no asset manifest: its own entries count.
+            assets.sync(session, self._episode(session, episode_id), body, manifest={})
         return _spec_out(stored)
 
     def replace_spec(self, episode_id: uuid.UUID, body: dict[str, Any]) -> SpecOut:
@@ -915,12 +968,15 @@ class MemoryEpisodeService:
             id=uuid.uuid4(),
             title=None,
             idea=body.idea.strip(),
-            state=EpisodeState.BRIEF if body.start else EpisodeState.IDEA,
+            state=EpisodeState.DIRECTION if body.start else EpisodeState.IDEA,
             awaiting_approval=False,
             gate=None,
             stale_from_state=None,
             stale_scenes={},
             target_duration_s=body.target_duration_s,
+            options=options_of(
+                body.options.model_dump(exclude_none=True) if body.options else {}
+            ).to_json(),
             spec_version=None,
             resting=False,
             created_at=datetime.now(UTC),

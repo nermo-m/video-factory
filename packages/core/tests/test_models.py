@@ -100,6 +100,7 @@ def test_json_documents_use_jsonb() -> None:
         ("channel", "pronunciation"),
         ("channel", "banned_topics"),
         ("episode", "stale_scenes"),
+        ("episode", "options"),
         ("spec_version", "body"),
         ("asset", "tags"),
         ("job", "input"),

@@ -230,11 +230,14 @@ def _revise(session: Session, episode: Episode, channel: Channel, job: JobContex
     comment = job.job.input.get("comment")
     if not isinstance(comment, str) or not comment.strip():
         raise JobError("A revision needs the owner's comment.", error_class=ErrorClass.BUG)
+    spec = current_spec(session, episode)
     return Prepared(
         {
-            "spec": current_spec(session, episode),
+            "spec": spec,
             "comment": comment,
-            "capabilities": load_theme(channel.theme).capabilities,
+            # What the plan's own look can draw. A plan of shots is drawn by the plain
+            # look, whatever the channel's look is.
+            "capabilities": load_theme(str(spec["theme"])).capabilities,
         },
         check=rules.patch_leaves_a_valid_spec,
     )
