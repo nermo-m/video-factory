@@ -10,7 +10,9 @@
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import unquote, urlsplit
@@ -290,4 +292,184 @@ def patch_leaves_a_valid_spec(
         if revised[name] != inputs["spec"][name]:
             problems.append(f"The patch may not change `{name}`.")
     problems += [str(found) for found in check_capabilities(revised, inputs["capabilities"])]
+    return problems
+
+
+# --- Director mode: the owner's prompt is the plan ------------------------------------------
+
+# A silent shot that was given no length.
+SILENT_SHOT_S = 3.0
+# Labels in front of a line that is meant to be spoken.
+_SPOKEN_LABEL = re.compile(
+    r"(?:^|[\s.;,(])(?:VO|V\.O\.?|Voice[\s-]?over|Narration|Narrator)[\s]*:[ \t]*([^\n]+)",
+    re.IGNORECASE | re.MULTILINE,
+)
+_QUOTED = re.compile(r'"([^"\n]+)"')
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+_NOT_A_LETTER = re.compile(r"[^\w'\s]+")
+
+
+@dataclass(frozen=True)
+class Marked:
+    """A passage the owner marked in the prompt: after a label such as "VO:", or in
+    quotation marks. `spoken` is true for a labelled line, which has to be narration."""
+
+    text: str
+    spoken: bool
+
+
+def _bare(text: str) -> str:
+    """A text as the owner's lines are compared: quotes of one kind, no capitals, no
+    punctuation, single spaces."""
+    return " ".join(_NOT_A_LETTER.sub(" ", text.translate(_SAME_SIGN).lower()).split())
+
+
+def _stands_in(narration: str, bare_idea: str) -> bool:
+    """True when a narration is the owner's own words: it stands in the prompt as a whole,
+    or each of its sentences does. Two of the owner's lines may share one scene."""
+    if _bare(narration) in bare_idea:
+        return True
+    sentences = [_bare(part) for part in _SENTENCE_END.split(narration)]
+    return all(part in bare_idea for part in sentences if part)
+
+
+def marked_lines(idea: str) -> list[Marked]:
+    """The passages of a prompt that are marked as the owner's exact words, in the order
+    they stand: the rest of a line after a spoken label, and what is in quotation marks.
+    A passage of fewer than three words is a name or a term, not a line."""
+    text = idea.translate(_SAME_SIGN)
+    found: list[tuple[int, Marked]] = []
+    labelled: list[tuple[int, int]] = []
+    for match in _SPOKEN_LABEL.finditer(text):
+        line = match.group(1).strip().strip('"').strip()
+        labelled.append(match.span(1))
+        if count_words(line) >= MIN_WORDS_OF_A_LINE:
+            found.append((match.start(1), Marked(line, spoken=True)))
+    for match in _QUOTED.finditer(text):
+        inside_a_label = any(start <= match.start() < end for start, end in labelled)
+        passage = match.group(1).strip()
+        if not inside_a_label and count_words(passage) >= MIN_WORDS_OF_A_LINE:
+            found.append((match.start(), Marked(passage, spoken=False)))
+    return [marked for _, marked in sorted(found, key=lambda item: item[0])]
+
+
+def needed_seconds(scenes: Sequence[Mapping[str, Any]], speed: float = 1.0) -> float:
+    """How long a shot list is estimated to take. A spoken scene lasts as long as its
+    line, or longer when it was given more seconds. A silent one takes its seconds."""
+    total = 0.0
+    for scene in scenes:
+        given = float(scene.get("duration_s") or 0)
+        if str(scene.get("narration") or "").strip():
+            total += max(scene_seconds(str(scene["narration"]), speed), given)
+        else:
+            total += given or SILENT_SHOT_S
+    return total
+
+
+def _quote(text: str) -> str:
+    return f'"{text}"'
+
+
+def shotlist_follows_the_owner(
+    inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
+) -> list[str]:
+    """What a shot list does that the owner's prompt does not allow. Empty means it
+    follows the prompt, as far as code can tell.
+
+    The model is told to keep the owner's lines. This does not take its word for it: a
+    line marked as the owner's must stand in the prompt, a line the studio wrote must be
+    on the change list, and what the owner marked as exact words must be in the plan.
+    """
+    idea = _bare(str(inputs["idea"]))
+    scenes: list[dict[str, Any]] = output["scenes"]
+    changed_scenes = {change.get("scene") for change in output["changes"]}
+    problems: list[str] = []
+
+    seen: set[str] = set()
+    for scene in scenes:
+        if scene["id"] in seen:
+            problems.append(f"two scenes have the id '{scene['id']}'.")
+        seen.add(scene["id"])
+    described = set()
+    for character in output["characters"]:
+        if character["id"] in described:
+            problems.append(f"two characters have the id '{character['id']}'.")
+        described.add(character["id"])
+
+    cameras: list[str] = inputs["capabilities"]["cameras"]
+    positions: list[str] = inputs["capabilities"]["text_positions"]
+    for scene in scenes:
+        name = f"scene {scene['id']}"
+        narration = str(scene["narration"]).strip()
+        whose = scene.get("narration_from")
+        if narration and whose == "owner" and not _stands_in(narration, idea):
+            problems.append(
+                f"{name}: the narration is marked as the owner's line, but it does not "
+                "stand in the owner's prompt word for word. Use the owner's words, or mark "
+                "it as written by the studio and list it in `changes`."
+            )
+        elif narration and whose == "studio" and scene["id"] not in changed_scenes:
+            problems.append(
+                f"{name}: the narration was written by the studio, so `changes` needs an "
+                "entry for this scene that says so."
+            )
+        elif narration and whose is None:
+            problems.append(
+                f"{name}: a spoken scene says whose words it speaks. Set `narration_from` "
+                "to `owner` or `studio`."
+            )
+        for character in scene["characters"]:
+            if character not in described:
+                problems.append(
+                    f"{name}: the picture shows the character '{character}', who is not "
+                    "described in `characters`."
+                )
+        if scene["camera"] not in cameras:
+            problems.append(
+                f"{name}: the look has no camera move '{scene['camera']}'. It has: "
+                f"{', '.join(cameras)}. List what was asked for in `changes` as not possible."
+            )
+        for item in scene["on_screen_text"]:
+            if item["position"] not in positions:
+                problems.append(
+                    f"{name}: the look has no text position '{item['position']}'. It has: "
+                    f"{', '.join(positions)}."
+                )
+    for change in output["changes"]:
+        if "scene" in change and change["scene"] not in seen:
+            problems.append(f"`changes` names the scene '{change['scene']}', which is not there.")
+
+    narrations = [_bare(str(scene["narration"])) for scene in scenes]
+    elsewhere = [
+        _bare(
+            " ".join(
+                [scene["image_prompt"], *(item["content"] for item in scene["on_screen_text"])]
+            )
+        )
+        for scene in scenes
+    ]
+    last_scene, last_line = -1, ""
+    for marked in marked_lines(str(inputs["idea"])):
+        wanted = _bare(marked.text)
+        spoken_in = next((i for i, text in enumerate(narrations) if wanted in text), None)
+        if spoken_in is None:
+            if marked.spoken:
+                problems.append(
+                    f"the owner's line {_quote(marked.text)} is spoken in no scene. Every "
+                    "line the owner wrote is spoken word for word."
+                )
+            elif not any(wanted in text for text in elsewhere):
+                problems.append(
+                    f"the owner's words {_quote(marked.text)} are nowhere in the plan. They "
+                    "must be spoken, shown as text on screen, or written into a picture, "
+                    "word for word."
+                )
+            continue
+        if spoken_in < last_scene:
+            problems.append(
+                "the owner's lines are spoken in another order than the owner wrote them: "
+                f"{_quote(marked.text)} comes before {_quote(last_line)}"
+            )
+        else:
+            last_scene, last_line = spoken_in, marked.text
     return problems

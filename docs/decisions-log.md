@@ -1614,3 +1614,47 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **Not done:** sounds and music made to the owner's description (the second half of
   Q-077), and sub-pixel camera movement: a move advances in whole pixels, which is even
   enough at these speeds.
+
+## D-056: The shot list: one model call, checked against the owner's prompt in code
+
+- **Date:** 2026-11-15. **Card:** VFS-83 (Director mode, part 1). The owner, on
+  2026-11-14: the videos "should follow full instructions I give and not change them
+  based on the preset", with "full on direction for every small detail".
+- **Choice:**
+  - **One skill, `shotlist`,** reads the prompt once and answers with a document of its
+    own: title, style, characters, scenes (narration, on-screen text, a picture prompt, a
+    motion prompt, camera, clip) and `changes`. It is not the render plan.
+  - **The app builds the plan** (`packages/skills/build.py`): ids, frame, voice, seed, the
+    switches, one generated picture per scene named `a_<scene id>`. The model never
+    writes that part, so it cannot get it wrong, and nothing after the model call can
+    reshape the owner's text.
+  - **The model's word is not taken for it** (`rules.shotlist_follows_the_owner`):
+    - A narration marked as the owner's must stand in the prompt, compared without
+      capitals, punctuation and extra spaces. Two of the owner's lines may share a scene:
+      each sentence is looked up by itself.
+    - A narration the studio wrote must have an entry on the change list for its scene.
+    - What the owner marked as exact words must be in the plan. A line after a label
+      (`VO:`, `V.O.:`, `Voiceover:`, `Narration:`, `Narrator:`) must be spoken, and the
+      labelled lines keep their order. A passage in quotation marks of three words or
+      more must be spoken, shown as text on screen, or written into a picture prompt:
+      quotation marks are also used for a sign or a caption, so it is not forced into
+      the narration.
+    - Characters a scene lists exist, ids are used once, and only camera moves and text
+      positions the look has are named.
+  - **A spoken line always wins over a length.** A scene given fewer seconds than its line
+    takes loses the number and gains a `changed` entry. A stated total that the lines do
+    not fit into by more than 2 seconds is listed the same way. Scenes that need more
+    than 180 seconds raise `TooLongError` with a message for the owner. Nothing is cut.
+  - **Names stay as the owner wrote them.** The rule of D-052 that replaced a name that
+    belongs to someone else is gone. The model marks such a picture `third_party`, which
+    becomes the asset's `contains_third_party_ip` and, later, a badge the owner can dismiss.
+    The instructions hold no wording meant to get a picture past the image model's own
+    filter, and a test keeps it that way.
+  - **A character's description is not repeated in the picture prompts.** A scene lists
+    who is in it, and the description is put in front of the prompt when the picture is
+    made (VFS-84).
+- **What the check cannot see:** a prompt with no labels and no quotation marks has no
+  dropped-line check, only the check that an owner's line is really the owner's. A detail
+  of a picture that the model left out is not detected. The change list and the editable
+  shot list are there for the owner to catch it before anything is generated.
+- **Not wired in yet:** the pipeline still runs the old chain. VFS-84 switches it over.

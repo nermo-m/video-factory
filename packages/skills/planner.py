@@ -33,7 +33,16 @@ from packages.core.enums import ErrorClass
 from packages.core.queue import InvalidOutputError, JobError
 
 SKILLS_DIR = Path(__file__).resolve().parent
-SKILL_NAMES = ("brief", "research", "script", "direct", "assets", "package", "revise")
+SKILL_NAMES = (
+    "brief",
+    "research",
+    "script",
+    "direct",
+    "assets",
+    "package",
+    "revise",
+    "shotlist",
+)
 MAX_PROBLEMS_SHOWN = 12
 
 # A skill's own rules: problems with an answer that the schema cannot express.

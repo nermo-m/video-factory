@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shot list",
+  "description": "Output of the shotlist skill: the owner's prompt as scenes an image model and a video model can follow, and the list of everything that is not the owner's own.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "style", "characters", "scenes", "changes"],
+  "properties": {
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "style": {
+      "description": "The look of the pictures, once for the whole video.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "characters": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      }
+    },
+    "target_duration_s": {
+      "description": "The length of the whole video, only when the owner gave one.",
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 600
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "narration",
+          "on_screen_text",
+          "image_prompt",
+          "characters",
+          "motion_prompt",
+          "clip",
+          "camera",
+          "third_party",
+          "text_in_picture"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,37}$" },
+          "narration": { "type": "string", "maxLength": 600 },
+          "narration_from": {
+            "description": "Whose words the narration is. Needed for every scene that is spoken.",
+            "enum": ["owner", "studio"]
+          },
+          "on_screen_text": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["content", "position"],
+              "properties": {
+                "content": { "type": "string", "minLength": 1, "maxLength": 80 },
+                "position": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" }
+              }
+            }
+          },
+          "duration_s": {
+            "description": "The length of the scene, only when the owner gave one or the scene is silent.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 120
+          },
+          "image_prompt": { "type": "string", "minLength": 40, "maxLength": 3500 },
+          "characters": {
+            "type": "array",
+            "maxItems": 12,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" }
+          },
+          "motion_prompt": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "clip": { "type": "boolean" },
+          "camera": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" },
+          "third_party": { "type": "boolean" },
+          "text_in_picture": { "type": "boolean" }
+        }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "maxItems": 90,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "what", "why"],
+        "properties": {
+          "scene": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,39}$" },
+          "kind": { "enum": ["added", "changed", "not_possible"] },
+          "what": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "why": { "type": "string", "minLength": 1, "maxLength": 300 }
+        }
+      }
+    }
+  }
+}
