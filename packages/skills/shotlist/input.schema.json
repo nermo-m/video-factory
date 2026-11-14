@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shot list input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["idea", "capabilities", "voice_speed", "claims"],
+  "properties": {
+    "idea": {
+      "description": "The owner's prompt, as it was typed in. It is the plan.",
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilities": {
+      "description": "What the look can draw: its camera moves and where text can sit.",
+      "type": "object",
+      "required": ["theme", "cameras", "text_positions"]
+    },
+    "voice_speed": {
+      "description": "How fast the voice speaks. 1 is its normal pace of about 2.3 words a second.",
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 2
+    },
+    "claims": {
+      "description": "Facts with their sources, when the owner asked for research. Otherwise empty.",
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  }
+}

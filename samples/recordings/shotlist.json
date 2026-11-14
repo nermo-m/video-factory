@@ -1,0 +1,128 @@
+{
+  "skill": "shotlist",
+  "skill_version": "1.0",
+  "output": {
+    "title": "The Keeper's Hill",
+    "style": "Soft watercolour on rough paper, muted blues and greys, one warm light in every picture.",
+    "characters": [
+      {
+        "id": "keeper",
+        "name": "The keeper",
+        "description": "A man of about sixty with a short grey beard, a navy wool coat with brass buttons and a knitted cap. He carries a brass lantern."
+      }
+    ],
+    "target_duration_s": 30,
+    "scenes": [
+      {
+        "id": "s01_hill",
+        "narration": "The keeper climbed the same hill every morning. Nobody asked him to.",
+        "narration_from": "owner",
+        "on_screen_text": [],
+        "image_prompt": "Dawn. The keeper climbs a steep green hill toward the lighthouse at its top, seen from below so that he is small against a pale sky. He leans into the slope, lantern in his right hand, its flame the one warm light. Wet grass, a narrow worn path, sea mist behind the hill. Low angle, wide lens, soft early light from the left.",
+        "characters": [
+          "keeper"
+        ],
+        "motion_prompt": "The keeper walks slowly up the path, the grass bends in the wind, mist drifts to the right. The camera holds still. Slow.",
+        "clip": false,
+        "camera": "tilt_up",
+        "third_party": false,
+        "text_in_picture": false
+      },
+      {
+        "id": "s02_lamp_room",
+        "narration": "He trimmed the wick, cleaned the glass, and wrote one line in the log.",
+        "narration_from": "owner",
+        "on_screen_text": [],
+        "image_prompt": "The lamp room at the top of the lighthouse. Close on the keeper's hands as he wipes the big glass lens with a cloth, the brass fittings around it dull and well used. An open logbook and a pencil on the sill. The lamp's flame is the one warm light and it glows through the lens onto his fingers. Eye level, close lens, shallow focus.",
+        "characters": [
+          "keeper"
+        ],
+        "motion_prompt": "His hand moves the cloth across the glass in a slow circle, the flame flickers gently. The camera holds still. Slow.",
+        "clip": false,
+        "camera": "push_in",
+        "third_party": false,
+        "text_in_picture": false
+      },
+      {
+        "id": "s03_storm",
+        "narration": "Then one night a storm took the stars, and a ship lost its way.",
+        "narration_from": "owner",
+        "on_screen_text": [],
+        "image_prompt": "Night. A storm over a black sea, sheets of rain, no stars. A small ship far out, half hidden between two tall waves, one warm lamp at its mast. Heavy cloud, cold blue-grey water with white crests. Wide shot from above the waves, long lens.",
+        "characters": [],
+        "motion_prompt": "The waves roll from left to right, the ship rises and drops between them, rain falls at a slant. The camera sways slightly with the sea. Medium speed.",
+        "clip": true,
+        "camera": "pan_right",
+        "third_party": false,
+        "text_in_picture": false
+      },
+      {
+        "id": "s04_beam",
+        "narration": "The lamp was burning, as it had every night before.",
+        "narration_from": "owner",
+        "on_screen_text": [],
+        "image_prompt": "The beam of the lighthouse cuts across the dark water in one warm bar of light, and the small ship has turned its bow toward it. The lighthouse stands at the right edge on its hill, rain thinning. The beam is the one warm light. Wide shot at sea level, normal lens.",
+        "characters": [],
+        "motion_prompt": "The beam sweeps slowly across the water toward the ship, the ship moves toward the light. Slow push in.",
+        "clip": false,
+        "camera": "push_in",
+        "third_party": false,
+        "text_in_picture": false
+      },
+      {
+        "id": "s05_morning",
+        "narration": "",
+        "on_screen_text": [
+          {
+            "content": "Small steps still count.",
+            "position": "middle"
+          }
+        ],
+        "duration_s": 3,
+        "image_prompt": "The same steep green hill at dawn, empty and calm, the lighthouse at its top. Nobody on the path. The sea flat and pale, the sky clearing. The first sun on the lighthouse glass is the one warm light. Seen from below, wide lens, the same view as the first picture.",
+        "characters": [],
+        "motion_prompt": "Grass moves lightly, a few gulls cross the sky far away. The camera holds still. Very slow.",
+        "clip": false,
+        "camera": "none",
+        "third_party": false,
+        "text_in_picture": false
+      }
+    ],
+    "changes": [
+      {
+        "scene": "s01_hill",
+        "kind": "added",
+        "what": "Sea mist behind the hill, soft light from the left, and a slow tilt up.",
+        "why": "The prompt gave no light or camera move for this scene."
+      },
+      {
+        "scene": "s02_lamp_room",
+        "kind": "added",
+        "what": "An open logbook and a pencil on the sill, and a slow push in.",
+        "why": "The line speaks of the log, and the prompt gave no camera move."
+      },
+      {
+        "scene": "s03_storm",
+        "kind": "added",
+        "what": "A view from above the waves through a long lens, and a slow pan to the right.",
+        "why": "The prompt gave no camera angle. The pan is what the still picture does until the clip exists."
+      },
+      {
+        "scene": "s05_morning",
+        "kind": "added",
+        "what": "The text sits in the middle of the frame, and the picture does not move.",
+        "why": "The prompt did not say where the text goes."
+      },
+      {
+        "scene": "s05_morning",
+        "kind": "not_possible",
+        "what": "A quiet piano under the last scene.",
+        "why": "The studio can only play its own soft music bed under the whole video."
+      }
+    ]
+  },
+  "input_tokens": 1500,
+  "output_tokens": 1900,
+  "sources": [],
+  "searches": 0
+}

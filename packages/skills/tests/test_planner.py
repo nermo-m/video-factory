@@ -107,6 +107,8 @@ def test_the_shared_schemas_are_the_skills_output_schemas() -> None:
         "assets": "asset_manifest",
         "package": "package",
         "revise": None,
+        # A shot list is the model's own answer. The app builds the plan from it.
+        "shotlist": None,
     }
     assert load_skill("brief").output_schema == schemas.bundled_schema("brief")
 

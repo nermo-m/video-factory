@@ -37,8 +37,16 @@ the caller can store them all.
 - **package:** the cover frame lies inside the video.
 - **revise:** the patch applies, leaves a valid spec the theme can draw, has at most 20
   operations, and does not touch the episode's id, format or theme.
+- **shotlist:** the owner's prompt is the plan. A narration marked as the owner's stands in
+  the prompt word for word, a narration the studio wrote is on the change list, nothing
+  the owner marked with a label such as `VO:` or with quotation marks is dropped, and only
+  camera moves and text positions the look has are named. `build.py` then builds the plan
+  from the shot list in ordinary code, and refuses to cut: lines that need more than 180
+  seconds stop with a message for the owner.
 
-The seven skills: `brief`, `research`, `script`, `direct`, `assets`, `package`, `revise`.
+The eight skills: `brief`, `research`, `script`, `direct`, `assets`, `package`, `revise`,
+`shotlist`. The first seven are the planning chain of design doc section 6. `shotlist` is
+Director mode, which takes the chain's place (card VFS-84).
 A skill whose answer is one of the shared schemas in `schemas/` sends the model that
 schema as one self-contained document (`schemas.bundled_schema`), because a model
 provider cannot follow a reference into another file.
