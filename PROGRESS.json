@@ -2,7 +2,7 @@
   "contract": "progress/1",
   "project": "Video Factory Studio",
   "repo": "video-factory",
-  "updated": "2026-11-13",
+  "updated": "2026-11-15",
   "theme": {
     "bg": "#0B0F1A",
     "primary": "#FF9610",
@@ -414,7 +414,7 @@
       "order": 315.7,
       "title": "A theme for full-frame pictures with a camera move for each shot",
       "status": "backlog",
-      "note": "Proposed after VFS-78: the scroll theme cannot do a punch zoom, a whip, a shake, a flash or sounds such as a crash and a piano, which the owner's shot lists ask for. Question Q-077."
+      "note": "Proposed after VFS-78: the scroll theme cannot do a punch zoom, a whip, a shake, a flash or sounds such as a crash and a piano, which the owner's shot lists ask for. Question Q-077. Taken over by VFS-82, the plain look of Director mode."
     },
     {
       "id": "VFS-74",
@@ -422,6 +422,55 @@
       "title": "Browser tests use their own database",
       "status": "done",
       "note": "The browser tests run in a Compose project of their own, so they no longer write into the owner's database or switch the owner's studio to demo mode. One PowerShell command starts the studio. Merged in pull request #48."
+    },
+    {
+      "id": "VFS-80",
+      "order": 316.1,
+      "title": "Delete videos from the Board and the video page",
+      "status": "review",
+      "note": "A video can be deleted from its card, from its own page, or several at once with Select. It is gone at once, and its plan, pictures, voice and rendered files are removed for good. Library pictures and the usage counts stay. Board card: https://app.notion.com/418474b94ace81a1a47dd4044c607a73"
+    },
+    {
+      "id": "VFS-81",
+      "order": 316.2,
+      "title": "Plan schema 2.1: shots, characters and the change list",
+      "status": "ready",
+      "note": "Director mode, part 1, task 2. Board card: https://app.notion.com/418474b94ace81cea7e8df0551cfe507"
+    },
+    {
+      "id": "VFS-82",
+      "order": 316.3,
+      "title": "The plain look: a shot on the whole frame",
+      "status": "ready",
+      "note": "Director mode, part 1, task 3. Takes the place of the proposal VFS-79. Board card: https://app.notion.com/418474b94ace819ea914d6e2988fb541"
+    },
+    {
+      "id": "VFS-83",
+      "order": 316.4,
+      "title": "The shot list skill and the code that builds the plan from it",
+      "status": "ready",
+      "note": "Director mode, part 1, task 4. Board card: https://app.notion.com/418474b94ace81149c39da7de88788dc"
+    },
+    {
+      "id": "VFS-84",
+      "order": 316.5,
+      "title": "The pipeline runs the shot list in place of the seven-step chain",
+      "status": "ready",
+      "note": "Director mode, part 1, task 5. Board card: https://app.notion.com/418474b94ace8136b85ede22cc04833c"
+    },
+    {
+      "id": "VFS-85",
+      "order": 316.6,
+      "title": "Write your video, the change list and the editable shot list on the screens",
+      "status": "ready",
+      "note": "Director mode, part 1, task 6. Board card: https://app.notion.com/418474b94ace81c8a62af37efff24623"
+    },
+    {
+      "id": "VFS-86",
+      "order": 316.7,
+      "title": "Director mode part 1: records and the first live video",
+      "status": "ready",
+      "note": "Director mode, part 1, task 7. Board card: https://app.notion.com/418474b94ace818691e2c023f7070fd9"
     },
     {
       "id": "VFS-28",
@@ -433,7 +482,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-29: the ComfyUI clip adapter and workflow, so approved pictures marked as clips are animated on the graphics card. Then VFS-28 second part, the Library screen."
+    "next": "VFS-81: plan schema 2.1 (shots, characters, the change list), task 2 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Director mode replaces the seven-step planning chain: the owner's prompt is the plan. After part 1 come Wan clips (VFS-29)."
   },
   "checklist": [
     {
@@ -468,7 +517,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1571 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 293 integration (Python), 19 Node, 205 browser tests with axe and screenshots"
+      "value": "1591 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 309 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -651,6 +700,10 @@
     {
       "date": "2026-11-11",
       "text": "Asset licence check written test-first: a sample file without a registry row fails the build."
+    },
+    {
+      "date": "2026-11-15",
+      "text": "Videos can be deleted, one or many, with their files. A job still running for a deleted video is thrown away when it ends."
     }
   ]
 }

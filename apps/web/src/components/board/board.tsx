@@ -3,10 +3,16 @@
 import { useId, useState } from "react";
 
 import type { EpisodeOut } from "@/api/client";
-import { type EpisodesState, useEpisodes } from "@/components/episodes/episodes-provider";
+import {
+  type DeleteNotice,
+  type DeleteTarget,
+  type EpisodesState,
+  useEpisodes,
+} from "@/components/episodes/episodes-provider";
 import { Banner, EmptyState, PageHeader } from "@/components/page";
 import { type ApiState, useApiState } from "@/components/shell/status-strip";
-import { type GroupId, episodeCount, groupOf } from "@/lib/episodes";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { type GroupId, displayTitle, episodeCount, groupOf } from "@/lib/episodes";
 import { quietAction } from "@/lib/styles";
 import { useIsPhone } from "@/lib/use-media";
 import { cn } from "@/lib/utils";
@@ -68,6 +74,14 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
+/** What the cards need to offer Delete and to be chosen while selecting. */
+interface Choosing {
+  selecting: boolean;
+  selected: ReadonlySet<string>;
+  toggle: (id: string) => void;
+  ask: (episode: EpisodeOut) => void;
+}
+
 /**
  * One status group. From tablet up it is a column with a plain heading. On a phone the
  * heading is a button that folds the group away (design doc section 11.5).
@@ -77,6 +91,7 @@ function Group({
   label,
   episodes,
   openOnPhone,
+  choosing,
   accent = false,
   className,
 }: {
@@ -84,6 +99,7 @@ function Group({
   label: string;
   episodes: EpisodeOut[];
   openOnPhone: boolean;
+  choosing: Choosing;
   accent?: boolean;
   className?: string;
 }) {
@@ -131,7 +147,13 @@ function Group({
         )}
         {episodes.map((episode) => (
           <li key={episode.id} className="min-w-0">
-            <EpisodeCard episode={episode} />
+            <EpisodeCard
+              episode={episode}
+              onDelete={() => choosing.ask(episode)}
+              selecting={choosing.selecting}
+              selected={choosing.selected.has(episode.id)}
+              onToggle={() => choosing.toggle(episode.id)}
+            />
           </li>
         ))}
       </ul>
@@ -148,7 +170,7 @@ function Group({
  *
  * Below 1024 px Planning and Producing are shown as one group, In progress.
  */
-function Groups({ episodes }: { episodes: EpisodeOut[] }) {
+function Groups({ episodes, choosing }: { episodes: EpisodeOut[]; choosing: Choosing }) {
   const by = (group: GroupId) => episodes.filter((episode) => groupOf(episode) === group);
   const planning = by("planning");
   const producing = by("producing");
@@ -158,18 +180,19 @@ function Groups({ episodes }: { episodes: EpisodeOut[] }) {
 
   return (
     <div data-testid="board-groups" className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <Group id="needs-you" label="Needs you" episodes={by("needs-you")} openOnPhone accent className="flex" />
+      <Group id="needs-you" label="Needs you" episodes={by("needs-you")} openOnPhone choosing={choosing} accent className="flex" />
       <div className="flex min-w-0 flex-col gap-4 lg:contents">
         <Group
           id="in-progress"
           label="In progress"
           episodes={inProgress}
           openOnPhone
+          choosing={choosing}
           className="flex lg:hidden"
         />
-        <Group id="planning" label="Planning" episodes={planning} openOnPhone className="hidden lg:flex" />
-        <Group id="producing" label="Producing" episodes={producing} openOnPhone className="hidden lg:flex" />
-        <Group id="finished" label="Finished" episodes={by("finished")} openOnPhone={false} className="flex" />
+        <Group id="planning" label="Planning" episodes={planning} openOnPhone choosing={choosing} className="hidden lg:flex" />
+        <Group id="producing" label="Producing" episodes={producing} openOnPhone choosing={choosing} className="hidden lg:flex" />
+        <Group id="finished" label="Finished" episodes={by("finished")} openOnPhone={false} choosing={choosing} className="flex" />
       </div>
     </div>
   );
@@ -216,11 +239,91 @@ export interface BoardViewProps {
   episodes: EpisodesState;
   onRetry: () => void;
   onShowMore: () => Promise<void>;
+  /** Deletes the videos and resolves when it is over, whatever the outcome. */
+  onDelete: (targets: DeleteTarget[]) => Promise<unknown>;
+  notice: DeleteNotice | null;
+  onDismissNotice: () => void;
+}
+
+function Notice({ notice, onDismiss }: { notice: DeleteNotice; onDismiss: () => void }) {
+  const failed = notice.kind === "failed";
+  return (
+    <div
+      data-testid="board-notice"
+      className={cn(
+        "flex items-center justify-between gap-3 rounded-lg border px-4 py-1",
+        failed ? "border-danger/50 bg-chip-failed" : "border-success/50 bg-chip-finished",
+      )}
+    >
+      <p role={failed ? "alert" : "status"}>{notice.text}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="min-h-11 px-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        Dismiss
+      </button>
+    </div>
+  );
 }
 
 /** The Board for a given state, without any requests of its own. */
-export function BoardView({ api, episodes, onRetry, onShowMore }: BoardViewProps) {
+export function BoardView({
+  api,
+  episodes,
+  onRetry,
+  onShowMore,
+  onDelete,
+  notice,
+  onDismissNotice,
+}: BoardViewProps) {
   const [loadingMore, setLoadingMore] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  // The videos the owner is being asked about. Null when no question is open.
+  const [asking, setAsking] = useState<DeleteTarget[] | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const shown = episodes.kind === "ready" ? episodes.episodes : [];
+  // A video that left the Board by itself is no longer chosen.
+  const chosen = shown.filter((episode) => selected.has(episode.id));
+  const target = (episode: EpisodeOut): DeleteTarget => ({
+    id: episode.id,
+    title: displayTitle(episode),
+  });
+
+  function stopSelecting() {
+    setSelecting(false);
+    setSelected(new Set());
+  }
+
+  async function confirmDelete() {
+    if (!asking) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await onDelete(asking);
+    } finally {
+      setDeleting(false);
+      setAsking(null);
+      stopSelecting();
+    }
+  }
+
+  const choosing: Choosing = {
+    selecting,
+    selected,
+    toggle: (id) =>
+      setSelected((current) => {
+        const next = new Set(current);
+        if (!next.delete(id)) {
+          next.add(id);
+        }
+        return next;
+      }),
+    ask: (episode) => setAsking([target(episode)]),
+  };
 
   async function showMore() {
     setLoadingMore(true);
@@ -238,6 +341,42 @@ export function BoardView({ api, episodes, onRetry, onShowMore }: BoardViewProps
         note={episodes.kind === "ready" ? episodeCount(episodes.total) : undefined}
       />
       <BoardBanner state={api} />
+      {notice && <Notice notice={notice} onDismiss={onDismissNotice} />}
+      {shown.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          {selecting ? (
+            <>
+              <button
+                type="button"
+                disabled={chosen.length === 0}
+                onClick={() => setAsking(chosen.map(target))}
+                className={quietAction}
+              >
+                Delete {chosen.length} {chosen.length === 1 ? "video" : "videos"}
+              </button>
+              <button type="button" onClick={stopSelecting} className={quietAction}>
+                Done
+              </button>
+              <p className="text-muted-foreground">Choose the videos to delete.</p>
+            </>
+          ) : (
+            <button type="button" onClick={() => setSelecting(true)} className={quietAction}>
+              Select
+            </button>
+          )}
+        </div>
+      )}
+      {asking && (
+        <ConfirmDialog
+          title={asking.length === 1 ? `Delete "${asking[0]?.title}"?` : `Delete ${asking.length} videos?`}
+          body="The plan, pictures, voice and rendered files are removed for good."
+          confirmLabel="Delete"
+          busyLabel="Deleting…"
+          busy={deleting}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => setAsking(null)}
+        />
+      )}
 
       {episodes.kind === "loading" && <Loading />}
       {episodes.kind === "error" && <LoadFailed message={episodes.message} onRetry={onRetry} />}
@@ -255,7 +394,9 @@ export function BoardView({ api, episodes, onRetry, onShowMore }: BoardViewProps
           with its current step, and anything waiting for you comes first. Start with New episode.
         </EmptyState>
       )}
-      {episodes.kind === "ready" && episodes.total > 0 && <Groups episodes={episodes.episodes} />}
+      {episodes.kind === "ready" && episodes.total > 0 && (
+        <Groups episodes={episodes.episodes} choosing={choosing} />
+      )}
       {episodes.kind === "ready" && episodes.episodes.length < episodes.total && (
         <div className="flex flex-wrap items-center gap-4">
           <p className="text-muted-foreground">
@@ -273,6 +414,16 @@ export function BoardView({ api, episodes, onRetry, onShowMore }: BoardViewProps
 /** The Board, wired to the API. */
 export function Board() {
   const api = useApiState();
-  const { state, retry, showMore } = useEpisodes();
-  return <BoardView api={api} episodes={state} onRetry={retry} onShowMore={showMore} />;
+  const { state, retry, showMore, remove, notice, dismissNotice } = useEpisodes();
+  return (
+    <BoardView
+      api={api}
+      episodes={state}
+      onRetry={retry}
+      onShowMore={showMore}
+      onDelete={remove}
+      notice={notice}
+      onDismissNotice={dismissNotice}
+    />
+  );
 }

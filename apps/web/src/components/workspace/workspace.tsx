@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type KeyboardEvent, useId, useRef, useState } from "react";
 
 import { type EpisodeDetail, postEpisodeAdvance } from "@/api/client";
+import { useEpisodes } from "@/components/episodes/episodes-provider";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { failureOf, unwrap } from "@/lib/api-error";
 import { displayTitle } from "@/lib/episodes";
 import { primaryAction, quietAction } from "@/lib/styles";
@@ -245,9 +248,39 @@ function Ready({ data, reload }: { data: WorkspaceData; reload: () => Promise<vo
   const chip = chipOf(episode);
   const scenes = (spec?.spec as Spec | undefined)?.scenes?.length;
   const [tab, setTab] = useState<Tab>("Plan");
+  const router = useRouter();
+  const { remove } = useEpisodes();
+  const [asking, setAsking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
+
+  async function deleteVideo() {
+    setDeleting(true);
+    setDeleteFailed(false);
+    const failed = await remove([{ id: episode.id, title }]);
+    if (failed.length === 0) {
+      // The Board says that it worked. This page no longer exists.
+      router.push("/");
+      return;
+    }
+    setDeleting(false);
+    setAsking(false);
+    setDeleteFailed(true);
+  }
 
   return (
     <div className="flex flex-col gap-5">
+      {asking && (
+        <ConfirmDialog
+          title={`Delete "${title}"?`}
+          body="The plan, pictures, voice and rendered files are removed for good."
+          confirmLabel="Delete"
+          busyLabel="Deleting…"
+          busy={deleting}
+          onConfirm={() => void deleteVideo()}
+          onCancel={() => setAsking(false)}
+        />
+      )}
       <header className="flex flex-col gap-2">
         <nav aria-label="Breadcrumb" className="hidden text-[0.8125rem] text-muted-foreground sm:block">
           <ol className="flex flex-wrap items-center gap-x-2">
@@ -283,7 +316,19 @@ function Ready({ data, reload }: { data: WorkspaceData; reload: () => Promise<vo
           <span className="text-[0.8125rem] text-muted-foreground">
             {episode.target_duration_s} seconds{scenes ? `, ${scenes} ${scenes === 1 ? "scene" : "scenes"}` : ""}
           </span>
+          <button
+            type="button"
+            onClick={() => setAsking(true)}
+            className={cn(quietAction, "ml-auto text-muted-foreground hover:text-danger")}
+          >
+            Delete video
+          </button>
         </div>
+        {deleteFailed && (
+          <p role="alert" className="rounded-lg border border-danger/50 bg-chip-failed px-4 py-3">
+            {title} could not be deleted. Try again.
+          </p>
+        )}
       </header>
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[11.5rem_minmax(0,1fr)] lg:gap-6 2xl:grid-cols-[13.75rem_minmax(0,55rem)_20rem]">

@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-import { type EpisodeOut, getEpisodes } from "@/api/client";
+import { type EpisodeOut, deleteEpisode, getEpisodes } from "@/api/client";
 import { API_NOT_ANSWERING, failureMessage } from "@/lib/api-error";
 
 /** How many episodes one "Show more" adds. */
@@ -27,8 +27,24 @@ export type EpisodesState =
   /** `stale` is true when the last refresh failed and the list may be old. */
   | { kind: "ready"; episodes: EpisodeOut[]; total: number; stale: boolean };
 
+/** A video the owner asked to delete, with the name it is called by on screen. */
+export interface DeleteTarget {
+  id: string;
+  title: string;
+}
+
+/** What the last delete did, shown on the Board until the next one or until dismissed. */
+export type DeleteNotice = { kind: "deleted"; text: string } | { kind: "failed"; text: string };
+
 interface Episodes {
   state: EpisodesState;
+  /**
+   * Delete videos for good. Resolves with the ones that could not be deleted when every
+   * one was tried. It never rejects.
+   */
+  remove: (targets: DeleteTarget[]) => Promise<DeleteTarget[]>;
+  notice: DeleteNotice | null;
+  dismissNotice: () => void;
   /** Load again now, for example after an episode was created. */
   refresh: () => Promise<void>;
   /** Start over after an error. */
@@ -40,6 +56,30 @@ interface Episodes {
 const EpisodesContext = createContext<Episodes | null>(null);
 
 class LoadError extends Error {}
+
+async function deleteOne(target: DeleteTarget): Promise<boolean> {
+  try {
+    const result = await deleteEpisode({ path: { episode_id: target.id } });
+    return result.response?.status === 204;
+  } catch {
+    return false;
+  }
+}
+
+function noticeOf(targets: DeleteTarget[], failed: DeleteTarget[]): DeleteNotice {
+  if (failed.length === 0) {
+    return { kind: "deleted", text: "Deleted." };
+  }
+  const [only] = failed;
+  if (only && failed.length === 1) {
+    return { kind: "failed", text: `${only.title} could not be deleted. Try again.` };
+  }
+  const gone = targets.length - failed.length;
+  return {
+    kind: "failed",
+    text: `${failed.length} videos could not be deleted${gone ? `, ${gone} ${gone === 1 ? "was" : "were"}` : ""}. Try again.`,
+  };
+}
 
 /** The newest `wanted` episodes, asked for in as few requests as the API allows. */
 async function load(wanted: number): Promise<{ episodes: EpisodeOut[]; total: number }> {
@@ -66,6 +106,7 @@ async function load(wanted: number): Promise<{ episodes: EpisodeOut[]; total: nu
  */
 export function EpisodesProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<EpisodesState>({ kind: "loading" });
+  const [notice, setNotice] = useState<DeleteNotice | null>(null);
   const wanted = useRef(PAGE_SIZE);
   // Answers can arrive out of order. Only the newest request may change what is shown.
   const newest = useRef(0);
@@ -105,9 +146,29 @@ export function EpisodesProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
 
+  const remove = useCallback(
+    async (targets: DeleteTarget[]) => {
+      setNotice(null);
+      const failed: DeleteTarget[] = [];
+      // One after the other: a long list must not open dozens of requests at once.
+      for (const target of targets) {
+        if (!(await deleteOne(target))) {
+          failed.push(target);
+        }
+      }
+      await refresh();
+      setNotice(noticeOf(targets, failed));
+      return failed;
+    },
+    [refresh],
+  );
+
   const value = useMemo<Episodes>(
     () => ({
       state,
+      remove,
+      notice,
+      dismissNotice: () => setNotice(null),
       refresh,
       retry: () => {
         setState({ kind: "loading" });
@@ -118,7 +179,7 @@ export function EpisodesProvider({ children }: { children: ReactNode }) {
         return refresh();
       },
     }),
-    [state, refresh],
+    [state, refresh, remove, notice],
   );
 
   return <EpisodesContext.Provider value={value}>{children}</EpisodesContext.Provider>;

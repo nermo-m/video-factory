@@ -210,8 +210,10 @@ test.describe("Board groups follow the mockups", () => {
     await page.setViewportSize(SIZES.phone);
     await openBoard(page);
 
-    await expect(groups(page).getByRole("button")).toHaveCount(3);
-    for (const header of await groups(page).getByRole("button").all()) {
+    // The headers only: each card has a Delete button of its own.
+    const headers = groups(page).getByRole("heading", { level: 2 }).getByRole("button");
+    await expect(headers).toHaveCount(3);
+    for (const header of await headers.all()) {
       expect((await header.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     }
   });
