@@ -584,15 +584,15 @@
       "id": "VFS-82",
       "order": 316.3,
       "title": "The plain look: a shot on the whole frame",
-      "status": "review",
-      "note": "A second look, plain: a shot's picture covers the whole frame, whatever its shape, and moves with one of seven slow camera moves. The owner's text sits at the top, the middle or the bottom, captions and music can be switched off, and shots can fade into each other. A shot lasts at least as long as its spoken line. Takes the place of the proposal VFS-79. Board card: https://app.notion.com/418474b94ace819ea914d6e2988fb541"
+      "status": "done",
+      "note": "A second look, plain: a shot's picture covers the whole frame, whatever its shape, and moves with one of seven slow camera moves. The owner's text sits at the top, the middle or the bottom, captions and music can be switched off, and shots can fade into each other. A shot lasts at least as long as its spoken line. Takes the place of the proposal VFS-79. Merged in pull request #62. Board card: https://app.notion.com/418474b94ace819ea914d6e2988fb541"
     },
     {
       "id": "VFS-83",
       "order": 316.4,
       "title": "The shot list skill and the code that builds the plan from it",
-      "status": "ready",
-      "note": "Director mode, part 1, task 4. Board card: https://app.notion.com/418474b94ace81149c39da7de88788dc"
+      "status": "review",
+      "note": "One skill, shotlist, reads the owner's prompt and writes the shot list: the scenes, a full picture prompt and a motion prompt for each, the characters described once, and the list of everything it added, changed or could not do. Code checks that the owner's lines are spoken word for word and that nothing the owner marked was dropped, then builds the plan. Lines that need more than 180 seconds stop with a message, they are never cut. Board card: https://app.notion.com/418474b94ace81149c39da7de88788dc"
     },
     {
       "id": "VFS-84",
@@ -625,7 +625,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-83: the shot list skill and the code that builds the plan from it, task 4 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-84, the pipeline runs it."
+    "next": "VFS-84: the pipeline runs the shot list in place of the seven-step chain, task 5 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-85, the screens."
   },
   "checklist": [
     {
@@ -660,7 +660,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1646 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 311 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
+      "value": "1707 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 311 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
