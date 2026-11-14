@@ -1117,6 +1117,40 @@ export type PostEpisodeResponses = {
 
 export type PostEpisodeResponse = PostEpisodeResponses[keyof PostEpisodeResponses];
 
+export type DeleteEpisodeData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}';
+};
+
+export type DeleteEpisodeErrors = {
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type DeleteEpisodeError = DeleteEpisodeErrors[keyof DeleteEpisodeErrors];
+
+export type DeleteEpisodeResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteEpisodeResponse = DeleteEpisodeResponses[keyof DeleteEpisodeResponses];
+
 export type GetEpisodeData = {
     body?: never;
     path: {

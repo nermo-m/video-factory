@@ -126,6 +126,9 @@ class Episode(Base):
         )
     )
     total_cost_usd: Mapped[Decimal] = mapped_column(default=ZERO, server_default="0")
+    # Set when the owner deleted the video. From then on it is hidden everywhere, and its
+    # rows and files are removed as soon as no job of it is running (`core/removal.py`).
+    deleted_at: Mapped[datetime | None] = mapped_column(index=True)
 
 
 class SpecVersion(Base):

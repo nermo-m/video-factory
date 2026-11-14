@@ -89,6 +89,7 @@ def main() -> int:
         provider_mode=settings.provider_mode,
         limit_probe=ProviderProbe(settings),
         limit_check_interval_s=settings.limit_check_minutes * 60,
+        storage=Adapters(settings).storage(),
     )
     logger.info(
         "worker started",

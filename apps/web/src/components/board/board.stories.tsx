@@ -40,6 +40,9 @@ const meta = {
     episodes: { kind: "ready", episodes: EPISODES, total: EPISODES.length, stale: false },
     onRetry: () => undefined,
     onShowMore: () => Promise.resolve(),
+    onDelete: () => Promise.resolve(),
+    notice: null,
+    onDismissNotice: () => undefined,
   },
   decorators: [
     (Story) => (

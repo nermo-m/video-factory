@@ -23,5 +23,9 @@ class StorageAdapter(Protocol):
     def exists(self, path: PurePosixPath | str) -> bool:
         """True when a file is stored at this path."""
 
+    def remove_tree(self, path: PurePosixPath | str) -> None:
+        """Remove a file, or a folder with everything in it. Nothing there is not an error.
+        Raises StorageError for a path that is empty or leaves the storage root."""
+
     def check(self) -> None:
         """Prove the storage is usable right now. Raises StorageError when it is not."""

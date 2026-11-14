@@ -1536,3 +1536,26 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   piano are not among its capabilities, so the direction leaves them out. Question Q-077.
 - **Skill versions:** brief 1.1, script 1.1, direct 1.2, assets 1.1. The demo recordings
   carry the new versions and are otherwise unchanged.
+
+## D-053: A deleted video is hidden at once and removed when none of its jobs is running
+
+- **Date:** 2026-11-15. **Card:** VFS-80 (Director mode, part 1). Asked for by the owner in
+  the chat on 2026-11-14: "I want to have options to delete some started videos".
+- **Choice:**
+  - **Two steps.** `DELETE /episodes/{id}` sets `episode.deleted_at` and cancels the queued
+    jobs, then removes the rows and files in the same request when no job of the episode is
+    running. While one is running, the removal waits: the worker throws that job's result
+    away when it ends and finishes the removal. A job of a deleted video that is claimed
+    later, for example after a worker restart, is dropped before it starts.
+  - **Gone means gone.** There is no bin and no undo. The screens ask first, with Cancel
+    in focus.
+  - **What stays:** the pictures of the channel's library, and the usage counts
+    (`model_call`, `provider_usage`), which lose their job reference. The plan budgets are
+    measured against them, so deleting a video must not give usage back.
+  - **The route answers 204 for a video that is already gone or never existed**, so a
+    repeated or doubled request is harmless.
+- **Card numbers:** the cards of Director mode are VFS-80 to VFS-86 in the repository.
+  The board numbered them 78 to 84 by itself, and this repository already used VFS-78
+  and VFS-79, so each board card carries its repository number in its name.
+- **Why not a soft delete only:** the owner wants the test videos and their files gone,
+  and pictures and renders take real disk space.

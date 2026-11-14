@@ -41,7 +41,17 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from apps.api.errors import BAD_BODY_RESPONSE, ApiError, ErrorResponse
 from apps.api.files import file_url
-from packages.core import assets, lengths, pipeline, queue, schemas, specs, stages, uploads
+from packages.core import (
+    assets,
+    lengths,
+    pipeline,
+    queue,
+    removal,
+    schemas,
+    specs,
+    stages,
+    uploads,
+)
 from packages.core.db.models import Channel, Episode, Job, Render, SpecVersion
 from packages.core.enums import (
     AssetKind,
@@ -291,6 +301,7 @@ class EpisodeService(Protocol):
     def page(self, limit: int, offset: int) -> EpisodeList: ...
     def create(self, body: EpisodeCreate) -> EpisodeDetail: ...
     def get(self, episode_id: uuid.UUID) -> EpisodeDetail: ...
+    def delete(self, episode_id: uuid.UUID) -> None: ...
     def advance(self, episode_id: uuid.UUID) -> EpisodeDetail: ...
     def approve(self, episode_id: uuid.UUID) -> EpisodeDetail: ...
     def reject(self, episode_id: uuid.UUID, body: RejectRequest) -> EpisodeDetail: ...
@@ -375,7 +386,8 @@ class DatabaseEpisodeService:
 
     def _episode(self, session: Session, episode_id: uuid.UUID) -> Episode:
         episode = session.get(Episode, episode_id)
-        if episode is None:
+        if episode is None or episode.deleted_at is not None:
+            # A deleted video is gone for the owner, even while its last job still ends.
             raise _not_found()
         return episode
 
@@ -428,9 +440,11 @@ class DatabaseEpisodeService:
 
     def page(self, limit: int, offset: int) -> EpisodeList:
         with self._sessions.begin() as session:
-            total = session.scalar(select(func.count()).select_from(Episode)) or 0
+            shown = Episode.deleted_at.is_(None)
+            total = session.scalar(select(func.count()).select_from(Episode).where(shown)) or 0
             found = session.scalars(
                 select(Episode)
+                .where(shown)
                 .order_by(Episode.created_at.desc(), Episode.id)
                 .limit(limit)
                 .offset(offset)
@@ -447,6 +461,13 @@ class DatabaseEpisodeService:
             return self._detail(session, self._episode(session, episode_id))
 
     # --- lifecycle ---
+
+    def delete(self, episode_id: uuid.UUID) -> None:
+        """Delete a video for good. It is hidden at once. Its rows and files go now, or
+        when the job that is running at this moment has ended (the worker does that)."""
+        with self._sessions.begin() as session:
+            if removal.mark_deleted(session, episode_id) and self._storage is not None:
+                removal.purge(session, self._storage, episode_id)
 
     def create(self, body: EpisodeCreate) -> EpisodeDetail:
         with self._sessions.begin() as session:
@@ -734,7 +755,7 @@ class DatabaseEpisodeService:
     def regenerate(self, episode_id: uuid.UUID, asset_id: str, note: str | None) -> AssetList:
         with self._sessions.begin() as session:
             episode = session.get(Episode, episode_id, with_for_update=True)
-            if episode is None:
+            if episode is None or episode.deleted_at is not None:
                 raise _not_found()
             spec = self._current(session, episode_id).body
             picture = next(
@@ -774,7 +795,7 @@ class DatabaseEpisodeService:
 
         with self._sessions.begin() as session:
             episode = session.get(Episode, episode_id, with_for_update=True)
-            if episode is None:
+            if episode is None or episode.deleted_at is not None:
                 raise _not_found()
             spec = self._current(session, episode_id).body
             # A picture that entered the plan after the asset plan ran gets its row here.
@@ -913,6 +934,9 @@ class MemoryEpisodeService:
             raise _not_found()
         return self.episodes[episode_id]
 
+    def delete(self, episode_id: uuid.UUID) -> None:
+        self.episodes.pop(episode_id, None)
+
     def _missing(self, *_: Any) -> Any:
         raise _not_found()
 
@@ -966,6 +990,19 @@ def post_episode(body: EpisodeCreate, request: Request) -> EpisodeDetail:
 )
 def get_episode(episode_id: uuid.UUID, request: Request) -> EpisodeDetail:
     return _service(request).get(episode_id)
+
+
+@router.delete(
+    "/episodes/{episode_id}",
+    summary="Delete a video with its plan, pictures, voice and rendered files",
+    description=(
+        "The video is gone from every list at once and cannot be brought back. Deleting "
+        "a video that is already gone, or never existed, answers the same way."
+    ),
+    status_code=204,
+)
+def delete_episode(episode_id: uuid.UUID, request: Request) -> None:
+    _service(request).delete(episode_id)
 
 
 @router.post(

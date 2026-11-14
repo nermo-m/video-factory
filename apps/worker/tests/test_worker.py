@@ -11,12 +11,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.worker.handlers import HANDLERS
 from apps.worker.runner import Handler, JobContext, Worker
-from packages.core import queue
+from packages.adapters.storage import LocalStorage
+from packages.core import queue, removal
 from packages.core.db import models
 from packages.core.enums import ErrorClass, JobStatus, JobTag
 
@@ -233,3 +234,76 @@ def test_the_worker_touches_its_process_heartbeat_file(
             time.sleep(0.02)
 
     assert heartbeat.exists()
+
+
+# --- deleting a video (Director mode design, "Deleting videos") ----------------------------
+
+
+def _episode(sessions: sessionmaker[Session]) -> uuid.UUID:
+    with sessions.begin() as session:
+        channel = models.Channel(name="Small Steps", voice_id="bm_george", theme="plain")
+        session.add(channel)
+        session.flush()
+        made = models.Episode(channel_id=channel.id, idea="A keeper who climbs a hill.")
+        session.add(made)
+        session.flush()
+        return made.id
+
+
+def _gone(sessions: sessionmaker[Session], episode_id: uuid.UUID, timeout_s: float = 10) -> None:
+    deadline = time.monotonic() + timeout_s
+    while True:
+        with sessions() as session:
+            if session.get(models.Episode, episode_id) is None:
+                return
+        if time.monotonic() > deadline:
+            pytest.fail("the deleted episode was not removed")
+        time.sleep(0.02)
+
+
+def test_a_job_that_ends_after_its_video_was_deleted_is_thrown_away(
+    sessions: sessionmaker[Session], tmp_path: Path
+) -> None:
+    storage = LocalStorage(tmp_path / "data")
+    episode_id = _episode(sessions)
+    started, release = threading.Event(), threading.Event()
+
+    def slow(context: JobContext) -> dict[str, object]:
+        storage.write_bytes(context.output_path / "picture.png", b"made while deleting")
+        started.set()
+        assert release.wait(timeout=10)
+        return {"made": True}
+
+    with sessions.begin() as session:
+        queue.enqueue(session, job_type="slow", tag=JobTag.CPU, episode_id=episode_id)
+
+    with running_worker(sessions, {"slow": slow}, storage=storage):
+        assert started.wait(timeout=10)
+        with sessions.begin() as session:
+            assert removal.mark_deleted(session, episode_id) is True
+            assert removal.purge(session, storage, episode_id) is False
+        release.set()
+        _gone(sessions, episode_id)
+
+    with sessions() as session:
+        assert session.scalars(select(models.Job)).all() == []
+    assert not (tmp_path / "data" / "episodes" / str(episode_id)).exists()
+
+
+def test_a_job_of_a_deleted_video_is_not_started(
+    sessions: sessionmaker[Session], tmp_path: Path
+) -> None:
+    storage = LocalStorage(tmp_path / "data")
+    episode_id = _episode(sessions)
+    ran = threading.Event()
+    with sessions.begin() as session:
+        queue.enqueue(session, job_type="slow", tag=JobTag.CPU, episode_id=episode_id)
+        # As after a worker that died: the video is marked, its job is still queued.
+        session.execute(
+            text("UPDATE episode SET deleted_at = now() WHERE id = :id"), {"id": episode_id}
+        )
+
+    with running_worker(sessions, {"slow": lambda _context: ran.set()}, storage=storage):
+        _gone(sessions, episode_id)
+
+    assert not ran.is_set()

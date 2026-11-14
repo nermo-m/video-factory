@@ -22,7 +22,9 @@ from apps.api.settings import MemorySettingStore
 from apps.worker.handlers.plan import plan_handlers
 from apps.worker.tests.test_worker import running_worker
 from packages.adapters.llm import RecordedLLM
+from packages.core import queue
 from packages.core.db import models
+from packages.core.enums import JobTag
 from packages.core.settings import Settings
 
 pytestmark = pytest.mark.integration
@@ -405,3 +407,57 @@ def test_before_the_plan_is_written_the_plan_is_empty_and_says_nothing_about_fit
         None,
     )
     assert client.get(f"/api/v1/episodes/{uuid.uuid4()}/plan").status_code == 404
+
+
+# --- deleting a video (Director mode design, "Deleting videos") ----------------------------
+
+
+def test_delete_removes_the_episode_from_the_board(client: TestClient) -> None:
+    kept = client.post("/api/v1/episodes", json={"idea": IDEA, "start": False}).json()
+    gone = client.post("/api/v1/episodes", json={"idea": IDEA, "start": False}).json()
+
+    response = client.delete(f"/api/v1/episodes/{gone['id']}")
+
+    assert (response.status_code, response.content) == (204, b"")
+    board = client.get("/api/v1/episodes").json()
+    assert [shown["id"] for shown in board["episodes"]] == [kept["id"]]
+    assert board["total"] == 1
+
+
+def test_delete_twice_answers_204(client: TestClient) -> None:
+    made = client.post("/api/v1/episodes", json={"idea": IDEA, "start": False}).json()
+
+    first = client.delete(f"/api/v1/episodes/{made['id']}")
+    second = client.delete(f"/api/v1/episodes/{made['id']}")
+    never_there = client.delete(f"/api/v1/episodes/{uuid.uuid4()}")
+
+    assert [first.status_code, second.status_code, never_there.status_code] == [204, 204, 204]
+
+
+def test_a_deleted_episode_answers_404_everywhere(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    made = client.post("/api/v1/episodes", json={"idea": IDEA}).json()
+    with sessions.begin() as session:
+        # A job of it is running, so its rows stay for now. It must be hidden all the same.
+        assert queue.claim_next(session, JobTag.CPU) is not None
+
+    assert client.delete(f"/api/v1/episodes/{made['id']}").status_code == 204
+
+    with sessions() as session:
+        assert session.get(models.Episode, uuid.UUID(made["id"])) is not None
+    assert client.get("/api/v1/episodes").json()["episodes"] == []
+    for method, path in (
+        ("get", ""),
+        ("post", "/advance"),
+        ("post", "/approve"),
+        ("get", "/spec"),
+        ("get", "/plan"),
+        ("get", "/assets"),
+        ("get", "/renders"),
+    ):
+        response = getattr(client, method)(f"/api/v1/episodes/{made['id']}{path}")
+        assert (response.status_code, response.json()["error"]["code"]) == (
+            404,
+            "episode_not_found",
+        ), path
