@@ -128,7 +128,8 @@ def mix_audio(resolved: Mapping[str, Any], theme: Theme, *, storage_root: Path |
 
     music = np.zeros((count, 2), dtype=np.float32)
     settings = theme.config.get("music")
-    if settings and count:
+    # A plan can switch the music off. A plan that says nothing has music.
+    if settings and count and resolved.get("music", True):
         bed = music_bed(settings, resolved["seed"], count)
         under_voice_db = voice_db - VOICE_OVER_MUSIC_DB
         lift = _linear(duck_gain_db(spans, count))

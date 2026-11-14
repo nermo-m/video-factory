@@ -35,6 +35,12 @@ MAX_PAD_BEFORE_S = 0.6
 MAX_PAD_AFTER_S = 0.9
 FIT_MARGIN_S = 1.0
 
+# A shot that names no camera move drifts in slowly, and its text sits at the bottom.
+DEFAULT_CAMERA = "push_in"
+DEFAULT_TEXT_POSITION = "bottom"
+# Asset fields that say how a picture is made, not how it is drawn.
+MADE_FROM = ("characters", "text_in_picture")
+
 
 @dataclass(frozen=True)
 class WordTiming:
@@ -202,7 +208,11 @@ def _place(
     pad_after = source.get("pad_after_s", PAD_AFTER_S) if spoken_words else 0.0
     hold = source.get("hold_s", OUTRO_HOLD_S) if source["kind"] == "outro" else 0.0
 
-    if "duration_s" in source:
+    if source["kind"] == "shot":
+        # A spoken line always wins over a length: the shot lasts at least as long as its
+        # line with its pauses, and longer when it was given more seconds.
+        duration = max(pad_before + narration_duration + pad_after, source.get("duration_s", 0.0))
+    elif "duration_s" in source:
         duration = source["duration_s"]
         needed = pad_before + narration_duration
         if _ms(needed) > _ms(duration):
@@ -278,6 +288,10 @@ def _resolve_scene(
                 )
             )
         resolved["visual"] = {"asset_id": asset_id, "clip": source["visual"].get("clip", False)}
+        if source["kind"] == "shot":
+            resolved["visual"]["camera"] = source["visual"].get("camera", DEFAULT_CAMERA)
+            if "motion" in source["visual"]:
+                resolved["visual"]["motion"] = source["visual"]["motion"]
 
     if "stat" in source:
         claim_id = source["stat"]["claim_id"]
@@ -297,6 +311,9 @@ def _resolve_scene(
         }
         for i, item in enumerate(source.get("text", []))
     ]
+    if source["kind"] == "shot":
+        for item, written in zip(resolved["text"], source.get("text", []), strict=True):
+            item["position"] = written.get("position", DEFAULT_TEXT_POSITION)
     if "steps" in source:
         resolved["steps"] = [
             {"text": item["text"], "at_s": scene.cue_time(item, f"{path}/steps/{i}")}
@@ -356,7 +373,9 @@ def _resolve_assets(
                 )
             )
             continue
-        entry = dict(asset)
+        # What a picture was made from stays in the authored plan. The render engine
+        # only needs the file.
+        entry = {key: value for key, value in asset.items() if key not in MADE_FROM}
         entry["licence"] = licence
         entry["file"] = stored.file
         if stored.clip_file is not None:
@@ -401,7 +420,10 @@ def resolve(
 
     total = _ms(cursor)
     target = authored["format"]["target_duration_s"]
-    if _ms(abs(total - target)) > DURATION_TOLERANCE_S:
+    # A 2.1 plan is the owner's own: its length is what its scenes need, never a reason
+    # to refuse it or to squeeze its pauses.
+    owners_plan = authored["spec_version"] != "2.0"
+    if not owners_plan and _ms(abs(total - target)) > DURATION_TOLERANCE_S:
         raise DurationError(total, target, lengths)
 
     resolved = {
@@ -416,6 +438,9 @@ def resolve(
         "claims": [dict(claim) for claim in authored["claims"]],
         "assets": assets,
     }
+    if owners_plan:
+        resolved["captions"] = authored.get("captions", True)
+        resolved["music"] = authored.get("music", True)
     # The output is a contract too. A failure here is a bug in this module.
     schemas.validate_or_raise("resolved_spec", resolved)
     return resolved

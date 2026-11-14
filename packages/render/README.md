@@ -8,8 +8,10 @@ render the same frames.
 
 So far: `resolver.py` turns an authored spec plus voice timings into a resolved spec with
 absolute times, and reports every problem it finds with its location. `theme/` holds the
-`night_scrolls` theme: its artwork, sounds and fonts, what it can draw
-(`capabilities.json`) and where things go (`theme.json`).
+themes. Each is a folder with what it can draw (`capabilities.json`) and where things go
+(`theme.json`): `night_scrolls` tells a story on paper scrolls, with its own artwork,
+sounds and fonts, and `plain` puts a shot's picture on the whole frame with a slow camera
+move, the owner's text and the captions, and adds nothing of its own.
 `compositor.py` draws frame N of scene S from the resolved spec, using the drawing functions
 in `primitives.py` and the caption grouping and font fitting in `text.py`.
 

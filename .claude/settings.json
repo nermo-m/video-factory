@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "skill-creator@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "chrome-devtools-mcp@claude-plugins-official": true,
+    "huggingface-skills@claude-plugins-official": true,
+    "design-superpowers@anthropic-plugin-directory": true,
+    "research-superpowers@anthropic-plugin-directory": true,
+    "ux-superpowers@anthropic-plugin-directory": true,
+    "beads-superpowers@anthropic-plugin-directory": true,
+    "conductor-nguyengiatam@anthropic-plugin-directory": true
+  }
+}

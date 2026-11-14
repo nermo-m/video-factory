@@ -35,4 +35,5 @@ no file.
 | `packages/render/theme/night_scrolls/assets/sounds/*.wav` | original | MIT | Synthesised in code by `packages/render/theme/night_scrolls/build_assets.py` for this project |
 | `packages/render/theme/night_scrolls/assets/fonts/Anton-Regular.ttf` | third-party | OFL-1.1 | Anton by The Anton Project Authors, https://github.com/google/fonts/tree/main/ofl/anton |
 | `packages/render/theme/night_scrolls/assets/fonts/Inter-Variable.ttf` | third-party | OFL-1.1 | Inter by The Inter Project Authors, https://github.com/google/fonts/tree/main/ofl/inter |
+| `packages/render/theme/plain/assets/fonts/Inter-Variable.ttf` | third-party | OFL-1.1 | Inter by The Inter Project Authors, https://github.com/google/fonts/tree/main/ofl/inter |
 | `packages/render/theme/night_scrolls/assets/fonts/Kalam-Bold.ttf` | third-party | OFL-1.1 | Kalam by Indian Type Foundry, https://github.com/google/fonts/tree/main/ofl/kalam |

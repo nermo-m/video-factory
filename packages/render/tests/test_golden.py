@@ -132,3 +132,85 @@ def test_golden_clip_frame(resolved: dict[str, Any], storage: Path) -> None:
 
     # 3.2 seconds in, the half-second clip is long over: its last frame is held.
     support.assert_matches_golden(compositor.render(1, round(3.2 * compositor.fps)), "clip_frozen")
+
+
+# --- the plain look ------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def plain(storage: Path) -> Compositor:
+    """Three shots of the plain look: text on top with a push in, captions with a pan and
+    a fade out, and a silent shot that fades in."""
+    line = "Every evening she climbed the same hill."
+    authored = {
+        "spec_version": "2.1",
+        "episode_id": "ep_plain",
+        "format": {"width": 1080, "height": 1920, "fps": 30, "target_duration_s": 15},
+        "theme": "plain",
+        "voice": {"voice_id": "bm_george", "speed": 1.0},
+        "seed": 3,
+        "scenes": [
+            {
+                "id": "s1",
+                "kind": "shot",
+                "narration": line,
+                "visual": {"asset_id": "a_garden_dusk", "camera": "push_in"},
+                "text": [
+                    {"content": "Every evening", "style": "plain", "position": "top"},
+                    {"content": "the same hill", "style": "plain", "position": "middle"},
+                ],
+            },
+            {
+                "id": "s2",
+                "kind": "shot",
+                "narration": "Nobody asked her to.",
+                "visual": {"asset_id": "a_garden_dusk", "camera": "pan_left"},
+                "text": [{"content": "nobody asked", "style": "plain"}],
+                "transition_out": "fade",
+            },
+            {
+                "id": "s3",
+                "kind": "shot",
+                "narration": "",
+                "duration_s": 3,
+                "visual": {"asset_id": "a_garden_dusk", "camera": "tilt_up"},
+            },
+        ],
+        "claims": [],
+        "assets": [
+            {
+                "id": "a_garden_dusk",
+                "kind": "image",
+                "origin": "library",
+                "licence": "MIT",
+                "contains_third_party_ip": False,
+                "rights_status": "cleared",
+            }
+        ],
+    }
+    return Compositor(
+        support.resolve_sample(authored, PICTURE), load_theme("plain"), storage_root=storage
+    )
+
+
+# name -> (scene index, seconds into the scene)
+PLAIN_CASES: dict[str, tuple[int, float]] = {
+    # The picture on the whole frame, text at the top and in the middle, a caption with
+    # its current word highlighted.
+    "plain_text_and_caption": (0, 1.2),
+    # The end of a push in: the picture 8 percent closer.
+    "plain_push_in_end": (0, 3.6),
+    # A pan half-way, text at the bottom above the caption.
+    "plain_pan_and_bottom_text": (1, 1.2),
+    # Half-way into a fade to black.
+    "plain_fade_out": (1, 2.55),
+    # A silent shot after its fade in: the picture alone.
+    "plain_silent": (2, 1.5),
+}
+
+
+@pytest.mark.parametrize("name", sorted(PLAIN_CASES))
+def test_golden_plain_frame(name: str, plain: Compositor) -> None:
+    scene, seconds = PLAIN_CASES[name]
+
+    support.assert_matches_golden(plain.render(scene, round(seconds * plain.fps)), name)

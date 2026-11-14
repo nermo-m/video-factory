@@ -139,6 +139,44 @@ def cover(
     return scaled.crop((left, top, left + width, top + height))
 
 
+# How much closer a slow camera move ends than it starts, and how far a pan travels.
+CAMERA_ZOOM = 1.08
+_CENTRE = (0.5, 0.5)
+# name -> zoom at the start and at the end, and which part of the picture shows at the
+# start and at the end. A pan to the left shows the right part first and ends on the left.
+_CAMERAS: dict[str, tuple[float, float, tuple[float, float], tuple[float, float]]] = {
+    "none": (1.0, 1.0, _CENTRE, _CENTRE),
+    "push_in": (1.0, CAMERA_ZOOM, _CENTRE, _CENTRE),
+    "pull_out": (CAMERA_ZOOM, 1.0, _CENTRE, _CENTRE),
+    "pan_left": (CAMERA_ZOOM, CAMERA_ZOOM, (1.0, 0.5), (0.0, 0.5)),
+    "pan_right": (CAMERA_ZOOM, CAMERA_ZOOM, (0.0, 0.5), (1.0, 0.5)),
+    "tilt_up": (CAMERA_ZOOM, CAMERA_ZOOM, (0.5, 1.0), (0.5, 0.0)),
+    "tilt_down": (CAMERA_ZOOM, CAMERA_ZOOM, (0.5, 0.0), (0.5, 1.0)),
+}
+CAMERAS = tuple(_CAMERAS)
+
+
+def camera_frame(
+    image: Image.Image, size: tuple[int, int], camera: str, progress: float
+) -> Image.Image:
+    """A still picture on the whole frame, seen through a slow camera move.
+
+    The picture is scaled until it covers the frame and cropped from its centre, so a
+    picture of any shape fills it without bars. `progress` runs from 0 at the start of
+    the scene to 1 at its end, and the move is even over that time.
+    """
+    if camera not in _CAMERAS:
+        raise ValueError(f"There is no camera move '{camera}'. Known: {', '.join(_CAMERAS)}.")
+    zoom_from, zoom_to, pan_from, pan_to = _CAMERAS[camera]
+    at = clamp01(progress)
+    zoom = zoom_from + (zoom_to - zoom_from) * at
+    pan = (
+        pan_from[0] + (pan_to[0] - pan_from[0]) * at,
+        pan_from[1] + (pan_to[1] - pan_from[1]) * at,
+    )
+    return cover(image, size[0], size[1], zoom, pan)
+
+
 # --- clips ---------------------------------------------------------------------------
 
 

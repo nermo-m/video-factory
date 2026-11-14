@@ -1583,3 +1583,34 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **Not done:** `narration_from` is accepted on every scene kind, though only a shot uses
   it. Forbidding it elsewhere would add a rule to each of the five older kinds for a field
   that harms nothing.
+
+## D-055: The plain look, and a spoken line always wins over a length
+
+- **Date:** 2026-11-15. **Card:** VFS-82 (Director mode, part 1). Answers the first half
+  of Q-077: a full-frame picture with a camera move for each shot.
+- **Choice:**
+  - **A second theme folder, `plain`,** with one scene kind, `shot`. The picture is scaled
+    until it covers the frame and cropped from its centre, so an uploaded landscape or
+    square picture fills the frame without bars. Nothing of the studio's own is drawn: no
+    background, no paper, no particles.
+  - **Seven camera moves for a still picture:** `none`, `push_in`, `pull_out`, `pan_left`,
+    `pan_right`, `tilt_up`, `tilt_down`. A push ends 8 percent closer, a pan or tilt
+    travels across the spare 8 percent, evenly over the scene. A shot that names none gets
+    the slow push in. A pan to the left turns the view to the left, so what is in the
+    picture drifts to the right.
+  - **A clip plays in place of the still** when the scene asks for one and the clip exists.
+    Until clips are made (VFS-29) the still is shown with its camera move.
+  - **Text in one neutral style** (Inter 700, white with a 4 pixel dark edge), at the top,
+    the middle or the bottom. The bottom box ends above the caption row.
+  - **Transitions `cut` and `fade`.** A fade takes 0.3 seconds to black and 0.3 back.
+  - **Captions and music are switches of the plan.** A plan that says nothing has both.
+  - **A shot lasts at least as long as its line.** A shot given fewer seconds than its
+    line takes is as long as the line with its pauses, never an error.
+  - **A 2.1 plan is not held to a target length.** The rule of section 5.2 (fail when the
+    video is more than 2 seconds off the target) and the pause fitting of D-046 apply to
+    2.0 plans only. The length of the owner's plan is what its scenes need.
+  - **What a picture is made from stays out of the resolved plan** (`characters`,
+    `text_in_picture`, the style, the change list). The render engine only draws.
+- **Not done:** sounds and music made to the owner's description (the second half of
+  Q-077), and sub-pixel camera movement: a move advances in whole pixels, which is even
+  enough at these speeds.
