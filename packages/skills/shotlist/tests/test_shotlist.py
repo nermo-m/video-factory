@@ -86,11 +86,11 @@ def test_the_example_keeps_the_owners_scenes_in_order_and_adds_none() -> None:
     output = example("output")
 
     assert [scene["id"] for scene in output["scenes"]] == [
-        "s01_hill",
-        "s02_lamp_room",
-        "s03_storm",
-        "s04_beam",
-        "s05_morning",
+        "hill_dawn",
+        "lamp_room",
+        "storm_sea",
+        "lighthouse_beam",
+        "morning_after",
     ]
     assert [scene["clip"] for scene in output["scenes"]] == [False, False, True, False, False]
     assert output["scenes"][4]["on_screen_text"] == [
@@ -124,3 +124,22 @@ def test_the_example_lists_what_it_added_and_what_it_could_not_do() -> None:
 
 def test_nothing_in_the_example_belongs_to_someone_else() -> None:
     assert not any(scene["third_party"] for scene in example("output")["scenes"])
+
+
+def test_demo_mode_has_a_voice_and_a_picture_for_the_example() -> None:
+    """Demo mode plays bundled recordings, found by the exact words, and bundled pictures,
+    found by the picture's name. So the example speaks the sample episode's lines and
+    names its scenes after the sample pictures."""
+    sample = json.loads(
+        (ROOT / "samples" / "lighthouse_keeper" / "episode_spec.json").read_text(encoding="utf-8")
+    )
+    recorded_lines = {scene["narration"] for scene in sample["scenes"]}
+    bundled = {
+        path.stem for path in (ROOT / "samples" / "lighthouse_keeper" / "assets").glob("*.png")
+    }
+    scenes = example("output")["scenes"]
+
+    for scene in scenes:
+        if scene["narration"]:
+            assert scene["narration"] in recorded_lines, scene["id"]
+    assert {f"a_{scene['id']}" for scene in scenes[:4]} == bundled

@@ -8,10 +8,10 @@
       "description": "A man of about sixty with a short grey beard, a navy wool coat with brass buttons and a knitted cap. He carries a brass lantern."
     }
   ],
-  "target_duration_s": 30,
+  "target_duration_s": 35,
   "scenes": [
     {
-      "id": "s01_hill",
+      "id": "hill_dawn",
       "narration": "The keeper climbed the same hill every morning. Nobody asked him to.",
       "narration_from": "owner",
       "on_screen_text": [],
@@ -26,8 +26,8 @@
       "text_in_picture": false
     },
     {
-      "id": "s02_lamp_room",
-      "narration": "He trimmed the wick, cleaned the glass, and wrote one line in the log.",
+      "id": "lamp_room",
+      "narration": "He trimmed the wick, cleaned the glass, and wrote one line in the log. Then he did it all again.",
       "narration_from": "owner",
       "on_screen_text": [],
       "image_prompt": "The lamp room at the top of the lighthouse. Close on the keeper's hands as he wipes the big glass lens with a cloth, the brass fittings around it dull and well used. An open logbook and a pencil on the sill. The lamp's flame is the one warm light and it glows through the lens onto his fingers. Eye level, close lens, shallow focus.",
@@ -41,8 +41,8 @@
       "text_in_picture": false
     },
     {
-      "id": "s03_storm",
-      "narration": "Then one night a storm took the stars, and a ship lost its way.",
+      "id": "storm_sea",
+      "narration": "Years passed. Then one night a storm took the stars, and a ship lost its way.",
       "narration_from": "owner",
       "on_screen_text": [],
       "image_prompt": "Night. A storm over a black sea, sheets of rain, no stars. A small ship far out, half hidden between two tall waves, one warm lamp at its mast. Heavy cloud, cold blue-grey water with white crests. Wide shot from above the waves, long lens.",
@@ -54,8 +54,8 @@
       "text_in_picture": false
     },
     {
-      "id": "s04_beam",
-      "narration": "The lamp was burning, as it had every night before.",
+      "id": "lighthouse_beam",
+      "narration": "The lamp was burning, as it had every night before. Because of one small habit, the ship came home.",
       "narration_from": "owner",
       "on_screen_text": [],
       "image_prompt": "The beam of the lighthouse cuts across the dark water in one warm bar of light, and the small ship has turned its bow toward it. The lighthouse stands at the right edge on its hill, rain thinning. The beam is the one warm light. Wide shot at sea level, normal lens.",
@@ -67,7 +67,7 @@
       "text_in_picture": false
     },
     {
-      "id": "s05_morning",
+      "id": "morning_after",
       "narration": "",
       "on_screen_text": [
         {
@@ -87,31 +87,31 @@
   ],
   "changes": [
     {
-      "scene": "s01_hill",
+      "scene": "hill_dawn",
       "kind": "added",
       "what": "Sea mist behind the hill, soft light from the left, and a slow tilt up.",
       "why": "The prompt gave no light or camera move for this scene."
     },
     {
-      "scene": "s02_lamp_room",
+      "scene": "lamp_room",
       "kind": "added",
       "what": "An open logbook and a pencil on the sill, and a slow push in.",
       "why": "The line speaks of the log, and the prompt gave no camera move."
     },
     {
-      "scene": "s03_storm",
+      "scene": "storm_sea",
       "kind": "added",
       "what": "A view from above the waves through a long lens, and a slow pan to the right.",
       "why": "The prompt gave no camera angle. The pan is what the still picture does until the clip exists."
     },
     {
-      "scene": "s05_morning",
+      "scene": "morning_after",
       "kind": "added",
       "what": "The text sits in the middle of the frame, and the picture does not move.",
       "why": "The prompt did not say where the text goes."
     },
     {
-      "scene": "s05_morning",
+      "scene": "morning_after",
       "kind": "not_possible",
       "what": "A quiet piano under the last scene.",
       "why": "The studio can only play its own soft music bed under the whole video."
