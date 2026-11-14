@@ -1,6 +1,7 @@
 # Director mode, part 1: the shot list, the plain look and the switches
 
-Date: 2026-11-14. Status: waiting for the owner's approval.
+Date: 2026-11-14. Status: approved by the owner on 2026-11-14, with deleting
+videos added at their request.
 
 ## Why
 
@@ -133,6 +134,15 @@ document of its own (not the render plan):
 - `changes`: one entry for everything added, changed, or asked for and not possible, each
   with `scene` (or none), `kind` (`added`, `changed`, `not_possible`), `what`, `why`
 
+The owner's words on 2026-11-14: Claude writes "full on direction for every small detail",
+with the scene backgrounds "based on exact details I have given", so that the image model
+makes the pictures "exactly with the character design description and mood". So the
+picture prompt of every scene is complete on its own: every detail the owner gave for
+that scene, its background and its mood is in it, in the owner's words where they gave
+them, and what the owner left open (lighting, lens, angle) is filled in to match the
+owner's style and listed as `added`. A short or vague picture prompt is a failure of the
+step. The motion prompt is written to the same standard, for part 2.
+
 Rules given to the model: the owner's prompt is the plan. Keep its scenes, order, lines,
 names and style. Fill in only what is missing. Never shorten, soften or replace. Names
 stay as the owner wrote them, including ones that belong to someone else (the rule that
@@ -211,6 +221,23 @@ A request for a move, sound or effect the look does not have is left out and lis
   seconds, picture prompt, who is in it, camera move, motion prompt, clip switch. The
   existing "ask for a change in words" (revise) stays and works on the new fields.
 - Nothing is generated until the owner approves the plan, as today.
+
+### Deleting videos (owner, 2026-11-14)
+
+The owner wants to delete videos that were started, including the test episodes that
+fill the Board.
+
+- **Delete** on a video's card on the Board and on its own page, and a "Select" mode on
+  the Board to delete several at once.
+- A confirmation in the studio's own style names the video (or the number of videos) and
+  says that its plan, pictures, voice and rendered files are removed for good.
+- Deleting removes the episode, its plans, jobs, its own pictures and their versions,
+  its renders, and its files in the data folder. Pictures of the shared library stay.
+  The usage counts stay, because they are what the plan budgets are measured against.
+- A video can be deleted in any state. Its queued jobs are cancelled. A job that is
+  running at that moment is allowed to end and its result is thrown away.
+- The Board shows that it worked or says why it did not. One `DELETE` call per episode,
+  safe to repeat.
 
 ### Demo mode
 
