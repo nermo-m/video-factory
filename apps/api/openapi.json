@@ -1911,6 +1911,51 @@
       }
     },
     "/api/v1/episodes/{episode_id}": {
+      "delete": {
+        "description": "The video is gone from every list at once and cannot be brought back. Deleting a video that is already gone, or never existed, answers the same way.",
+        "operationId": "delete_episode",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Delete a video with its plan, pictures, voice and rendered files",
+        "tags": [
+          "episodes"
+        ]
+      },
       "get": {
         "operationId": "get_episode",
         "parameters": [

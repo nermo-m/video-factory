@@ -6,6 +6,7 @@ storage is this same class pointed at a temporary folder (section 3.3).
 
 from __future__ import annotations
 
+import shutil
 import uuid
 from pathlib import Path, PurePosixPath
 
@@ -48,6 +49,16 @@ class LocalStorage:
 
     def exists(self, path: PurePosixPath | str) -> bool:
         return self._resolve(path).is_file()
+
+    def remove_tree(self, path: PurePosixPath | str) -> None:
+        target = self._resolve(path)
+        try:
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink(missing_ok=True)
+        except OSError as error:
+            raise StorageError(f"Could not remove '{path}': {error.strerror or error}.") from error
 
     def check(self) -> None:
         """Write and remove a small probe file to prove the folder is writable."""

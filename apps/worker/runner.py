@@ -23,8 +23,9 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from packages.core import limits, pipeline, queue
+from packages.core import limits, pipeline, queue, removal
 from packages.core.enums import ErrorClass, JobTag, Provider
+from packages.core.storage import StorageAdapter, StorageError
 
 logger = logging.getLogger("apps.worker")
 
@@ -57,6 +58,7 @@ class Worker:
         provider_mode: str = "demo",
         limit_probe: limits.Probe | None = None,
         limit_check_interval_s: float = 600.0,
+        storage: StorageAdapter | None = None,
     ) -> None:
         if cpu_workers < 1:
             raise ValueError("cpu_workers must be 1 or more")
@@ -68,6 +70,9 @@ class Worker:
         self._stale_after_s = stale_after_s
         self._heartbeat_file = heartbeat_file
         self._critic_enabled = critic_enabled
+        # Needed to remove the files of a video the owner deleted. Without it a deleted
+        # video's jobs are still thrown away, and its files stay for the api to remove.
+        self._storage = storage
         # Usage and limits tracker (section 3.5). Without a probe nothing is checked,
         # which is right for demo mode: recordings have no limits.
         self._provider_mode = provider_mode
@@ -114,6 +119,8 @@ class Worker:
             self._active[thread_id] = claim
         logger.info("job started", extra=ids)
         try:
+            if self._drop_deleted(claim, ids):
+                return
             if self._waits_for_its_provider(claim, ids):
                 return
             handler = self._handlers.get(claim.type)
@@ -124,16 +131,40 @@ class Worker:
             context = JobContext(claim, queue.output_path_of(claim))
             output = handler(context)
         except queue.JobError as error:
-            self._fail(claim, error.error_class, str(error), ids, retry_at=error.retry_at)
+            if not self._drop_deleted(claim, ids):
+                self._fail(claim, error.error_class, str(error), ids, retry_at=error.retry_at)
         except Exception as error:
+            if self._drop_deleted(claim, ids):
+                return
             # Section 4.4, class "bug": log the stack trace, fail the job, do not retry.
             logger.exception("job crashed", extra=ids)
             self._fail(claim, ErrorClass.BUG, f"{type(error).__name__}: {error}", ids)
         else:
-            self._complete(claim, output, ids)
+            if not self._drop_deleted(claim, ids):
+                self._complete(claim, output, ids)
         finally:
             with self._active_lock:
                 self._active.pop(thread_id, None)
+
+    def _drop_deleted(self, claim: queue.ClaimedJob, ids: dict[str, Any]) -> bool:
+        """True when the job's video was deleted by the owner. The job is cancelled, its
+        result is thrown away, and the video's rows and files are removed if no other
+        job of it is still running."""
+        if claim.episode_id is None:
+            return False
+        try:
+            with self._sessions.begin() as session:
+                if not removal.is_deleted(session, claim.episode_id):
+                    return False
+                queue.cancel(session, claim.id)
+                if self._storage is not None:
+                    removal.purge(session, self._storage, claim.episode_id)
+        except (SQLAlchemyError, StorageError):
+            # The job stays as it is and is looked at again. The video stays hidden.
+            logger.exception("could not remove a deleted video", extra=ids)
+            return True
+        logger.info("job dropped: its video was deleted", extra=ids)
+        return True
 
     def _provider(self, claim: queue.ClaimedJob) -> Provider | None:
         """The provider this job calls, when it calls one that can be limited."""
