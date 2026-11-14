@@ -15,7 +15,15 @@ it, and unknown properties are rejected.
 
 Rules worth knowing:
 
-- Each scene kind (`title`, `scroll`, `stat`, `steps`, `outro`) has its own required fields.
+- Each scene kind (`title`, `scroll`, `stat`, `steps`, `outro`, `shot`) has its own required fields.
+- `spec_version` is `2.0` or `2.1`. A 2.1 plan may carry the `style` of its pictures, its
+  `characters`, the list of `changes` the studio made to the owner's prompt, and the
+  switches `captions` and `music`. Its scenes are `shot` scenes: one picture on the whole
+  frame with a `camera` move, a `motion` prompt for the clip, and on-screen text with a
+  `position`. A picture lists the `characters` it shows by id.
+- What a plan points at must exist (`packages/core/specs.py`, `reference_problems`): a
+  character a picture lists, a shot's picture, a scene the change list names. A plan that
+  points at something missing is refused whole when it is saved.
 - A cue has exactly one anchor: `word` (counted from zero), `scene_start_s`,
   `after_narration_s` or `at_s` (absolute).
 - A statistic on screen points at a claim through `claim_id`.

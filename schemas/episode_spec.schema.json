@@ -7,7 +7,10 @@
   "additionalProperties": false,
   "required": ["spec_version", "episode_id", "format", "theme", "voice", "seed", "scenes", "claims", "assets"],
   "properties": {
-    "spec_version": { "const": "2.0" },
+    "spec_version": {
+      "description": "2.0 is a plan of the scroll look. 2.1 adds shots, characters, the style and the change list.",
+      "enum": ["2.0", "2.1"]
+    },
     "episode_id": { "$ref": "#/$defs/episode_id" },
     "format": { "$ref": "#/$defs/format" },
     "theme": { "$ref": "#/$defs/name" },
@@ -31,9 +34,65 @@
     "assets": {
       "type": "array",
       "items": { "$ref": "#/$defs/asset" }
+    },
+    "style": {
+      "description": "The look of the pictures, once for the whole video. It is put in front of every picture prompt.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "characters": {
+      "description": "Who appears in the video. Each is described once, and the description goes into every picture that shows them.",
+      "type": "array",
+      "maxItems": 12,
+      "items": { "$ref": "#/$defs/character" }
+    },
+    "changes": {
+      "description": "Everything the studio added to the owner's prompt, changed in it, or could not do.",
+      "type": "array",
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/change" }
+    },
+    "captions": {
+      "description": "Whether the spoken words are shown as captions.",
+      "type": "boolean",
+      "default": true
+    },
+    "music": {
+      "description": "Whether the studio's music bed plays under the video.",
+      "type": "boolean",
+      "default": true
     }
   },
   "$defs": {
+    "character": {
+      "title": "Character",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/scene_id" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": {
+          "description": "Face, build, hair, clothes and colours: enough to draw the same person twice.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "change": {
+      "title": "Change",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "what", "why"],
+      "properties": {
+        "scene": { "$ref": "#/$defs/scene_id" },
+        "kind": { "enum": ["added", "changed", "not_possible"] },
+        "what": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "why": { "type": "string", "minLength": 1, "maxLength": 300 }
+      }
+    },
     "not_allowed": {
       "description": "Marks a property that this kind of object may not have.",
       "not": {}
@@ -107,7 +166,11 @@
       "properties": {
         "content": { "type": "string", "minLength": 1, "maxLength": 80 },
         "style": { "$ref": "#/$defs/name" },
-        "cue": { "$ref": "#/$defs/cue" }
+        "cue": { "$ref": "#/$defs/cue" },
+        "position": {
+          "description": "Where the line sits in a shot.",
+          "enum": ["top", "middle", "bottom"]
+        }
       }
     },
     "visual": {
@@ -120,6 +183,16 @@
           "description": "True when this image should become a generated clip. Stills get a slow pan and zoom.",
           "type": "boolean",
           "default": false
+        },
+        "camera": {
+          "description": "How a still picture moves while it is shown. The theme lists the moves it has.",
+          "$ref": "#/$defs/name"
+        },
+        "motion": {
+          "description": "What moves in the clip, the camera move and the speed, for the video model.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
         }
       }
     },
@@ -219,7 +292,11 @@
       "required": ["id", "kind", "narration"],
       "properties": {
         "id": { "$ref": "#/$defs/scene_id" },
-        "kind": { "enum": ["title", "scroll", "stat", "steps", "outro"] },
+        "kind": { "enum": ["title", "scroll", "stat", "steps", "outro", "shot"] },
+        "narration_from": {
+          "description": "Whose words the narration is: the owner's own line, or written by the studio.",
+          "enum": ["owner", "studio"]
+        },
         "narration": {
           "description": "What the voice says in this scene. Empty for a silent scene, which then needs duration_s.",
           "type": "string",
@@ -312,6 +389,23 @@
             "required": ["text"],
             "properties": { "text": { "minItems": 1 }, "stat": { "$ref": "#/$defs/not_allowed" }, "steps": { "$ref": "#/$defs/not_allowed" } }
           }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "shot" } }, "required": ["kind"] },
+          "then": {
+            "required": ["visual"],
+            "properties": {
+              "title": { "$ref": "#/$defs/not_allowed" },
+              "label": { "$ref": "#/$defs/not_allowed" },
+              "sublabel": { "$ref": "#/$defs/not_allowed" },
+              "stat": { "$ref": "#/$defs/not_allowed" },
+              "steps": { "$ref": "#/$defs/not_allowed" },
+              "overlays": { "$ref": "#/$defs/not_allowed" },
+              "sound": { "$ref": "#/$defs/not_allowed" },
+              "hold_s": { "$ref": "#/$defs/not_allowed" },
+              "retention_device": { "$ref": "#/$defs/not_allowed" }
+            }
+          }
         }
       ]
     },
@@ -332,7 +426,7 @@
         "id": { "$ref": "#/$defs/asset_id" },
         "kind": { "$ref": "#/$defs/asset_kind" },
         "origin": { "$ref": "#/$defs/asset_origin" },
-        "prompt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 4000 },
         "licence": { "type": "string", "minLength": 1, "maxLength": 120 },
         "contains_third_party_ip": { "type": "boolean" },
         "rights_status": { "$ref": "#/$defs/rights_status" },
@@ -340,6 +434,18 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/name" }
+        },
+        "characters": {
+          "description": "The characters this picture shows, by id.",
+          "type": "array",
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/scene_id" }
+        },
+        "text_in_picture": {
+          "description": "True when the picture itself is meant to show written words.",
+          "type": "boolean",
+          "default": false
         }
       }
     }

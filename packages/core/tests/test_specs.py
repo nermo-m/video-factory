@@ -289,3 +289,53 @@ def test_an_edit_after_the_plan_gate_marks_the_changed_scene_stale(
     assert episode is not None
     assert "s03_lamp" in episode.stale_scenes.get("voice", [])
     assert episode.stale_from_state is EpisodeState.VOICE
+
+
+# --- plan schema 2.1: what a plan points at must exist ------------------------------------
+
+SHOTS: dict[str, Any] = json.loads(
+    (ROOT / "schemas" / "fixtures" / "episode_spec" / "valid" / "shots.json").read_text(
+        encoding="utf-8"
+    )
+)
+
+
+@integration
+def test_a_plan_whose_picture_lists_a_removed_character_is_refused_whole(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    with sessions.begin() as session:
+        specs.store_spec(session, episode_id, SHOTS, author=SpecAuthor.MODEL, skill_version="1.0")
+    without_the_keeper = copy.deepcopy(SHOTS)
+    without_the_keeper["characters"] = []
+    # A second edit in the same save must not slip through either.
+    without_the_keeper["style"] = "Ink and wash."
+
+    with sessions.begin() as session, pytest.raises(SpecError) as raised:
+        specs.replace_spec(session, episode_id, without_the_keeper, author=SpecAuthor.OWNER)
+
+    assert raised.value.code == "invalid_spec"
+    assert "a_s01_hill" in raised.value.problems[0]
+    assert "'keeper'" in raised.value.problems[0]
+    assert "s01_hill" in raised.value.problems[0]
+    with sessions() as session:
+        stored = specs.versions(session, episode_id)
+        current = specs.current(session, episode_id)
+    assert len(stored) == 1
+    assert current is not None
+    assert current.body["style"] == SHOTS["style"]
+
+
+@integration
+def test_a_plan_of_shots_can_be_edited_and_stored(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    with sessions.begin() as session:
+        specs.store_spec(session, episode_id, SHOTS, author=SpecAuthor.MODEL, skill_version="1.0")
+    restyled = copy.deepcopy(SHOTS)
+    restyled["characters"][0]["description"] = "A woman of about sixty in a red coat."
+
+    with sessions.begin() as session:
+        stored = specs.replace_spec(session, episode_id, restyled, author=SpecAuthor.OWNER)
+
+    assert stored.version == 2

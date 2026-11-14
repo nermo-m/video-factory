@@ -142,11 +142,77 @@ def store_spec(
     return stored
 
 
+def _twice(items: Sequence[Mapping[str, Any]], folder: str, what: str) -> list[str]:
+    """A problem for every item whose id an earlier item already has."""
+    seen: set[str] = set()
+    problems = []
+    for index, item in enumerate(items):
+        if item["id"] in seen:
+            problems.append(f"/{folder}/{index}/id: two {what} have the id '{item['id']}'.")
+        seen.add(item["id"])
+    return problems
+
+
+def reference_problems(body: Mapping[str, Any]) -> list[str]:
+    """What a plan points at that it does not have. Empty means every reference holds.
+
+    The schema checks the shape of a plan. It cannot say that a character a picture lists
+    exists, that a shot's picture is among the assets, or that an id is used once. `body`
+    is expected to fit the schema already.
+    """
+    scenes: Sequence[Mapping[str, Any]] = body["scenes"]
+    characters: Sequence[Mapping[str, Any]] = body.get("characters", [])
+    problems = _twice(scenes, "scenes", "scenes") + _twice(characters, "characters", "characters")
+
+    known_characters = {character["id"] for character in characters}
+    known_assets = {asset["id"] for asset in body["assets"]}
+    shown_in: dict[str, list[str]] = {}
+    for index, scene in enumerate(scenes):
+        asset_id = scene.get("visual", {}).get("asset_id")
+        if asset_id is None:
+            continue
+        shown_in.setdefault(asset_id, []).append(scene["id"])
+        if scene["kind"] == "shot" and asset_id not in known_assets:
+            problems.append(
+                f"/scenes/{index}/visual/asset_id: scene {scene['id']} shows the picture "
+                f"'{asset_id}', which the plan does not have."
+            )
+
+    for index, asset in enumerate(body["assets"]):
+        for position, character in enumerate(asset.get("characters", [])):
+            if character in known_characters:
+                continue
+            users = shown_in.get(asset["id"], [])
+            where = (
+                f" Scene {users[0]} uses this picture."
+                if len(users) == 1
+                else f" Scenes {', '.join(users)} use this picture."
+                if users
+                else ""
+            )
+            problems.append(
+                f"/assets/{index}/characters/{position}: the picture {asset['id']} shows the "
+                f"character '{character}', and the plan has no character with that id.{where}"
+            )
+
+    known_scenes = {scene["id"] for scene in scenes}
+    for index, change in enumerate(body.get("changes", [])):
+        if "scene" in change and change["scene"] not in known_scenes:
+            problems.append(
+                f"/changes/{index}/scene: the change list names the scene '{change['scene']}', "
+                "which the plan does not have."
+            )
+    return problems
+
+
 def _checked(body: Mapping[str, Any], before: Mapping[str, Any], drawable: Sequence[str]) -> None:
     """Raise SpecError unless `body` is a valid spec for the same episode."""
     problems = [str(found) for found in schemas.validate("episode_spec", dict(body))]
     if problems:
         raise SpecError("invalid_spec", "The spec is not valid.", problems)
+    missing = reference_problems(body)
+    if missing:
+        raise SpecError("invalid_spec", "The plan refers to something it does not have.", missing)
     changed = [name for name in PROTECTED if body[name] != before[name]]
     if changed:
         raise SpecError(
