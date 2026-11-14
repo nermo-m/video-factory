@@ -4,22 +4,13 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "brief"
+    "idea"
   ],
   "properties": {
-    "brief": {
-      "$ref": "#/$defs/brief"
-    }
-  },
-  "$defs": {
-    "brief": {
-      "type": "object",
-      "required": [
-        "angle",
-        "lesson",
-        "audience",
-        "titles"
-      ]
+    "idea": {
+      "description": "The owner's prompt for the video, as it was typed in.",
+      "type": "string",
+      "minLength": 1
     }
   }
 }

@@ -35,12 +35,16 @@ REJECT_RETURNS_TO: dict[EpisodeState, EpisodeState] = {
     EpisodeState.CRITIQUE: EpisodeState.RENDER,
 }
 
+# Director mode: one job plans a video. It reads the owner's prompt and writes the shot
+# list (`plan.shotlist`, in the state `direction`, which the plan gate follows). The states
+# `brief`, `script` and `asset_plan` of the first design keep their place in the order and
+# have no job, so an episode passes over them.
+RESEARCH_JOB = "plan.research"
+# The planning states that no longer have a job. Running one of them again, for an
+# episode that was started before Director mode, means running what follows it.
+PASSED_OVER = (EpisodeState.BRIEF, EpisodeState.SCRIPT, EpisodeState.ASSET_PLAN)
 _ONE_JOB: dict[EpisodeState, str] = {
-    EpisodeState.BRIEF: "plan.brief",
-    EpisodeState.RESEARCH: "plan.research",
-    EpisodeState.SCRIPT: "plan.script",
-    EpisodeState.DIRECTION: "plan.direct",
-    EpisodeState.ASSET_PLAN: "plan.assets",
+    EpisodeState.DIRECTION: "plan.shotlist",
     EpisodeState.QC: "qc.run",
     EpisodeState.CRITIQUE: "agent.critic",
     EpisodeState.PACKAGE: "plan.package",
@@ -48,6 +52,8 @@ _ONE_JOB: dict[EpisodeState, str] = {
 }
 _STAGES: dict[EpisodeState, int] = {
     **dict.fromkeys(_ONE_JOB, 1),
+    # Research is a choice of the episode. It has its job only when the owner asked for it.
+    EpisodeState.RESEARCH: 1,
     EpisodeState.ASSET_GEN: 2,
     EpisodeState.VOICE: 1,
     EpisodeState.RENDER: 2,
@@ -92,14 +98,18 @@ def plan_stage(
     spec: Mapping[str, Any] | None,
     critic_enabled: bool = True,
     scope: Scope | None = None,
+    research: bool = False,
 ) -> list[JobRequest]:
     """The jobs of one stage of a state. An empty list means the stage has nothing to do.
 
     `spec` is the episode's current authored spec, needed from `asset_gen` to `render`.
-    `scope` limits voice and render to the scenes an edit made stale.
+    `scope` limits voice and render to the scenes an edit made stale. `research` is the
+    episode's own choice to have facts looked up before its plan is written.
     """
     if state is EpisodeState.CRITIQUE and not critic_enabled:
         return []
+    if state is EpisodeState.RESEARCH:
+        return [JobRequest(RESEARCH_JOB)] if research else []
     if state in _ONE_JOB:
         return [JobRequest(_ONE_JOB[state])]
     if state not in _STAGES:
@@ -115,6 +125,11 @@ def plan_stage(
                 for asset in spec["assets"]
                 if asset["kind"] == "image" and asset["origin"] == "generated"
             ]
+        if spec.get("spec_version") != "2.0":
+            # A plan of shots stores which scenes are to move. The clips themselves are
+            # made once the ComfyUI adapter exists (VFS-29). Until then nothing is queued
+            # and a clip scene shows its still picture with its camera move.
+            return []
         return [
             JobRequest(
                 "gen.clip",

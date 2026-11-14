@@ -66,6 +66,7 @@ BRIEF = example("brief", "output")
 VERSIONS = {
     **dict.fromkeys(SKILL_NAMES, "1.0"),
     "brief": "1.1",
+    "research": "1.1",
     "script": "1.1",
     "direct": "1.2",
     "assets": "1.1",
@@ -228,7 +229,7 @@ def research(*answers: Any) -> Any:
     return run_skill(
         FakeLLM(*answers),
         load_skill("research"),
-        {"brief": BRIEF},
+        {"idea": "A keeper who climbs a hill every morning."},
         repair=rules.keep_sourced_claims,
     )
 

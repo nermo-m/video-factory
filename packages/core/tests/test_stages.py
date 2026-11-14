@@ -20,11 +20,7 @@ from packages.core.stages import (
 )
 
 SINGLE_JOB_STATES = {
-    EpisodeState.BRIEF: "plan.brief",
-    EpisodeState.RESEARCH: "plan.research",
-    EpisodeState.SCRIPT: "plan.script",
-    EpisodeState.DIRECTION: "plan.direct",
-    EpisodeState.ASSET_PLAN: "plan.assets",
+    EpisodeState.DIRECTION: "plan.shotlist",
     EpisodeState.QC: "qc.run",
     EpisodeState.PACKAGE: "plan.package",
     EpisodeState.EXPORT: "export.pack",
@@ -164,3 +160,68 @@ def test_a_state_that_needs_the_spec_says_so_when_there_is_none() -> None:
 def test_the_built_pipeline_ends_with_the_render() -> None:
     """Milestone M2 builds the pipeline up to the render. An episode rests there."""
     assert LAST_BUILT_STATE is EpisodeState.RENDER
+
+
+# --- Director mode: one shot list step plans a video ---------------------------------------
+
+
+def test_planning_is_one_shot_list_job() -> None:
+    planned = [
+        (state, [request.job_type for request in plan_stage(state, 0, spec=None)])
+        for state in (
+            EpisodeState.BRIEF,
+            EpisodeState.RESEARCH,
+            EpisodeState.SCRIPT,
+            EpisodeState.DIRECTION,
+            EpisodeState.ASSET_PLAN,
+        )
+    ]
+
+    assert planned == [
+        (EpisodeState.BRIEF, []),
+        (EpisodeState.RESEARCH, []),
+        (EpisodeState.SCRIPT, []),
+        (EpisodeState.DIRECTION, ["plan.shotlist"]),
+        (EpisodeState.ASSET_PLAN, []),
+    ]
+
+
+def test_brief_script_and_asset_plan_have_no_jobs() -> None:
+    for state in (EpisodeState.BRIEF, EpisodeState.SCRIPT, EpisodeState.ASSET_PLAN):
+        assert stage_count(state) == 0, state
+        assert plan_stage(state, 0, spec=None, research=True) == []
+
+
+def test_research_runs_only_when_asked() -> None:
+    assert plan_stage(EpisodeState.RESEARCH, 0, spec=None) == []
+    assert plan_stage(EpisodeState.RESEARCH, 0, spec=None, research=False) == []
+
+    (asked,) = plan_stage(EpisodeState.RESEARCH, 0, spec=None, research=True)
+
+    assert (asked.job_type, asked.tag) == ("plan.research", JobTag.CPU)
+
+
+def test_no_clip_job_is_queued_for_a_clip_scene() -> None:
+    """Clips arrive with the ComfyUI adapter. Until then a clip scene shows its still
+    picture with its camera move, and no job waits for a graphics card."""
+    path = schemas.SCHEMA_DIR / "fixtures" / "episode_spec" / "valid" / "shots.json"
+    shots = json.loads(path.read_text(encoding="utf-8"))
+    assert shots["scenes"][0]["visual"]["clip"] is True
+
+    pictures = plan_stage(EpisodeState.ASSET_GEN, 0, spec=shots)
+    clips = plan_stage(EpisodeState.ASSET_GEN, 1, spec=shots)
+
+    assert [request.payload["asset_id"] for request in pictures] == ["a_s01_hill", "a_s02_lamp"]
+    assert clips == []
+
+
+def test_a_plan_of_shots_speaks_and_encodes_its_scenes() -> None:
+    path = schemas.SCHEMA_DIR / "fixtures" / "episode_spec" / "valid" / "shots.json"
+    shots = json.loads(path.read_text(encoding="utf-8"))
+
+    voice = plan_stage(EpisodeState.VOICE, 0, spec=shots)
+    render = plan_stage(EpisodeState.RENDER, 0, spec=shots)
+
+    # The second shot is silent: nothing to speak, still a scene to encode.
+    assert [request.payload["scene_id"] for request in voice] == ["s01_hill"]
+    assert [request.payload["scene_id"] for request in render] == ["s01_hill", "s02_lamp"]

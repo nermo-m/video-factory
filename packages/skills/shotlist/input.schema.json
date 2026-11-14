@@ -25,6 +25,11 @@
       "description": "Facts with their sources, when the owner asked for research. Otherwise empty.",
       "type": "array",
       "items": { "type": "object" }
+    },
+    "comment": {
+      "description": "What the owner asked to be different after seeing an earlier plan of this prompt.",
+      "type": "string",
+      "minLength": 1
     }
   }
 }

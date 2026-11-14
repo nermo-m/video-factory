@@ -19,6 +19,7 @@ from urllib.parse import unquote, urlsplit
 
 from packages.adapters.llm.base import LLMResponse
 from packages.core import json_patch, schemas
+from packages.core.enums import Provider
 from packages.core.lengths import (
     PAUSE_PER_SCENE_S,
     SLACK,
@@ -371,7 +372,7 @@ def _quote(text: str) -> str:
 
 
 def shotlist_follows_the_owner(
-    inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
+    inputs: Mapping[str, Any], output: dict[str, Any], response: LLMResponse | None
 ) -> list[str]:
     """What a shot list does that the owner's prompt does not allow. Empty means it
     follows the prompt, as far as code can tell.
@@ -381,6 +382,10 @@ def shotlist_follows_the_owner(
     on the change list, and what the owner marked as exact words must be in the plan.
     """
     idea = _bare(str(inputs["idea"]))
+    # Demo mode replays one recording, the sample story, whatever was typed. That plan
+    # cannot be held against the typed idea, and the screens say that it is recorded.
+    # What it points at and what the look can do is still checked.
+    recorded = response is not None and response.provider is Provider.DEMO
     scenes: list[dict[str, Any]] = output["scenes"]
     changed_scenes = {change.get("scene") for change in output["changes"]}
     problems: list[str] = []
@@ -402,7 +407,9 @@ def shotlist_follows_the_owner(
         name = f"scene {scene['id']}"
         narration = str(scene["narration"]).strip()
         whose = scene.get("narration_from")
-        if narration and whose == "owner" and not _stands_in(narration, idea):
+        if recorded:
+            pass
+        elif narration and whose == "owner" and not _stands_in(narration, idea):
             problems.append(
                 f"{name}: the narration is marked as the owner's line, but it does not "
                 "stand in the owner's prompt word for word. Use the owner's words, or mark "
@@ -449,7 +456,7 @@ def shotlist_follows_the_owner(
         for scene in scenes
     ]
     last_scene, last_line = -1, ""
-    for marked in marked_lines(str(inputs["idea"])):
+    for marked in [] if recorded else marked_lines(str(inputs["idea"])):
         wanted = _bare(marked.text)
         spoken_in = next((i for i, text in enumerate(narrations) if wanted in text), None)
         if spoken_in is None:

@@ -149,10 +149,11 @@ def _brief(session: Session, episode: Episode, channel: Channel, _job: JobContex
     )
 
 
-def _research(session: Session, episode: Episode, _channel_: Channel, _job: JobContext) -> Prepared:
-    return Prepared(
-        {"brief": document_of(session, episode.id, BRIEF_JOB)}, repair=rules.keep_sourced_claims
-    )
+def _research(
+    _session: Session, episode: Episode, _channel_: Channel, _job: JobContext
+) -> Prepared:
+    # Research reads the owner's own prompt. It no longer waits for a brief.
+    return Prepared({"idea": episode.idea}, repair=rules.keep_sourced_claims)
 
 
 def _script(session: Session, episode: Episode, channel: Channel, _job: JobContext) -> Prepared:

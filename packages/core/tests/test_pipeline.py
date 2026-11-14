@@ -67,7 +67,13 @@ def episode_id(sessions: sessionmaker[Session]) -> uuid.UUID:
         channel = models.Channel(name="Small Steps", voice_id="bm_george", theme="night_scrolls")
         session.add(channel)
         session.flush()
-        episode = models.Episode(channel_id=channel.id, idea="A keeper who climbs a hill.")
+        # Research is switched on, so planning has two jobs in two states, research and
+        # then the shot list, and the rules about earlier states have something to run.
+        episode = models.Episode(
+            channel_id=channel.id,
+            idea="A keeper who climbs a hill.",
+            options={"research": True},
+        )
         session.add(episode)
         session.flush()
         return episode.id
@@ -161,7 +167,7 @@ def run_until(
             continue
         finished = finish_one(sessions) or finish_one(sessions, JobTag.GPU)
         assert finished is not None, f"the pipeline stopped at {current.state} with no job"
-        if finished.type == "plan.direct" and spec is not None:
+        if finished.type == "plan.shotlist" and spec is not None:
             give_spec(sessions, episode_id, spec)
     raise AssertionError("the pipeline did not reach the wanted point")
 
@@ -186,10 +192,11 @@ def test_a_new_episode_waits_at_idea_until_it_is_advanced(
     with sessions.begin() as session:
         pipeline.advance(session, episode_id)
 
-    assert episode(sessions, episode_id).state is S.BRIEF
+    # The brief of the first design has no job any more: the episode passes over it.
+    assert episode(sessions, episode_id).state is S.RESEARCH
     (job,) = jobs(sessions, episode_id)
-    assert (job.type, job.tag, job.status) == ("plan.brief", JobTag.CPU, JobStatus.QUEUED)
-    assert job.input["state"] == "brief"
+    assert (job.type, job.tag, job.status) == ("plan.research", JobTag.CPU, JobStatus.QUEUED)
+    assert job.input["state"] == "research"
 
 
 def test_an_unknown_episode_is_an_error(sessions: sessionmaker[Session]) -> None:
@@ -209,12 +216,12 @@ def test_the_planning_states_follow_each_other_as_their_jobs_succeed(
         pipeline.advance(session, episode_id)
 
     seen = []
-    for _ in range(4):
+    for _ in range(2):
         job = finish_one(sessions)
         assert job is not None
         seen.append(job.type)
 
-    assert seen == ["plan.brief", "plan.research", "plan.script", "plan.direct"]
+    assert seen == ["plan.research", "plan.shotlist"]
     assert episode(sessions, episode_id).state is S.DIRECTION
 
 
@@ -243,7 +250,7 @@ def test_a_failed_job_holds_the_state(
         assert claim is not None
         queue.fail(session, claim, ErrorClass.NEEDS_OWNER, "No API key.")
 
-    assert episode(sessions, episode_id).state is S.BRIEF
+    assert episode(sessions, episode_id).state is S.RESEARCH
     assert queued(sessions, episode_id) == []
     with sessions.begin() as session, pytest.raises(PipelineError) as caught:
         pipeline.advance(session, episode_id)
@@ -325,14 +332,14 @@ def test_telling_the_pipeline_twice_about_a_job_changes_nothing(
 ) -> None:
     with sessions.begin() as session:
         pipeline.advance(session, episode_id)
-    brief = finish_one(sessions)
-    assert brief is not None
+    first = finish_one(sessions)
+    assert first is not None
 
     with sessions.begin() as session:
-        pipeline.job_succeeded(session, brief.id)
+        pipeline.job_succeeded(session, first.id)
 
-    assert episode(sessions, episode_id).state is S.RESEARCH
-    assert [job.type for job in jobs(sessions, episode_id)] == ["plan.brief", "plan.research"]
+    assert episode(sessions, episode_id).state is S.DIRECTION
+    assert [job.type for job in jobs(sessions, episode_id)] == ["plan.research", "plan.shotlist"]
 
 
 def test_the_last_state_is_done_and_has_nothing_left_to_run(
@@ -361,9 +368,11 @@ def test_a_gate_holds_the_episode_until_the_owner_approves(
     with sessions.begin() as session:
         pipeline.approve(session, episode_id)
 
+    # The fixture's one picture comes from the library, so nothing is generated and the
+    # episode is at once at the next gate, the pictures.
     current = episode(sessions, episode_id)
-    assert (current.state, current.awaiting_approval) == (S.ASSET_PLAN, False)
-    assert queued(sessions, episode_id) == ["plan.assets"]
+    assert (current.state, current.awaiting_approval) == (S.ASSET_GEN, True)
+    assert queued(sessions, episode_id) == []
 
 
 def test_an_episode_at_a_gate_cannot_be_advanced_past_it(
@@ -409,7 +418,7 @@ def test_the_three_gates_are_plan_assets_and_review(
             continue
         finished = finish_one(sessions)
         assert finished is not None
-        if finished.type == "plan.direct":
+        if finished.type == "plan.shotlist":
             give_spec(sessions, episode_id, spec)
 
     assert gates == [S.DIRECTION, S.ASSET_GEN, S.CRITIQUE]
@@ -456,7 +465,7 @@ def test_a_rejected_plan_goes_back_to_direction_with_the_owners_comment(
     current = episode(sessions, episode_id)
     assert (current.state, current.awaiting_approval) == (S.DIRECTION, False)
     (again,) = jobs(sessions, episode_id, status=JobStatus.QUEUED)
-    assert again.type == "plan.direct"
+    assert again.type == "plan.shotlist"
     assert again.input["comment"] == "The hook is too slow."
 
 
@@ -466,12 +475,12 @@ def test_a_rejection_can_name_an_earlier_state_to_return_to(
     run_until(sessions, episode_id, at_gate(S.DIRECTION), spec=spec)
 
     with sessions.begin() as session:
-        pipeline.reject(session, episode_id, comment="Wrong angle.", return_to_state=S.SCRIPT)
+        pipeline.reject(session, episode_id, comment="Wrong angle.", return_to_state=S.RESEARCH)
 
     current = episode(sessions, episode_id)
-    assert (current.state, current.awaiting_approval) == (S.SCRIPT, False)
+    assert (current.state, current.awaiting_approval) == (S.RESEARCH, False)
     assert current.stale_from_state is S.DIRECTION
-    assert queued(sessions, episode_id) == ["plan.script"]
+    assert queued(sessions, episode_id) == ["plan.research"]
 
 
 def test_a_rejected_video_goes_back_to_render_by_default(
@@ -509,10 +518,10 @@ def test_an_earlier_state_can_be_run_again_and_nothing_is_deleted(
     before = jobs(sessions, episode_id)
 
     with sessions.begin() as session:
-        pipeline.rerun(session, episode_id, S.SCRIPT)
+        pipeline.rerun(session, episode_id, S.RESEARCH)
 
     current = episode(sessions, episode_id)
-    assert (current.state, current.awaiting_approval) == (S.SCRIPT, False)
+    assert (current.state, current.awaiting_approval) == (S.RESEARCH, False)
     assert current.stale_from_state is S.DIRECTION
     after = jobs(sessions, episode_id)
     assert {job.id for job in before} < {job.id for job in after}
@@ -533,12 +542,12 @@ def test_the_current_state_can_be_run_again_without_marking_anything_stale(
     finish_one(sessions)
 
     with sessions.begin() as session:
-        pipeline.rerun(session, episode_id, S.RESEARCH)
+        pipeline.rerun(session, episode_id, S.DIRECTION)
 
     current = episode(sessions, episode_id)
-    assert current.state is S.RESEARCH
+    assert current.state is S.DIRECTION
     assert current.stale_from_state is None
-    assert queued(sessions, episode_id) == ["plan.research"]
+    assert queued(sessions, episode_id) == ["plan.shotlist"]
 
 
 def test_a_re_run_from_a_gate_clears_the_gate(
@@ -547,10 +556,10 @@ def test_a_re_run_from_a_gate_clears_the_gate(
     run_until(sessions, episode_id, at_gate(S.DIRECTION), spec=spec)
 
     with sessions.begin() as session:
-        pipeline.rerun(session, episode_id, S.BRIEF)
+        pipeline.rerun(session, episode_id, S.RESEARCH)
 
     current = episode(sessions, episode_id)
-    assert (current.state, current.awaiting_approval) == (S.BRIEF, False)
+    assert (current.state, current.awaiting_approval) == (S.RESEARCH, False)
 
 
 @pytest.mark.parametrize("state", [S.RENDER, S.IDEA, S.DONE])
@@ -575,7 +584,7 @@ def test_a_re_run_cancels_what_was_still_waiting_and_ignores_late_results(
         assert in_flight is not None
 
     with sessions.begin() as session:
-        pipeline.rerun(session, episode_id, S.SCRIPT)
+        pipeline.rerun(session, episode_id, S.RESEARCH)
 
     statuses = {job.status for job in jobs(sessions, episode_id) if job.type == "gen.voice"}
     assert statuses == {JobStatus.CANCELLED}
@@ -583,8 +592,8 @@ def test_a_re_run_cancels_what_was_still_waiting_and_ignores_late_results(
     with sessions.begin() as session:
         assert queue.complete(session, in_flight, {}) is False
         pipeline.job_succeeded(session, in_flight.id)
-    assert episode(sessions, episode_id).state is S.SCRIPT
-    assert queued(sessions, episode_id) == ["plan.script"]
+    assert episode(sessions, episode_id).state is S.RESEARCH
+    assert queued(sessions, episode_id) == ["plan.research"]
 
 
 def test_the_stale_marker_moves_forward_as_the_states_are_done_again(
@@ -592,13 +601,13 @@ def test_the_stale_marker_moves_forward_as_the_states_are_done_again(
 ) -> None:
     run_until(sessions, episode_id, in_state(S.VOICE), spec=spec)
     with sessions.begin() as session:
-        pipeline.rerun(session, episode_id, S.SCRIPT)
+        pipeline.rerun(session, episode_id, S.RESEARCH)
     assert episode(sessions, episode_id).stale_from_state is S.DIRECTION
 
-    finish_one(sessions)  # script again
+    finish_one(sessions)  # research again
     assert episode(sessions, episode_id).stale_from_state is S.DIRECTION
-    finish_one(sessions)  # direction again: now it is the asset plan that is out of date
-    assert episode(sessions, episode_id).stale_from_state is S.ASSET_PLAN
+    finish_one(sessions)  # the shot list again: nothing after it had finished work
+    assert episode(sessions, episode_id).stale_from_state is None
 
     back_at_voice = run_until(sessions, episode_id, in_state(S.VOICE), spec=spec)
     # Voice had not finished before the re-run, so nothing after asset_gen is stale.
@@ -732,7 +741,7 @@ def test_an_edit_while_the_voice_has_not_been_made_yet_marks_nothing(
 ) -> None:
     # After plan approval, but nothing has been spoken or rendered: there is nothing to
     # be stale, and the states ahead will use the edited spec anyway.
-    run_until(sessions, episode_id, in_state(S.ASSET_PLAN), spec=spec)
+    run_until(sessions, episode_id, at_gate(S.ASSET_GEN), spec=spec)
 
     with sessions.begin() as session:
         pipeline.spec_edited(
@@ -893,3 +902,83 @@ def test_a_picture_no_scene_shows_makes_nothing_stale(
 
     assert stale == StaleScenes()
     assert episode(sessions, episode_id).stale_from_state is None
+
+
+# --- Director mode: the planning states of the first design are passed over -----------------
+
+
+def test_a_new_episode_goes_from_idea_to_the_plan_gate_with_one_job(
+    sessions: sessionmaker[Session], spec: dict[str, Any]
+) -> None:
+    with sessions.begin() as session:
+        channel = models.Channel(name="Plain", voice_id="bm_george", theme="plain")
+        session.add(channel)
+        session.flush()
+        made = models.Episode(channel_id=channel.id, idea="A keeper who climbs a hill.")
+        session.add(made)
+        session.flush()
+        episode_id = made.id
+
+    with sessions.begin() as session:
+        pipeline.advance(session, episode_id)
+
+    assert episode(sessions, episode_id).state is S.DIRECTION
+    assert queued(sessions, episode_id) == ["plan.shotlist"]
+
+    finished = finish_one(sessions)
+    assert finished is not None
+    give_spec(sessions, episode_id, spec)
+
+    current = episode(sessions, episode_id)
+    assert (current.state, current.awaiting_approval) == (S.DIRECTION, True)
+    assert [job.type for job in jobs(sessions, episode_id)] == ["plan.shotlist"]
+
+
+@pytest.mark.parametrize("stopped_in", [S.BRIEF, S.SCRIPT])
+def test_an_old_episode_resting_in_an_old_planning_state_is_planned_by_the_shot_list(
+    sessions: sessionmaker[Session], stopped_in: EpisodeState
+) -> None:
+    """An episode that was started before Director mode and stopped in a planning state
+    whose job no longer exists. Run this step again must not be a dead end."""
+    with sessions.begin() as session:
+        channel = models.Channel(name="Old", voice_id="bm_george", theme="night_scrolls")
+        session.add(channel)
+        session.flush()
+        made = models.Episode(
+            channel_id=channel.id, idea="A keeper who climbs a hill.", state=stopped_in
+        )
+        session.add(made)
+        session.flush()
+        episode_id = made.id
+        old = queue.enqueue(
+            session,
+            job_type=f"plan.{stopped_in.value}",
+            tag=JobTag.CPU,
+            payload={"state": stopped_in.value, "stage": 0, "run": 1},
+            episode_id=episode_id,
+        )
+        old.status = JobStatus.FAILED
+
+    with sessions.begin() as session:
+        pipeline.rerun(session, episode_id, stopped_in)
+
+    current = episode(sessions, episode_id)
+    assert (current.state, current.awaiting_approval) == (S.DIRECTION, False)
+    assert queued(sessions, episode_id) == ["plan.shotlist"]
+
+
+def test_an_episode_without_research_passes_over_it(
+    sessions: sessionmaker[Session], spec: dict[str, Any]
+) -> None:
+    with sessions.begin() as session:
+        channel = models.Channel(name="Plain", voice_id="bm_george", theme="plain")
+        session.add(channel)
+        session.flush()
+        made = models.Episode(channel_id=channel.id, idea="A keeper.", options={"research": False})
+        session.add(made)
+        session.flush()
+        episode_id = made.id
+
+    run_until(sessions, episode_id, at_gate(S.DIRECTION), spec=spec)
+
+    assert [job.type for job in jobs(sessions, episode_id)] == ["plan.shotlist"]
