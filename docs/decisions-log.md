@@ -1559,3 +1559,27 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   and VFS-79, so each board card carries its repository number in its name.
 - **Why not a soft delete only:** the owner wants the test videos and their files gone,
   and pictures and renders take real disk space.
+
+## D-054: Plan format 2.1 grows the 2.0 schema instead of standing beside it
+
+- **Date:** 2026-11-15. **Card:** VFS-81 (Director mode, part 1).
+- **Choice:**
+  - **One schema, two versions.** `spec_version` is `2.0` or `2.1`. Everything new is
+    optional at the top level (`style`, `characters`, `changes`, `captions`, `music`) or
+    belongs to the new scene kind `shot`, so every stored 2.0 plan stays valid and the
+    spec store, the diff and the versions keep working unchanged.
+  - **A shot forbids what belongs to the scrolls** (`title`, `label`, `stat`, `steps`,
+    overlays, sound cues), the way each older kind forbids its neighbours' fields.
+  - **A character's description is not copied into the picture prompts.** A picture lists
+    its `characters` by id, and the prompt is put together when the picture is made
+    (VFS-84). Editing one description then reaches every picture that shows the character.
+  - **References are checked in code, on every save** (`specs.reference_problems`): a
+    listed character, a shot's picture, a scene named by the change list, and ids used
+    twice. A schema cannot say these. A plan that points at something missing is refused
+    whole, with the picture and the scene named, so no half-saved plan exists.
+  - **A look says which camera moves and text positions it has** (`cameras`,
+    `text_positions` in `capabilities.json`). A look that lists none keeps its pictures
+    still. The plain look arrives with VFS-82.
+- **Not done:** `narration_from` is accepted on every scene kind, though only a shot uses
+  it. Forbidding it elsewhere would add a rule to each of the five older kinds for a field
+  that harms nothing.

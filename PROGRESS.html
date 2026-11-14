@@ -570,15 +570,15 @@
       "id": "VFS-80",
       "order": 316.1,
       "title": "Delete videos from the Board and the video page",
-      "status": "review",
-      "note": "A video can be deleted from its card, from its own page, or several at once with Select. It is gone at once, and its plan, pictures, voice and rendered files are removed for good. Library pictures and the usage counts stay. Board card: https://app.notion.com/418474b94ace81a1a47dd4044c607a73"
+      "status": "done",
+      "note": "A video can be deleted from its card, from its own page, or several at once with Select. It is gone at once, and its plan, pictures, voice and rendered files are removed for good. Library pictures and the usage counts stay. Merged in pull request #60. Board card: https://app.notion.com/418474b94ace81a1a47dd4044c607a73"
     },
     {
       "id": "VFS-81",
       "order": 316.2,
       "title": "Plan schema 2.1: shots, characters and the change list",
-      "status": "ready",
-      "note": "Director mode, part 1, task 2. Board card: https://app.notion.com/418474b94ace81cea7e8df0551cfe507"
+      "status": "review",
+      "note": "The plan format 2.1: a shot scene (one picture on the whole frame, camera move, motion prompt, positioned text), the style, the characters, the change list and the switches for captions and music. A plan that points at a character, picture or scene it does not have is refused whole. Old 2.0 plans stay valid. Board card: https://app.notion.com/418474b94ace81cea7e8df0551cfe507"
     },
     {
       "id": "VFS-82",
@@ -625,7 +625,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-81: plan schema 2.1 (shots, characters, the change list), task 2 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Director mode replaces the seven-step planning chain: the owner's prompt is the plan. After part 1 come Wan clips (VFS-29)."
+    "next": "VFS-82: the plain look, which draws a shot on the whole frame, task 3 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-83, the shot list skill."
   },
   "checklist": [
     {
@@ -660,7 +660,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1591 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 309 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
+      "value": "1609 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 311 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
