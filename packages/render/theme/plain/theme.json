@@ -1,0 +1,30 @@
+{
+  "name": "plain",
+  "description": "The picture on the whole frame and nothing of the studio's own: no paper, no frame, no effects. Text and captions in one neutral style.",
+  "frame": { "width": 1080, "height": 1920 },
+  "palette": {
+    "night": "#000000",
+    "text": "#FFFFFF",
+    "accent": "#FFD84A",
+    "shadow": "#000000"
+  },
+  "fonts": {
+    "body": "assets/fonts/Inter-Variable.ttf"
+  },
+  "music": {
+    "notes_hz": [130.81, 196.0, 261.63, 329.63, 392.0],
+    "brightness": 0.2
+  },
+  "text_styles": {
+    "plain": { "font": "body", "color": "text", "size": 72, "weight": 700 }
+  },
+  "layout": {
+    "safe_area": { "left": 0.06, "top": 0.05, "right": 0.12, "bottom": 0.15 },
+    "captions": { "x": 90, "y": 1430, "w": 800, "h": 180 },
+    "text": {
+      "top": { "x": 90, "y": 130, "w": 800, "h": 300 },
+      "middle": { "x": 90, "y": 780, "w": 800, "h": 300 },
+      "bottom": { "x": 90, "y": 1100, "w": 800, "h": 300 }
+    }
+  }
+}

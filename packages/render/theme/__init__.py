@@ -5,7 +5,8 @@ A theme is a folder with `theme.json` (palette, fonts, layout, asset files) and
 transitions). The capabilities are given to the planner and checked here, so a spec cannot
 ask for something the renderer cannot draw (design doc section 6).
 
-v1 has one theme, night_scrolls (decision D10).
+There are two: night_scrolls (decision D10), which tells a story on paper scrolls, and
+plain, which puts the picture on the whole frame and adds nothing of its own.
 """
 
 from __future__ import annotations
@@ -50,7 +51,9 @@ def load_theme(name: str) -> Theme:
     config = _read(root / "theme.json")
 
     def paths(section: str) -> dict[str, Path]:
-        return {key: root / value for key, value in config[section].items()}
+        # A look only has the parts it draws with: the plain look has no scroll,
+        # sprites or sounds.
+        return {key: root / value for key, value in config.get(section, {}).items()}
 
     return Theme(
         name=name,
@@ -58,7 +61,7 @@ def load_theme(name: str) -> Theme:
         capabilities=_read(root / "capabilities.json"),
         config=config,
         fonts=paths("fonts"),
-        backgrounds=[root / value for value in config["backgrounds"]],
+        backgrounds=[root / value for value in config.get("backgrounds", [])],
         scroll=paths("scroll"),
         sprites=paths("sprites"),
         sounds=paths("sounds"),

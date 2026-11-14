@@ -385,3 +385,22 @@ def test_a_cue_before_the_start_or_past_the_end_is_cut_not_an_error(
 
     assert mixed.samples.shape == (round(mixed.report.duration_s * SAMPLE_RATE), 2)
     assert decibels(stretch(mixed.effects, 0.0, 0.3)) > -60
+
+
+# --- the music switch of a plan (plan schema 2.1) -----------------------------------------
+
+
+def test_music_off_gives_a_silent_music_stem(
+    resolved: dict[str, Any], theme: Theme, storage: Path
+) -> None:
+    without = {**resolved, "music": False}
+
+    quiet = mix_audio(without, theme, storage_root=storage)
+
+    assert not quiet.music.any()
+    assert quiet.voice.any()
+    assert quiet.report.voice_over_music_db is None
+
+
+def test_a_plan_that_says_nothing_about_music_has_it(mix: AudioMix) -> None:
+    assert mix.music.any()

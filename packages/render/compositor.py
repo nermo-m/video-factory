@@ -27,6 +27,11 @@ from packages.render.theme import Theme
 DESIGN_SIZE = (1080, 1920)
 UNROLL_S = 0.6
 TRANSITION_S = 0.35
+# A fade between two shots: this long to black, and this long back.
+FADE_S = 0.3
+# On-screen text of a shot: how many lines one item may take, and its dark edge in pixels.
+SHOT_TEXT_LINES = 3
+SHOT_TEXT_EDGE = 4
 SCROLL_KINDS = ("scroll", "stat", "steps")
 # Text shrinks to fit its box (RN-06). This is as small as it may get before it stops.
 MIN_TEXT_SIZE = 14
@@ -99,6 +104,9 @@ class Compositor:
         at_s = scene["start_s"] + local
         boxes: list[TextBox] = record if record is not None else []
 
+        if scene["kind"] == "shot":
+            return self._shot(scene_index, scene, at_s, local, boxes)
+
         canvas = draw.load_image(self.theme.backgrounds[0]).copy()
         self._sprites(canvas, scene, at_s, behind=True)
         for layer in self.theme.backgrounds[1:]:
@@ -111,7 +119,8 @@ class Compositor:
         self._sprites(canvas, scene, at_s, behind=False)
         impacts += self._tags(canvas, scene, at_s, boxes)
         impacts += self._stamps(canvas, scene, at_s, boxes)
-        self._captions(canvas, scene, at_s, boxes)
+        if self.resolved.get("captions", True):
+            self._captions(canvas, scene, at_s, boxes)
 
         since_impact = min((at_s - impact for impact in impacts if impact <= at_s), default=None)
         if since_impact is not None:
@@ -189,6 +198,101 @@ class Compositor:
         if not path.is_file():
             raise RenderError(f"The file for asset '{asset_id}' is missing: {asset['file']}")
         return draw.load_image(path)
+
+    # --- shots: one picture on the whole frame ------------------------------------------
+
+    def _shot(
+        self,
+        scene_index: int,
+        scene: Mapping[str, Any],
+        at_s: float,
+        local: float,
+        boxes: list[TextBox],
+    ) -> Image.Image:
+        """A shot: its clip or its picture on the whole frame, the owner's text, the
+        captions, and a fade when the plan asks for one. Nothing else is drawn."""
+        visual = scene["visual"]
+        duration: float = scene["duration_s"]
+        clip = self.clips.get(visual["asset_id"]) if visual.get("clip") else None
+        if clip is not None:
+            filled = draw.cover(clip.at(local), *self.size)
+        else:
+            filled = draw.camera_frame(
+                self._asset_image(visual["asset_id"]),
+                self.size,
+                visual.get("camera", "push_in"),
+                local / duration if duration else 0.0,
+            )
+        canvas = Image.new("RGBA", self.size, (*self.colors["night"], 255))
+        canvas.paste(filled.convert("RGBA"), (0, 0))
+
+        self._shot_text(canvas, scene, at_s, boxes)
+        if self.resolved.get("captions", True):
+            self._captions(canvas, scene, at_s, boxes)
+
+        dark = 0.0
+        if scene.get("transition_out") == "fade" and local > duration - FADE_S:
+            dark = (local - (duration - FADE_S)) / FADE_S
+        scenes = self.resolved["scenes"]
+        previous = scenes[scene_index - 1] if scene_index > 0 else None
+        if previous is not None and previous.get("transition_out") == "fade" and local < FADE_S:
+            dark = max(dark, 1 - local / FADE_S)
+        image = canvas.convert("RGB")
+        if dark > 0:
+            black = Image.new("RGB", image.size, self.colors["night"])
+            image = Image.blend(image, black, draw.clamp01(dark))
+        return image
+
+    def _shot_text(
+        self, canvas: Image.Image, scene: Mapping[str, Any], at_s: float, boxes: list[TextBox]
+    ) -> None:
+        """The owner's on-screen text, each line in the place it was given. Lines that
+        share a place are stacked in the order they were written."""
+        styles = self.theme.config["text_styles"]
+        places: Mapping[str, Mapping[str, int]] = self.layout["text"]
+        for position, area in places.items():
+            rows: list[Image.Image] = []
+            for item in scene.get("text", []):
+                if item.get("position", "bottom") != position or at_s < item["at_s"]:
+                    continue
+                style = styles[item["style"]]
+                font, lines = self._wrapped(
+                    item["content"],
+                    style["font"],
+                    area["w"],
+                    style["size"],
+                    max_lines=SHOT_TEXT_LINES,
+                    weight=style.get("weight"),
+                    margin=SHOT_TEXT_EDGE,
+                )
+                for line in lines:
+                    layer = draw.text_layer(
+                        line,
+                        font,
+                        self.colors[style["color"]],
+                        stroke=SHOT_TEXT_EDGE,
+                        stroke_fill=self.colors["shadow"],
+                    )
+                    rows.append(draw.fit_width(layer, area["w"]))
+            if not rows:
+                continue
+            gap = 10
+            height = min(area["h"], sum(row.height for row in rows) + gap * (len(rows) - 1))
+            if position == "top":
+                y = area["y"]
+            elif position == "bottom":
+                y = area["y"] + area["h"] - height
+            else:
+                y = area["y"] + (area["h"] - height) // 2
+            top, left, right = y, area["x"] + area["w"], area["x"]
+            for row in rows:
+                if y + row.height > area["y"] + area["h"]:
+                    break
+                x = area["x"] + (area["w"] - row.width) // 2
+                draw.paste(canvas, row, x, y)
+                left, right = min(left, x), max(right, x + row.width)
+                y += row.height + gap
+            boxes.append(TextBox(f"text_{position}", (left, top, right, y - gap)))
 
     # --- scroll scenes -------------------------------------------------------------
 

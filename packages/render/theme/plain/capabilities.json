@@ -1,0 +1,12 @@
+{
+  "theme": "plain",
+  "scene_kinds": ["shot"],
+  "text_styles": ["plain"],
+  "overlay_types": [],
+  "stamp_colors": [],
+  "sprites": {},
+  "sound_cues": [],
+  "transitions": ["cut", "fade"],
+  "cameras": ["none", "push_in", "pull_out", "pan_left", "pan_right", "tilt_up", "tilt_down"],
+  "text_positions": ["top", "middle", "bottom"]
+}
