@@ -577,15 +577,15 @@
       "id": "VFS-81",
       "order": 316.2,
       "title": "Plan schema 2.1: shots, characters and the change list",
-      "status": "review",
-      "note": "The plan format 2.1: a shot scene (one picture on the whole frame, camera move, motion prompt, positioned text), the style, the characters, the change list and the switches for captions and music. A plan that points at a character, picture or scene it does not have is refused whole. Old 2.0 plans stay valid. Board card: https://app.notion.com/418474b94ace81cea7e8df0551cfe507"
+      "status": "done",
+      "note": "The plan format 2.1: a shot scene (one picture on the whole frame, camera move, motion prompt, positioned text), the style, the characters, the change list and the switches for captions and music. A plan that points at a character, picture or scene it does not have is refused whole. Old 2.0 plans stay valid. Merged in pull request #61. Board card: https://app.notion.com/418474b94ace81cea7e8df0551cfe507"
     },
     {
       "id": "VFS-82",
       "order": 316.3,
       "title": "The plain look: a shot on the whole frame",
-      "status": "ready",
-      "note": "Director mode, part 1, task 3. Takes the place of the proposal VFS-79. Board card: https://app.notion.com/418474b94ace819ea914d6e2988fb541"
+      "status": "review",
+      "note": "A second look, plain: a shot's picture covers the whole frame, whatever its shape, and moves with one of seven slow camera moves. The owner's text sits at the top, the middle or the bottom, captions and music can be switched off, and shots can fade into each other. A shot lasts at least as long as its spoken line. Takes the place of the proposal VFS-79. Board card: https://app.notion.com/418474b94ace819ea914d6e2988fb541"
     },
     {
       "id": "VFS-83",
@@ -625,7 +625,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-82: the plain look, which draws a shot on the whole frame, task 3 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-83, the shot list skill."
+    "next": "VFS-83: the shot list skill and the code that builds the plan from it, task 4 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-84, the pipeline runs it."
   },
   "checklist": [
     {
@@ -660,7 +660,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1609 unit, 41 render (14 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 311 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
+      "value": "1646 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 311 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -847,6 +847,10 @@
     {
       "date": "2026-11-15",
       "text": "Videos can be deleted, one or many, with their files. A job still running for a deleted video is thrown away when it ends."
+    },
+    {
+      "date": "2026-11-15",
+      "text": "A plain look: the picture on the whole frame with a slow camera move, in place of the scroll. A spoken line now always wins over a given length."
     }
   ]
 }
