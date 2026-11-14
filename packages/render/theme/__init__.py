@@ -77,7 +77,8 @@ class CapabilityProblem:
 
 
 def _missing(path: str, what: str, value: str, known: list[str]) -> CapabilityProblem:
-    return CapabilityProblem(path, f"the theme has no {what} '{value}'. It has: {', '.join(known)}")
+    has = ", ".join(known) or "nothing of the kind"
+    return CapabilityProblem(path, f"the theme has no {what} '{value}'. It has: {has}")
 
 
 def check_capabilities(
@@ -98,12 +99,19 @@ def check_capabilities(
 
     problems: list[CapabilityProblem] = []
     sprites: dict[str, list[str]] = capabilities["sprites"]
+    # A look that lists no camera moves keeps its pictures still, and one that lists no
+    # text positions places its text by itself.
+    cameras: list[str] = capabilities.get("cameras", ["none"])
+    positions: list[str] = capabilities.get("text_positions", [])
     for index, scene in enumerate(authored["scenes"]):
         path = f"/scenes/{index}"
         if scene["kind"] not in capabilities["scene_kinds"]:
             problems.append(
                 _missing(f"{path}/kind", "scene kind", scene["kind"], capabilities["scene_kinds"])
             )
+        camera = scene.get("visual", {}).get("camera")
+        if camera is not None and camera not in cameras:
+            problems.append(_missing(f"{path}/visual/camera", "camera move", camera, cameras))
         for i, item in enumerate(scene.get("text", [])):
             if item["style"] not in capabilities["text_styles"]:
                 problems.append(
@@ -113,6 +121,11 @@ def check_capabilities(
                         item["style"],
                         capabilities["text_styles"],
                     )
+                )
+            position = item.get("position")
+            if position is not None and position not in positions:
+                problems.append(
+                    _missing(f"{path}/text/{i}/position", "text position", position, positions)
                 )
         for i, overlay in enumerate(scene.get("overlays", [])):
             overlay_path = f"{path}/overlays/{i}"

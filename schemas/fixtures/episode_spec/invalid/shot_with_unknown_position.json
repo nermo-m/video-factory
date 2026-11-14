@@ -1,0 +1,99 @@
+{
+  "why": "On-screen text sits at the top, the middle or the bottom.",
+  "error_at": "/scenes/0/text/0/position",
+  "document": {
+    "spec_version": "2.1",
+    "episode_id": "ep_fixture",
+    "format": {
+      "width": 1080,
+      "height": 1920,
+      "fps": 30,
+      "target_duration_s": 15
+    },
+    "theme": "plain",
+    "voice": {
+      "voice_id": "bm_george",
+      "speed": 1
+    },
+    "seed": 11,
+    "style": "Soft watercolour, muted blues, grain of rough paper.",
+    "captions": true,
+    "music": false,
+    "characters": [
+      {
+        "id": "keeper",
+        "name": "The keeper",
+        "description": "A woman of about sixty, grey braid, yellow oilskin coat, lean and upright."
+      }
+    ],
+    "changes": [
+      {
+        "scene": "s02_lamp",
+        "kind": "added",
+        "what": "Low warm light from the left.",
+        "why": "The prompt gave no lighting for this scene."
+      },
+      {
+        "kind": "not_possible",
+        "what": "A piano under the last scene.",
+        "why": "The studio can only make its own soft music bed."
+      }
+    ],
+    "scenes": [
+      {
+        "id": "s01_hill",
+        "kind": "shot",
+        "narration": "Every evening she climbed the same hill.",
+        "narration_from": "owner",
+        "visual": {
+          "asset_id": "a_s01_hill",
+          "clip": true,
+          "camera": "push_in",
+          "motion": "She walks up the path, the grass moves in the wind, slow push in."
+        },
+        "text": [
+          {
+            "content": "Every evening",
+            "style": "plain",
+            "position": "left"
+          }
+        ],
+        "transition_out": "fade"
+      },
+      {
+        "id": "s02_lamp",
+        "kind": "shot",
+        "narration": "",
+        "duration_s": 4,
+        "visual": {
+          "asset_id": "a_s02_lamp",
+          "camera": "none"
+        }
+      }
+    ],
+    "claims": [],
+    "assets": [
+      {
+        "id": "a_s01_hill",
+        "kind": "image",
+        "origin": "generated",
+        "prompt": "A steep green hill at dusk, a narrow path, a lighthouse at the top, seen from below.",
+        "characters": [
+          "keeper"
+        ],
+        "contains_third_party_ip": false,
+        "rights_status": "needs_review"
+      },
+      {
+        "id": "a_s02_lamp",
+        "kind": "image",
+        "origin": "generated",
+        "prompt": "The lamp room of a lighthouse, a brass plate that reads KEEP THE LIGHT.",
+        "characters": [],
+        "text_in_picture": true,
+        "contains_third_party_ip": false,
+        "rights_status": "needs_review"
+      }
+    ]
+  }
+}

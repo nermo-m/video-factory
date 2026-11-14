@@ -59,7 +59,8 @@ def test_capabilities_list_every_scene_kind_and_overlay_type_the_schema_allows(
     overlay_types = schema["$defs"]["overlay"]["properties"]["type"]["enum"]
 
     assert theme.capabilities["theme"] == "night_scrolls"
-    assert theme.capabilities["scene_kinds"] == scene_kinds
+    # A shot fills the whole frame. It belongs to the plain look, not to the scrolls.
+    assert theme.capabilities["scene_kinds"] == [kind for kind in scene_kinds if kind != "shot"]
     assert theme.capabilities["overlay_types"] == overlay_types
 
 
@@ -249,3 +250,56 @@ def test_rule2_every_theme_asset_is_registered() -> None:
         "packages/render/theme/night_scrolls/assets/sounds/*.wav",
     ):
         assert needle in registry
+
+
+# --- shots: camera moves and text positions (plan schema 2.1) -----------------------------
+
+SHOT_LOOK = {
+    "theme": "plain",
+    "scene_kinds": ["shot"],
+    "text_styles": ["plain"],
+    "overlay_types": [],
+    "stamp_colors": [],
+    "sprites": {},
+    "sound_cues": [],
+    "transitions": ["cut", "fade"],
+    "cameras": ["none", "push_in"],
+    "text_positions": ["top", "bottom"],
+}
+
+
+def test_a_plan_of_shots_fits_a_look_that_has_what_it_asks_for() -> None:
+    assert check_capabilities(spec("shots.json"), SHOT_LOOK) == []
+
+
+def test_a_camera_the_theme_does_not_have_is_reported() -> None:
+    authored = spec("shots.json")
+    authored["scenes"][0]["visual"]["camera"] = "whip_pan"
+
+    problems = [str(problem) for problem in check_capabilities(authored, SHOT_LOOK)]
+
+    assert problems == [
+        "/scenes/0/visual/camera: the theme has no camera move 'whip_pan'. It has: none, push_in"
+    ]
+
+
+def test_a_text_position_the_theme_does_not_have_is_reported() -> None:
+    authored = spec("shots.json")
+    authored["scenes"][0]["text"][0]["position"] = "middle"
+
+    problems = [str(problem) for problem in check_capabilities(authored, SHOT_LOOK)]
+
+    assert problems == [
+        "/scenes/0/text/0/position: the theme has no text position 'middle'. It has: top, bottom"
+    ]
+
+
+def test_a_look_without_camera_moves_cannot_be_asked_for_one(theme: Theme) -> None:
+    authored = copy.deepcopy(spec())
+    authored["scenes"][1]["visual"]["camera"] = "push_in"
+
+    problems = [str(problem) for problem in check_capabilities(authored, theme.capabilities)]
+
+    assert problems == [
+        "/scenes/1/visual/camera: the theme has no camera move 'push_in'. It has: none"
+    ]
