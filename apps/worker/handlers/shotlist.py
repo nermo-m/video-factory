@@ -24,7 +24,7 @@ from packages.adapters.llm.base import LLMAdapter
 from packages.core import assets
 from packages.core.db.models import Job
 from packages.core.enums import JobStatus, SpecAuthor
-from packages.core.options import options_of
+from packages.core.options import options_of, writer_of
 from packages.core.queue import NeedsOwnerError
 from packages.core.specs import store_spec
 from packages.render.theme import load_theme
@@ -53,12 +53,13 @@ def _claims(session: Session, episode_id: Any) -> list[dict[str, Any]]:
 
 
 def shotlist_handlers(
-    sessions: sessionmaker[Session], llm: Callable[[], LLMAdapter]
+    sessions: sessionmaker[Session], llm: Callable[..., LLMAdapter]
 ) -> dict[str, Handler]:
     """The handler, for a worker that has a database and a way to get the mode's model.
 
     `llm` is called for every job, so the owner's "Use paid APIs" switch is read as it is
-    at that moment.
+    at that moment. When the owner chose who writes this video's plan, it is called with
+    that choice (`Writer`), and otherwise with nothing.
     """
 
     def plan_shotlist(context: JobContext) -> Mapping[str, Any]:
@@ -66,6 +67,7 @@ def shotlist_handlers(
             episode, channel = _episode(session, context.job.episode_id)
             episode_id = episode.id
             options = options_of(episode.options)
+            writer = writer_of(episode.options)
             voice_id, voice_speed = channel.voice_id, channel.voice_speed
             # Research only reaches the plan when the owner asked for it for this video.
             claims = _claims(session, episode_id) if options.research else []
@@ -81,7 +83,10 @@ def shotlist_handlers(
                 inputs["comment"] = comment.strip()
 
         result = run_skill(
-            llm(), load_skill("shotlist"), inputs, check=rules.shotlist_follows_the_owner
+            llm(writer) if writer.tool else llm(),
+            load_skill("shotlist"),
+            inputs,
+            check=rules.shotlist_follows_the_owner,
         )
         _record(sessions, context, result)
 

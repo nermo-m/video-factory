@@ -21,6 +21,7 @@ from packages.adapters.storage import LocalStorage
 from packages.core import assets, queue, schemas, specs
 from packages.core.db import models
 from packages.core.enums import ErrorClass, JobTag, Provider, SpecAuthor
+from packages.core.options import Writer
 from packages.core.queue import JobError
 from packages.render.theme import check_capabilities, load_theme
 from packages.skills.planner import SKILLS_DIR
@@ -375,3 +376,27 @@ def test_a_revision_of_a_plan_of_shots_is_checked_against_the_plain_look(
     assert proposal["document"]["patch"] == [
         {"op": "add", "path": "/scenes/0/transition_out", "value": "cut"}
     ]
+
+
+def test_the_plan_is_written_by_the_tool_and_the_model_the_owner_chose(
+    sessions: sessionmaker[Session],
+) -> None:
+    episode_id = new_episode(sessions, options={"writer": "chatgpt:gpt-5.5"})
+    model = Model(example("output"), provider=Provider.CHATGPT_PLAN)
+    asked: list[Any] = []
+
+    def chosen(*writer: Any) -> Model:
+        asked.extend(writer)
+        return model
+
+    with sessions.begin() as session:
+        queue.enqueue(session, job_type=SHOTLIST_JOB, tag=JobTag.CPU, episode_id=episode_id)
+    with sessions.begin() as session:
+        claim = queue.claim_next(session, JobTag.CPU)
+    assert claim is not None
+    shotlist_handlers(sessions, chosen)[SHOTLIST_JOB](
+        JobContext(claim, queue.output_path_of(claim))
+    )
+
+    assert asked == [Writer(tool="chatgpt", model="gpt-5.5")]
+    assert len(model.requests) == 1

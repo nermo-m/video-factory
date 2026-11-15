@@ -34,6 +34,7 @@ from packages.adapters.llm import ClaudeCliLLM, CodexCliLLM, LLMRequest, Recorde
 from packages.adapters.llm.cli_bridge import tool_schema
 from packages.core import logs
 from packages.core.enums import ErrorClass, Provider
+from packages.core.options import Writer
 from packages.core.queue import (
     InvalidOutputError,
     JobError,
@@ -634,3 +635,32 @@ def test_the_installed_claude_code_accepts_the_skills_schemas_as_they_are_sent(n
         )
 
     assert "Input must be provided" in finished.stdout + finished.stderr
+
+
+def test_the_owner_chooses_the_tool_and_the_model_that_write_a_plan() -> None:
+    chosen = adapters(
+        "subscription",
+        cli_bridge_url="http://127.0.0.1:9001",
+        claude_cli_model="claude-opus-5-5",
+        codex_cli_model="gpt-5.5",
+    )
+
+    fable = chosen.llm(Writer("claude", "claude-fable-5-2"))
+    claude = chosen.llm(Writer("claude", None))
+    chatgpt = chosen.llm(Writer("chatgpt", None))
+    other = chosen.llm(Writer("chatgpt", "gpt-5.5-codex"))
+
+    def made(adapter: object) -> tuple[type, str | None]:
+        assert isinstance(adapter, ClaudeCliLLM | CodexCliLLM)
+        return type(adapter), adapter.model
+
+    assert made(fable) == (ClaudeCliLLM, "claude-fable-5-2")
+    # No model chosen: the one of the settings, and without one the tool's own.
+    assert made(claude) == (ClaudeCliLLM, "claude-opus-5-5")
+    assert made(chatgpt) == (CodexCliLLM, "gpt-5.5")
+    assert made(other) == (CodexCliLLM, "gpt-5.5-codex")
+    assert type(chosen.llm(Writer())) is ClaudeCliLLM
+
+
+def test_the_choice_of_a_writer_never_changes_the_mode() -> None:
+    assert isinstance(adapters("demo").llm(Writer("chatgpt", "gpt-5.5")), RecordedLLM)

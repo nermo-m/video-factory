@@ -501,6 +501,26 @@ test.describe("Gate bar", () => {
     });
   });
 
+  test("a plan is sent back to be written by another model", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = await openWorkspace(page);
+
+    await gate(page).getByRole("button", { name: "Request changes" }).click();
+    const writer = gate(page).getByRole("combobox", { name: "Plan written by" });
+    // The video keeps its writer unless another one is chosen.
+    await expect(writer).toHaveValue("keep");
+    await expect(writer.locator("option").first()).toHaveText("Same as before (Studio's choice (Claude))");
+    await gate(page).getByRole("textbox", { name: "What should be different?" }).fill("Write it again.");
+    await writer.selectOption({ label: "ChatGPT (your plan's own model)" });
+    await gate(page).getByRole("button", { name: "Send back" }).click();
+
+    await expect(gate(page)).toBeHidden();
+    expect(sent(fake, "POST", "/reject")[0]?.body).toEqual({
+      comment: "Write it again.",
+      writer: "chatgpt",
+    });
+  });
+
   test("there is no gate bar while nothing waits for the owner", async ({ page }) => {
     await page.setViewportSize(SIZES.desktop);
     await openWorkspace(page, fakeEpisode({ state: "voice", awaiting_approval: false, gate: null }));

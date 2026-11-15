@@ -2,10 +2,12 @@
 
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 
+import { WriterField } from "@/components/episodes/writer-field";
 import { type EpisodeDetail, postEpisodeApprove, postEpisodeReject } from "@/api/client";
 import { failureOf, unwrap } from "@/lib/api-error";
 import { primaryAction, quietAction } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import { writerLabel, writerText } from "@/lib/writer";
 
 const WAITING: Record<string, string> = {
   review: "The video waits for your review. The screen for that is not built yet.",
@@ -22,6 +24,9 @@ export function GateBar({ episode, reload }: { episode: EpisodeDetail; reload: (
   const [asking, setAsking] = useState(false);
   const [comment, setComment] = useState("");
   const [missing, setMissing] = useState(false);
+  const [writer, setWriter] = useState("keep");
+  const [model, setModel] = useState("");
+  const [badModel, setBadModel] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -61,8 +66,16 @@ export function GateBar({ episode, reload }: { episode: EpisodeDetail; reload: (
       field.current?.focus();
       return;
     }
+    // "keep" sends no writer, so the video keeps the one it has.
+    const chosen = writer === "keep" ? null : writerText(writer, model);
+    if (writer !== "keep" && chosen === null) {
+      setBadModel(true);
+      document.getElementById(`${id}-writer-model`)?.focus();
+      return;
+    }
+    const body = { comment: text, ...(chosen === null ? {} : { writer: chosen || "claude" }) };
     void act(async () =>
-      unwrap(await postEpisodeReject({ path, body: { comment: text } }), "The plan could not be sent back. Try again."),
+      unwrap(await postEpisodeReject({ path, body }), "The plan could not be sent back. Try again."),
     );
   }
 
@@ -137,6 +150,21 @@ export function GateBar({ episode, reload }: { episode: EpisodeDetail; reload: (
               "The plan is written again with your comment and comes back here."
             )}
           </p>
+          <WriterField
+            id={`${id}-writer`}
+            choice={writer}
+            typed={model}
+            invalid={badModel}
+            keep={`Same as before (${writerLabel(episode.writer)})`}
+            onChoice={(choice) => {
+              setWriter(choice);
+              setBadModel(false);
+            }}
+            onTyped={(typed) => {
+              setModel(typed);
+              setBadModel(false);
+            }}
+          />
           <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
             <button type="button" onClick={() => setAsking(false)} className={quietAction}>
               Cancel

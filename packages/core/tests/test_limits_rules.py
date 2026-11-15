@@ -205,3 +205,23 @@ def test_fr31_a_limit_whose_reset_time_has_passed_still_waits_for_the_probe() ->
         why_not_now(Provider.CLAUDE_PLAN, ProviderState.LIMITED, passed, now=NOW, overridden=False)
         is not None
     )
+
+
+@pytest.mark.parametrize(
+    ("job_type", "mode", "writer", "provider"),
+    [
+        ("plan.shotlist", "subscription", "", Provider.CLAUDE_PLAN),
+        ("plan.shotlist", "subscription", "claude", Provider.CLAUDE_PLAN),
+        ("plan.shotlist", "subscription", "chatgpt", Provider.CHATGPT_PLAN),
+        # Only the shot list follows the owner's choice. Research needs the web search
+        # of the planner's own tool.
+        ("plan.research", "subscription", "chatgpt", Provider.CLAUDE_PLAN),
+        # The choice is between the two plans. The other modes have one answer.
+        ("plan.shotlist", "demo", "chatgpt", Provider.DEMO),
+        ("plan.shotlist", "api", "chatgpt", Provider.ANTHROPIC_API),
+    ],
+)
+def test_a_plan_written_by_chatgpt_is_counted_against_the_chatgpt_plan(
+    job_type: str, mode: str, writer: str, provider: Provider
+) -> None:
+    assert provider_for_job(job_type, mode, writer_tool=writer) is provider

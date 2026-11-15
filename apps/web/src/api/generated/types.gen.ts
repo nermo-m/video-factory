@@ -266,6 +266,10 @@ export type EpisodeCreate = {
      * Start planning at once.
      */
     start?: boolean;
+    /**
+     * Writer
+     */
+    writer?: string | null;
 };
 
 /**
@@ -338,6 +342,12 @@ export type EpisodeDetail = {
      * Title
      */
     title: string | null;
+    /**
+     * Writer
+     *
+     * Who writes this video's plan in subscription mode: `claude` or `chatgpt`, with a model after a colon when the owner named one (`claude:claude-fable-5-2`). Empty leaves the choice to the studio.
+     */
+    writer: string;
 };
 
 /**
@@ -426,6 +436,12 @@ export type EpisodeOut = {
      * Title
      */
     title: string | null;
+    /**
+     * Writer
+     *
+     * Who writes this video's plan in subscription mode: `claude` or `chatgpt`, with a model after a colon when the owner named one (`claude:claude-fable-5-2`). Empty leaves the choice to the studio.
+     */
+    writer: string;
 };
 
 /**
@@ -761,6 +777,12 @@ export type RejectRequest = {
      */
     comment: string;
     return_to_state?: EpisodeState | null;
+    /**
+     * Writer
+     *
+     * Have the plan written by this tool and model from now on. Left out, the video keeps the writer it has.
+     */
+    writer?: string | null;
 };
 
 /**

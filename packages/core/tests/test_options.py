@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from packages.core.options import NAMES, EpisodeOptions, options_of
+from packages.core.options import (
+    NAMES,
+    EpisodeOptions,
+    Writer,
+    options_of,
+    stored_options,
+    writer_of,
+)
 
 
 def test_nothing_is_forced_by_default() -> None:
@@ -31,3 +38,38 @@ def test_what_is_not_a_switch_is_ignored() -> None:
 
 def test_the_names_of_the_switches() -> None:
     assert NAMES == ("research", "captions", "music")
+
+
+# --- who writes the plan -------------------------------------------------------------------
+
+
+def test_the_studio_chooses_who_writes_the_plan_unless_the_owner_did() -> None:
+    assert writer_of(None) == Writer()
+    assert writer_of({"music": False}) == Writer(tool="", model=None)
+    assert Writer().text == ""
+
+
+def test_the_owner_chooses_the_tool_and_the_model_that_write_the_plan() -> None:
+    chosen = writer_of({"writer": "claude:claude-fable-5-2"})
+
+    assert chosen == Writer(tool="claude", model="claude-fable-5-2")
+    assert chosen.text == "claude:claude-fable-5-2"
+    assert writer_of({"writer": "chatgpt"}) == Writer(tool="chatgpt", model=None)
+
+
+def test_a_writer_that_is_not_one_is_ignored() -> None:
+    for written in ("gemini", "claude:", "claude:--model", "chatgpt:a b", 7, None):
+        assert writer_of({"writer": written}) == Writer()
+
+
+def test_the_writer_is_stored_next_to_the_switches() -> None:
+    stored = stored_options(EpisodeOptions(music=False), "chatgpt:gpt-5.5")
+
+    assert stored == {
+        "research": False,
+        "captions": True,
+        "music": False,
+        "writer": "chatgpt:gpt-5.5",
+    }
+    assert options_of(stored) == EpisodeOptions(music=False)
+    assert stored_options(EpisodeOptions(), "") == EpisodeOptions().to_json()

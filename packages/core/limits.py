@@ -178,9 +178,19 @@ def budget_state(share: float) -> ProviderState:
     return ProviderState.NEAR_BUDGET if share >= WARN_AT else ProviderState.OK
 
 
-def provider_for_job(job_type: str, mode: str) -> Provider | None:
-    """The provider a job of this type calls in this mode, or None when it calls none."""
+# The job that writes a video's plan. In subscription mode the owner may have it written
+# by the ChatGPT plan instead of the Claude plan (`core/options.py`).
+SHOTLIST_JOB = "plan.shotlist"
+
+
+def provider_for_job(job_type: str, mode: str, *, writer_tool: str = "") -> Provider | None:
+    """The provider a job of this type calls in this mode, or None when it calls none.
+
+    `writer_tool` is the tool the owner chose to write this episode's plan, if any.
+    """
     providers = providers_for(mode)
+    if job_type == SHOTLIST_JOB and mode == "subscription" and writer_tool == "chatgpt":
+        return providers.second_opinion
     if job_type.startswith(("plan.", "agent.")):
         return providers.text
     if job_type == "gen.image":
