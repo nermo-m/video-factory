@@ -1699,3 +1699,29 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   sometimes fail on a generated string that fits the documented pattern `\S` by one regex
   engine's rules and not by the server's. They pass on a second run. Not caused by this
   card. It needs a card of its own.
+
+## D-058: The screens of Director mode
+
+- **Date:** 2026-11-15. **Card:** VFS-85 (Director mode, part 1).
+- **Choice:**
+  - **New episode asks for the prompt and nothing else.** The length choice of 45 or 60
+    seconds is gone: the length comes from the prompt. Research, captions and music are
+    under "Options", closed by default, and sent with the prompt.
+  - **A prompt may be 20 000 characters long,** five times the old limit. A full prompt
+    with scenes, lines and characters did not fit into 4 000.
+  - **The Plan tab reads the plan itself.** The style, the characters and the change list
+    are parts of the plan, so the screen shows them from `GET /spec` and saves them with
+    the same `PUT /spec` as every other edit. The plan route was not widened.
+  - **What the studio changed comes first,** in three groups: added, changed, not
+    possible yet. An empty list says in words that the plan is the prompt as written.
+  - **One card per shot, every field editable:** spoken line, on-screen text with its
+    position, seconds, picture, who is in it, camera, motion, and whether it is to be a
+    clip. A line the owner types is the owner's line. An emptied line makes a silent shot
+    of three seconds. An emptied text or length is left out of the plan, not stored empty.
+  - **A plan of shots shows no brief.** The test for it found that an empty Brief box was
+    shown, and that was removed.
+- **Deviation from the plan of this work:** plans of the first design stay editable, and
+  there is no "planned the old way" banner. That rule belongs to removing the old chain's
+  code (VFS-87), which was moved out of VFS-84 (D-057).
+- **Left for VFS-87:** the step list beside the workspace and the progress strip on the
+  Board still name Brief, Research and Script, which a new video passes over at once.

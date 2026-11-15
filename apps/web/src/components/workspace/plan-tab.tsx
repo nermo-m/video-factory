@@ -16,7 +16,18 @@ import { quietAction } from "@/lib/styles";
 import { useIsDesktop } from "@/lib/use-media";
 import { cn } from "@/lib/utils";
 import { type Claim, type Scene, type Spec, changeLabel, changeText, safeLink } from "@/lib/workspace";
+import {
+  assetsOf,
+  changesOf,
+  charactersOf,
+  isOwnersPlan,
+  withLook,
+  withShot,
+} from "@/lib/director";
 
+import { ChangesPanel } from "./changes-panel";
+import { LookPanel } from "./look-panel";
+import { ShotCard } from "./shot-card";
 import { Problems, SceneCard } from "./scene-card";
 
 const sectionTitle = "font-sans text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase";
@@ -404,6 +415,12 @@ export function PlanTab({
       store({ ...body, scenes: scenes.map((old, position) => (position === index ? scene : old)) });
   }
 
+  // A plan of shots is built from the owner's own prompt (Director mode). It shows what
+  // the studio changed, the look and the characters, and one card per shot.
+  const owners = isOwnersPlan(body);
+  const characters = charactersOf(body);
+  const pictures = new Map(assetsOf(body).map((asset) => [asset.id, asset]));
+
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -420,13 +437,36 @@ export function PlanTab({
         </button>
       </div>
 
-      <Brief brief={plan.brief} />
+      {owners && <ChangesPanel changes={changesOf(body)} scenes={scenes} />}
+      {/* A plan of shots is the owner's own prompt. There is no brief to show. */}
+      {!owners && <Brief brief={plan.brief} />}
       <Claims claims={body.claims ?? []} />
       <Duration plan={plan} />
+      {owners && !json && (
+        <LookPanel
+          // A newer version starts the editor again with that version's text.
+          key={spec.version}
+          style={typeof body.style === "string" ? body.style : ""}
+          characters={characters}
+          onSave={(style, edited) => store(withLook(body, style, edited))}
+        />
+      )}
 
       {json ? (
         // A newer version starts the editor again with that version's text.
         <JsonPanel key={spec.version} spec={spec} onSave={store} />
+      ) : owners ? (
+        scenes.map((scene, index) => (
+          <ShotCard
+            key={scene.id}
+            scene={scene}
+            asset={pictures.get(scene.visual?.asset_id ?? "")}
+            index={index}
+            seconds={seconds.get(scene.id)}
+            characters={characters}
+            onSave={(edited, asset) => store(withShot(body, index, edited, asset))}
+          />
+        ))
       ) : (
         scenes.map((scene, index) => (
           <SceneCard

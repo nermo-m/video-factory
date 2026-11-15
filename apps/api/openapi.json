@@ -428,7 +428,8 @@
         "additionalProperties": false,
         "properties": {
           "idea": {
-            "maxLength": 4000,
+            "description": "The owner's whole prompt for the video. It is the plan.",
+            "maxLength": 20000,
             "minLength": 1,
             "pattern": "\\S",
             "title": "Idea",
@@ -449,15 +450,6 @@
             "description": "Start planning at once.",
             "title": "Start",
             "type": "boolean"
-          },
-          "target_duration_s": {
-            "default": 45,
-            "enum": [
-              45,
-              60
-            ],
-            "title": "Target Duration S",
-            "type": "integer"
           }
         },
         "required": [

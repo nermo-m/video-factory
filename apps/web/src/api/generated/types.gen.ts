@@ -255,6 +255,8 @@ export type ContinueRequest = {
 export type EpisodeCreate = {
     /**
      * Idea
+     *
+     * The owner's whole prompt for the video. It is the plan.
      */
     idea: string;
     options?: OptionsIn | null;
@@ -264,10 +266,6 @@ export type EpisodeCreate = {
      * Start planning at once.
      */
     start?: boolean;
-    /**
-     * Target Duration S
-     */
-    target_duration_s?: 45 | 60;
 };
 
 /**

@@ -221,8 +221,15 @@ class OptionsIn(BaseModel):
 class EpisodeCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    idea: Annotated[str, Field(min_length=1, max_length=4000, pattern=r"\S")]
-    target_duration_s: Literal[45, 60] = 45
+    idea: Annotated[
+        str,
+        Field(
+            min_length=1,
+            max_length=20000,
+            pattern=r"\S",
+            description="The owner's whole prompt for the video. It is the plan.",
+        ),
+    ]
     options: OptionsIn | None = None
     start: StrictBool = Field(default=True, description="Start planning at once.")
 
@@ -517,7 +524,6 @@ class DatabaseEpisodeService:
             episode = Episode(
                 channel_id=channel.id,
                 idea=body.idea.strip(),
-                target_duration_s=body.target_duration_s,
                 options=options_of(chosen).to_json(),
             )
             session.add(episode)
@@ -973,7 +979,7 @@ class MemoryEpisodeService:
             gate=None,
             stale_from_state=None,
             stale_scenes={},
-            target_duration_s=body.target_duration_s,
+            target_duration_s=45,
             options=options_of(
                 body.options.model_dump(exclude_none=True) if body.options else {}
             ).to_json(),

@@ -26,7 +26,7 @@ export function Problems({ failure }: { failure: ApiFailure }) {
 
 const fieldLook = "w-full rounded-lg border bg-raised px-3.5 py-2.5 text-base sm:text-sm";
 
-function Field({
+export function Field({
   label,
   value,
   onChange,

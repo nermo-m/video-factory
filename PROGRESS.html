@@ -598,15 +598,15 @@
       "id": "VFS-84",
       "order": 316.5,
       "title": "The pipeline runs the shot list in place of the seven-step chain",
-      "status": "review",
-      "note": "A new video is planned by one job, the shot list, straight from the owner's prompt. Research runs only when the video asks for it, and captions and music are switches of the video. Pictures are made from the style, the characters and the scene. A plan is as long as its lines need. The four skills of the old chain are no longer run and are removed by VFS-87. Board card: https://app.notion.com/418474b94ace8136b85ede22cc04833c"
+      "status": "done",
+      "note": "A new video is planned by one job, the shot list, straight from the owner's prompt. Research runs only when the video asks for it, and captions and music are switches of the video. Pictures are made from the style, the characters and the scene. A plan is as long as its lines need. The four skills of the old chain are no longer run and are removed by VFS-87. Merged in pull request #64. Board card: https://app.notion.com/418474b94ace8136b85ede22cc04833c"
     },
     {
       "id": "VFS-85",
       "order": 316.6,
       "title": "Write your video, the change list and the editable shot list on the screens",
-      "status": "ready",
-      "note": "Director mode, part 1, task 6. Board card: https://app.notion.com/418474b94ace81c8a62af37efff24623"
+      "status": "review",
+      "note": "New episode asks for one thing, the whole prompt, up to 20 000 characters, with research, captions and music as options. The Plan tab of a shot list shows what the studio changed in three groups, the look and the characters written once, and a card per shot whose every field can be edited before anything is generated. Board card: https://app.notion.com/418474b94ace81c8a62af37efff24623"
     },
     {
       "id": "VFS-86",
@@ -632,7 +632,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-85: the screens of Director mode (Write your video with its options, what the studio changed, the characters, the style and an editable card per shot), task 6 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-86, the first live video."
+    "next": "VFS-86: the records of Director mode part 1 (ADR 11, the design document's changelog) and the first live video from one of the owner's own shot lists, compared with the prompt line by line. Then VFS-87 (remove the old chain's skills) and VFS-29 (Wan clips)."
   },
   "checklist": [
     {
@@ -667,7 +667,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1734 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 343 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
+      "value": "1736 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 343 integration (Python), 19 Node, 238 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -862,6 +862,10 @@
     {
       "date": "2026-11-15",
       "text": "Director mode plans a video: one step reads the owner's prompt, keeps every line word for word and lists whatever it added. The seven-step chain is no longer run."
+    },
+    {
+      "date": "2026-11-15",
+      "text": "The screens of Director mode: write the whole video in one box, see what the studio changed, and edit every field of every shot before anything is made."
     }
   ]
 }

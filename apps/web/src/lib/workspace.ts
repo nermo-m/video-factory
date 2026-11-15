@@ -21,8 +21,10 @@ export interface Scene {
   title?: string;
   label?: string;
   sublabel?: string;
-  text?: { content?: string }[];
-  visual?: { asset_id?: string };
+  narration_from?: string;
+  duration_s?: number;
+  text?: { content?: string; position?: string }[];
+  visual?: { asset_id?: string; clip?: boolean; camera?: string; motion?: string };
   stat?: { value?: string; label?: string };
   steps?: { text?: string }[];
   overlays?: Record<string, unknown>[];
@@ -43,6 +45,7 @@ export interface Claim {
 }
 
 export interface Spec {
+  spec_version?: string;
   scenes?: Scene[];
   claims?: Claim[];
   [key: string]: unknown;

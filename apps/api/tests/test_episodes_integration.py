@@ -90,12 +90,12 @@ def planned(client: TestClient) -> str:
 def test_creating_an_episode_starts_its_plan(
     client: TestClient, sessions: sessionmaker[Session]
 ) -> None:
-    response = client.post("/api/v1/episodes", json={"idea": f"  {IDEA} ", "target_duration_s": 60})
+    response = client.post("/api/v1/episodes", json={"idea": f"  {IDEA} "})
 
     body = response.json()
     assert response.status_code == 201
     # One job plans a video: the shot list. The steps before it have no job any more.
-    assert (body["idea"], body["state"], body["target_duration_s"]) == (IDEA, "direction", 60)
+    assert (body["idea"], body["state"]) == (IDEA, "direction")
     assert (body["awaiting_approval"], body["gate"], body["spec_version"]) == (False, None, None)
     assert [(job["type"], job["status"]) for job in body["jobs"]] == [("plan.shotlist", "queued")]
     assert body["options"] == {"research": False, "captions": True, "music": True}
