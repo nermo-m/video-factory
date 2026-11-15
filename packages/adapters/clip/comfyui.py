@@ -32,10 +32,11 @@ MODEL = "wan2.2_i2v_14B_fp8 + lightx2v 4 steps"
 TIMEOUT_S = 1800.0
 POLL_S = 2.0
 CONNECT_S = 10.0
-# ComfyUI does not answer while it reads a model file into memory: more than ten seconds
-# for one of the 14 GB files, seen on the owner's PC. Silence shorter than this, while a
-# clip is being made, is waited out.
-PATIENCE_S = 180.0
+# ComfyUI does not answer while the two 14 GB models take turns in the card's memory: more
+# than three minutes of silence was seen on the owner's PC, and the clip was still being
+# made. So silence while a clip is being made is waited out for as long as half of what a
+# clip may take. Giving up early leaves ComfyUI working on a clip nobody fetches.
+PATIENCE_S = 900.0
 SETUP = "docs/gpu-setup.md"
 
 NEGATIVE = (

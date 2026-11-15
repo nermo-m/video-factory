@@ -17,7 +17,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from packages.adapters.clip import ClipRequest, ComfyClips, wan_frames
+from packages.adapters.clip import ClipRequest, ComfyClips, comfyui, wan_frames
 from packages.core.queue import NeedsOwnerError, RetryableError
 
 PICTURE = b"\x89PNG\r\n\x1a\n" + b"start picture"
@@ -281,3 +281,9 @@ def test_comfyui_that_stays_silent_is_the_owners_to_look_at() -> None:
     comfy.silent_polls, comfy.silent_s = 10_000, 0.3
     with serving(comfy) as url, pytest.raises(NeedsOwnerError, match="stopped answering"):
         clips(url, connect_s=0.1, patience_s=0.5).create(request())
+
+
+def test_the_patience_with_a_silent_comfyui_is_as_long_as_a_clip_may_take() -> None:
+    # Seen on the owner's PC on 2026-11-15: no answer for more than three minutes while
+    # the two models took turns in the card's memory, and the clip was still being made.
+    assert comfyui.PATIENCE_S >= comfyui.TIMEOUT_S / 2 >= 900
