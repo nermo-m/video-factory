@@ -53,15 +53,17 @@ def test_an_episode_is_created_from_an_idea_and_can_be_read_back(client: TestCli
         {"idea": ""},
         {"idea": "   "},
         {"idea": 5},
-        {"idea": "x" * 4001},
-        {"idea": "Fine.", "target_duration_s": 30},
-        {"idea": "Fine.", "target_duration_s": "45"},
+        {"idea": "x" * 20001},
+        # The length comes from the prompt. It is no longer asked for.
+        {"idea": "Fine.", "target_duration_s": 45},
+        {"idea": "Fine.", "options": {"look": "scrolls"}},
+        {"idea": "Fine.", "options": {"music": "off"}},
         {"idea": "Fine.", "start": "yes please"},
         {"idea": "Fine.", "start": 0},
         {"idea": "Fine.", "surprise": 1},
     ],
 )
-def test_an_episode_needs_an_idea_and_a_length_of_45_or_60(
+def test_an_episode_needs_a_prompt_and_takes_nothing_it_does_not_know(
     client: TestClient, body: dict[str, Any]
 ) -> None:
     assert client.post("/api/v1/episodes", json=body).status_code == 422
@@ -108,3 +110,14 @@ def test_a_diff_needs_both_versions(client: TestClient) -> None:
 
 def test_an_id_that_is_not_an_id_is_refused(client: TestClient) -> None:
     assert client.get("/api/v1/episodes/not-an-id").status_code == 422
+
+
+def test_a_long_prompt_is_taken_whole(client: TestClient) -> None:
+    """A full prompt with scenes, lines and characters is far longer than one sentence."""
+    prompt = "Scene. A keeper climbs a hill at dawn. VO: He climbed it every morning. " * 250
+
+    created = client.post("/api/v1/episodes", json={"idea": prompt})
+
+    assert len(prompt) > 15000
+    assert created.status_code == 201
+    assert created.json()["idea"] == prompt.strip()

@@ -13,9 +13,16 @@ import { cn } from "@/lib/utils";
 import { useEpisodes } from "./episodes-provider";
 
 const BOARD = "/";
-const LENGTHS = [45, 60] as const;
-/** The longest idea the API takes. */
-const IDEA_MAX = 4000;
+/** The longest prompt the API takes. */
+const IDEA_MAX = 20000;
+
+/** What can be switched on or off for one video, with the words the form uses. */
+const SWITCHES = [
+  ["research", "Check facts with sources", "Looks facts up on the web before the plan is written."],
+  ["captions", "Captions", "Shows the spoken words on screen."],
+  ["music", "Music", "Plays a soft music bed under the video."],
+] as const;
+type Switch = (typeof SWITCHES)[number][0];
 
 function CloseIcon() {
   return (
@@ -34,8 +41,9 @@ function CloseIcon() {
 }
 
 /**
- * New episode (design doc sections 11.2 and 11.5): one text area for the idea, 45 or 60
- * seconds, and Start. A full-screen sheet on a phone, a centred 560 px dialog from tablet
+ * New episode (Director mode): one large text area for the whole prompt, the options
+ * that are a choice of this video, and Start. Nothing is forced: the studio follows what
+ * is written. A full-screen sheet on a phone, a centred 560 px dialog from tablet
  * up. It is open whenever the address is /episodes/new, so the New episode buttons are
  * plain links, the Back button closes it, and closing it leads to the Board.
  *
@@ -46,7 +54,11 @@ export function NewEpisodeDialog() {
   const router = useRouter();
   const { refresh } = useEpisodes();
   const [idea, setIdea] = useState("");
-  const [length, setLength] = useState<(typeof LENGTHS)[number]>(45);
+  const [options, setOptions] = useState<Record<Switch, boolean>>({
+    research: false,
+    captions: true,
+    music: true,
+  });
   const [missing, setMissing] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -65,7 +77,7 @@ export function NewEpisodeDialog() {
     let created: string;
     try {
       const result = await postEpisode({
-        body: { idea: text, target_duration_s: length, start: true },
+        body: { idea: text, options, start: true },
       });
       if (!result.data) {
         setFailure(
@@ -124,12 +136,12 @@ export function NewEpisodeDialog() {
 
             <div className="flex flex-col gap-2">
               <label htmlFor="new-episode-idea" className="font-semibold">
-                Idea
+                Write your video
               </label>
               <textarea
                 id="new-episode-idea"
                 ref={field}
-                rows={5}
+                rows={9}
                 maxLength={IDEA_MAX}
                 value={idea}
                 onChange={(event) => {
@@ -138,42 +150,46 @@ export function NewEpisodeDialog() {
                 }}
                 aria-invalid={missing || undefined}
                 aria-describedby="new-episode-idea-hint"
-                placeholder="A lighthouse keeper who climbs the stairs every night, one small step at a time."
+                placeholder="Scene 1. Dawn. A keeper climbs a steep green hill toward a lighthouse. VO: The keeper climbed the same hill every morning."
                 className={cn(
-                  "min-h-32 resize-y rounded-lg border bg-raised p-3 text-base placeholder:text-muted-foreground/70 sm:text-sm",
+                  "min-h-52 resize-y rounded-lg border bg-raised p-3 text-base placeholder:text-muted-foreground/70 sm:text-sm",
                   missing && "border-danger",
                 )}
               />
               <p id="new-episode-idea-hint" className="text-xs text-muted-foreground">
                 {missing ? (
-                  <span className="font-semibold text-danger">Write the idea first.</span>
+                  <span className="font-semibold text-danger">Write your video first.</span>
                 ) : (
-                  "One or two sentences are enough."
+                  "Write it the way you want it: story, characters, look, scenes, lines, music, length. The studio follows what you write and lists anything it had to add."
                 )}
               </p>
             </div>
 
-            <fieldset className="flex flex-col gap-2">
-              <legend className="mb-2 font-semibold">Length</legend>
-              <div className="grid grid-cols-2 gap-2">
-                {LENGTHS.map((seconds) => (
-                  <label
-                    key={seconds}
-                    className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border bg-raised px-3.5 has-checked:border-info"
-                  >
+            <details className="rounded-lg border">
+              <summary className="flex min-h-11 cursor-pointer items-center px-3.5 font-semibold">
+                Options
+              </summary>
+              <fieldset className="flex flex-col gap-1 px-3.5 pb-3">
+                <legend className="sr-only">Options for this video</legend>
+                {SWITCHES.map(([name, label, hint]) => (
+                  <label key={name} className="flex min-h-11 cursor-pointer items-center gap-3 py-1.5">
                     <input
-                      type="radio"
-                      name="length"
-                      value={seconds}
-                      checked={length === seconds}
-                      onChange={() => setLength(seconds)}
-                      className="size-4 accent-info"
+                      type="checkbox"
+                      checked={options[name]}
+                      onChange={(event) => setOptions({ ...options, [name]: event.target.checked })}
+                      aria-describedby={`new-episode-${name}-hint`}
+                      className="size-4 shrink-0 accent-info"
                     />
-                    {seconds} seconds
+                    <span className="flex flex-col">
+                      {label}
+                      <span id={`new-episode-${name}-hint`} className="text-xs text-muted-foreground">
+                        {hint}
+                      </span>
+                    </span>
                   </label>
                 ))}
-              </div>
-            </fieldset>
+              </fieldset>
+            </details>
 
             {failure && (
               <p role="alert" className="rounded-lg border border-danger/50 bg-chip-failed px-3.5 py-3">

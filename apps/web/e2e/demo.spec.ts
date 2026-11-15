@@ -25,7 +25,7 @@ test.describe("FR-16 from an idea to a rendered video, through the real API and 
 
     await page.getByTestId("side-nav").getByRole("link", { name: "New episode" }).click();
     const dialog = page.getByRole("dialog", { name: "New episode" });
-    await dialog.getByRole("textbox", { name: "Idea" }).fill("A keeper who climbs the hill every morning");
+    await dialog.getByRole("textbox", { name: "Write your video" }).fill("A keeper who climbs the hill every morning");
     await dialog.getByRole("button", { name: "Start" }).click();
 
     await expect(page).toHaveURL(/\/episodes\/[0-9a-f-]{36}$/);

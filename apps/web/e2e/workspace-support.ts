@@ -83,7 +83,8 @@ function planOf(spec: { scenes: Scene[] } | null, fits: boolean | null): Json {
   });
   const total = scenes.reduce((sum, scene) => sum + scene.estimated_s, 0);
   return {
-    brief: spec
+    // A plan of shots is the owner's own prompt: Director mode writes no brief.
+    brief: spec && (spec as Json).spec_version !== "2.1"
       ? {
           angle: "A gardener waters one bed every morning, and a year later the street is green.",
           lesson: "One small thing, done daily, is a start.",
@@ -94,7 +95,6 @@ function planOf(spec: { scenes: Scene[] } | null, fits: boolean | null): Json {
     scenes,
     estimated_total_s: spec ? Math.round(total * 10) / 10 : null,
     target_duration_s: 45,
-    options: { research: false, captions: true, music: true },
     shortest_s: 41,
     longest_s: 49.4,
     fits: spec ? (fits ?? true) : null,

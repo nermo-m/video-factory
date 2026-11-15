@@ -654,7 +654,7 @@ test.describe("FR-03 UX-03 from an idea to an approved plan, through the real AP
 
     await page.getByTestId("floating-new-episode").click();
     const dialog = page.getByRole("dialog", { name: "New episode" });
-    await dialog.getByRole("textbox", { name: "Idea" }).fill("A keeper who climbs the hill every night");
+    await dialog.getByRole("textbox", { name: "Write your video" }).fill("A keeper who climbs the hill every night");
     await dialog.getByRole("button", { name: "Start" }).click();
 
     await expect(page).toHaveURL(/\/episodes\/[0-9a-f-]{36}$/);

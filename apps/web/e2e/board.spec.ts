@@ -383,7 +383,7 @@ test.describe("UX-06 the Board has loading, empty and error states", () => {
 
 test.describe("New episode", () => {
   const dialog = (page: Page) => page.getByRole("dialog", { name: "New episode" });
-  const idea = (page: Page) => dialog(page).getByRole("textbox", { name: "Idea" });
+  const idea = (page: Page) => dialog(page).getByRole("textbox", { name: "Write your video" });
   const start = (page: Page) => dialog(page).getByRole("button", { name: "Start" });
 
   /** Collect what the dialog sends, and answer it. */
@@ -414,8 +414,10 @@ test.describe("New episode", () => {
     expect(box?.width).toBe(560);
     expect(Math.round((box?.x ?? 0) + 280)).toBe(720);
     await expect(idea(page)).toBeFocused();
-    await expect(dialog(page).getByRole("radio", { name: "45 seconds" })).toBeChecked();
-    await expect(dialog(page).getByRole("radio", { name: "60 seconds" })).not.toBeChecked();
+    // Nothing is asked for but the prompt. The options are a choice, and start closed.
+    await expect(dialog(page).getByRole("radio")).toHaveCount(0);
+    await expect(dialog(page).getByText("Options", { exact: true })).toBeVisible();
+    await expect(dialog(page).getByRole("checkbox", { name: "Captions" })).toBeHidden();
     await expect(start(page)).toBeVisible();
   });
 
@@ -437,7 +439,7 @@ test.describe("New episode", () => {
     expect(await sidewaysOverflow(page)).toBeLessThanOrEqual(0);
   });
 
-  test("Start sends the idea and the length, then opens the episode", async ({
+  test("Start sends the prompt and the options, then opens the episode", async ({
     page,
   }) => {
     const list = [...SAMPLE_EPISODES];
@@ -451,13 +453,22 @@ test.describe("New episode", () => {
     await open(page, "/episodes/new");
 
     await idea(page).fill("  A clock that only runs when someone is kind  ");
-    await dialog(page).getByRole("radio", { name: "60 seconds" }).check();
+    await dialog(page).getByText("Options", { exact: true }).click();
+    await expect(dialog(page).getByRole("checkbox", { name: "Check facts with sources" })).not.toBeChecked();
+    await expect(dialog(page).getByRole("checkbox", { name: "Captions" })).toBeChecked();
+    await expect(dialog(page).getByRole("checkbox", { name: "Music" })).toBeChecked();
+    await dialog(page).getByRole("checkbox", { name: "Check facts with sources" }).check();
+    await dialog(page).getByRole("checkbox", { name: "Music" }).uncheck();
     await start(page).click();
 
     await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000050$/);
     await expect(dialog(page)).toBeHidden();
     expect(sent).toEqual([
-      { idea: "A clock that only runs when someone is kind", target_duration_s: 60, start: true },
+      {
+        idea: "A clock that only runs when someone is kind",
+        options: { research: true, captions: true, music: false },
+        start: true,
+      },
     ]);
 
     await page.goto("/");
@@ -477,21 +488,22 @@ test.describe("New episode", () => {
     await idea(page).fill("   ");
     await start(page).click();
 
-    await expect(dialog(page).getByText("Write the idea first.")).toBeVisible();
+    await expect(dialog(page).getByText("Write your video first.")).toBeVisible();
     await expect(idea(page)).toHaveAttribute("aria-invalid", "true");
     await expect(idea(page)).toBeFocused();
     expect(sent).toEqual([]);
 
     await idea(page).fill("Now there is one");
-    await expect(dialog(page).getByText("Write the idea first.")).toBeHidden();
+    await expect(dialog(page).getByText("Write your video first.")).toBeHidden();
   });
 
-  test("an idea longer than the API takes cannot be typed past the limit", async ({ page }) => {
+  test("a prompt longer than the API takes cannot be typed past the limit", async ({ page }) => {
     await mockEpisodes(page, () => []);
     await page.setViewportSize(SIZES.desktop);
     await open(page, "/episodes/new");
 
-    await expect(idea(page)).toHaveAttribute("maxlength", "4000");
+    // A full prompt with scenes, lines and characters needs room: 20 000 characters.
+    await expect(idea(page)).toHaveAttribute("maxlength", "20000");
   });
 
   test("when the API refuses, the reason is shown and the idea is kept", async ({ page }) => {
@@ -602,9 +614,16 @@ test.describe("New episode", () => {
     await expect(idea(page)).toBeFocused();
     await page.keyboard.type("Typed with the keyboard");
     await page.keyboard.press("Tab");
-    await expect(dialog(page).getByRole("radio", { name: "45 seconds" })).toBeFocused();
-    await page.keyboard.press("ArrowRight");
-    await expect(dialog(page).getByRole("radio", { name: "60 seconds" })).toBeChecked();
+    await expect(dialog(page).getByText("Options", { exact: true })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Tab");
+    await expect(dialog(page).getByRole("checkbox", { name: "Check facts with sources" })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(dialog(page).getByRole("checkbox", { name: "Captions" })).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(dialog(page).getByRole("checkbox", { name: "Captions" })).not.toBeChecked();
+    await page.keyboard.press("Tab");
+    await expect(dialog(page).getByRole("checkbox", { name: "Music" })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(dialog(page).getByRole("link", { name: "Cancel" })).toBeFocused();
     await page.keyboard.press("Tab");
@@ -615,7 +634,11 @@ test.describe("New episode", () => {
 
     await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000053$/);
     expect(sent).toEqual([
-      { idea: "Typed with the keyboard", target_duration_s: 60, start: true },
+      {
+        idea: "Typed with the keyboard",
+        options: { research: false, captions: false, music: true },
+        start: true,
+      },
     ]);
   });
 
@@ -628,8 +651,12 @@ test.describe("New episode", () => {
       await open(page, "/episodes/new");
       await expect(dialog(page)).toBeVisible();
 
-      const targets = dialog(page).locator("a:visible, button:visible, label:has(input[type=radio])");
-      expect(await targets.count()).toBe(5);
+      await dialog(page).getByText("Options", { exact: true }).click();
+      const targets = dialog(page).locator(
+        "a:visible, button:visible, summary:visible, label:has(input[type=checkbox])",
+      );
+      // Close, Options, the three switches, Cancel and Start.
+      expect(await targets.count()).toBe(7);
       for (const target of await targets.all()) {
         const box = await target.boundingBox();
         const name = (await target.innerText()).trim() || (await target.getAttribute("aria-label"));
@@ -650,7 +677,7 @@ test.describe("UX-03 an episode from idea to the plan gate, through the real API
 
     await page.getByTestId("floating-new-episode").click();
     const dialog = page.getByRole("dialog", { name: "New episode" });
-    await dialog.getByRole("textbox", { name: "Idea" }).fill("A keeper who climbs the hill every night");
+    await dialog.getByRole("textbox", { name: "Write your video" }).fill("A keeper who climbs the hill every night");
     const created = page.waitForResponse(
       (response) =>
         response.url().endsWith("/api/v1/episodes") && response.request().method() === "POST",
