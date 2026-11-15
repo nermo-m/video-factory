@@ -70,7 +70,8 @@ def _shot(scene: Mapping[str, Any], speed: float, changes: list[dict[str, Any]])
                     "scene": scene["id"],
                     "kind": "changed",
                     "what": "The scene lasts as long as its line.",
-                    "why": f"The line takes about {round(needed)} seconds to speak and the "
+                    # In tenths: rounded to whole seconds the two numbers can look the same.
+                    "why": f"The line takes about {needed:.1f} seconds to speak and the "
                     f"scene was given {given:g}.",
                 }
             )
