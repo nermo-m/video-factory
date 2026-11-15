@@ -186,7 +186,14 @@ def join_video(
         folder=folder,
         scenes_folder=scenes_folder,
     )
-    problems = format_problems(probe_video(rendered.video), resolved["format"], rendered.duration_s)
+    problems = format_problems(
+        probe_video(rendered.video),
+        resolved["format"],
+        rendered.duration_s,
+        # A plan of shots is as long as its lines need. Only a plan of the first design
+        # was written to a target length.
+        held_to_target=resolved["spec_version"] == "2.0",
+    )
     return Joined(
         video=rendered.video,
         contact_sheet=rendered.contact_sheet,

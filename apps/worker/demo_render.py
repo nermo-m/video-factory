@@ -140,7 +140,12 @@ def render_demo(
     render_s = time.perf_counter() - started
 
     spec = for_preview(prepared.resolved) if preview else prepared.resolved
-    problems = format_problems(probe_video(rendered.video), spec["format"], rendered.duration_s)
+    problems = format_problems(
+        probe_video(rendered.video),
+        spec["format"],
+        rendered.duration_s,
+        held_to_target=spec["spec_version"] == "2.0",
+    )
     return DemoResult(
         video=rendered.video,
         contact_sheet=rendered.contact_sheet,

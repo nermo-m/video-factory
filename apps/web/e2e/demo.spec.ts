@@ -1,6 +1,7 @@
 // FR-16: the end to end demo. In demo mode, with no keys, no GPU and no accounts, an idea
-// typed into the interface becomes a rendered video: the plan is written, one line is
-// edited, the plan and the pictures are approved, and the worker speaks, encodes and joins.
+// typed into the interface becomes a rendered video: the shot list is written, one line of
+// on-screen text is edited, the plan and the pictures are approved, and the worker makes the
+// pictures, speaks, encodes and joins.
 // Everything here goes through the real API and the real worker.
 //
 // The video it makes is saved to e2e/.demo, where CI picks it up as the demo artifact.
@@ -17,7 +18,7 @@ test.describe("FR-16 from an idea to a rendered video, through the real API and 
   test("idea, plan, an edited line, Approve plan, Approve pictures, the render, the video", async ({
     page,
   }, testInfo) => {
-    // The render encodes seven full-size scenes. On a small CI machine that takes minutes.
+    // The render encodes five full-size scenes. On a small CI machine that takes minutes.
     test.setTimeout(25 * MINUTE);
     await page.setViewportSize(SIZES.desktop);
     await open(page);
@@ -34,22 +35,22 @@ test.describe("FR-16 from an idea to a rendered video, through the real API and 
     await expect(status).toHaveText("Plan needs you", { timeout: 3 * MINUTE });
 
     // Edit a line that is shown, not spoken: without the voice model, the bundled voice
-    // only knows the words of the sample narration.
-    const second = page
+    // only knows the words of the sample narration. The last shot is silent and shows text.
+    const last = page
       .getByRole("article")
-      .filter({ has: page.getByRole("heading", { name: "Scene 2," }) });
-    await second.getByRole("button", { name: "Edit scene 2" }).click();
-    await second.getByRole("textbox", { name: "Title" }).fill("THE SAME HILL");
-    await second.getByRole("button", { name: "Save" }).click();
+      .filter({ has: page.getByRole("heading", { name: "Scene 5," }) });
+    await last.getByRole("button", { name: "Edit scene 5" }).click();
+    await last.getByRole("textbox", { name: "On-screen line 1" }).fill("Small steps count");
+    await last.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Version 2")).toBeVisible();
-    await expect(second).toContainText("THE SAME HILL");
+    await expect(last).toContainText("Small steps count");
 
     await gate.getByRole("button", { name: "Approve plan" }).click();
     await expect(status).toHaveText("Pictures need you", { timeout: 2 * MINUTE });
     await gate.getByRole("button", { name: "Approve pictures" }).click();
     await expect(gate).toBeHidden();
 
-    // Voice, seven scene files and the join run by themselves.
+    // Voice, five scene files and the join run by themselves.
     await expect(status).toHaveText("Video rendered", { timeout: 18 * MINUTE });
     await expect(page.getByTestId("step-failed")).toBeHidden();
 
@@ -83,13 +84,20 @@ test.describe("FR-16 from an idea to a rendered video, through the real API and 
     const renders = await (await page.request.get(`/api/v1/episodes/${episodeId}/renders`)).json();
     expect(renders.total).toBe(1);
     expect(renders.renders[0].kind).toBe("draft");
-    expect(renders.renders[0].duration_s).toBeGreaterThan(40);
-    expect(renders.renders[0].duration_s).toBeLessThan(48);
+    // Four spoken shots and three silent seconds. The video is as long as its lines need.
+    expect(renders.renders[0].duration_s).toBeGreaterThan(28);
+    expect(renders.renders[0].duration_s).toBeLessThan(42);
     const detail = await (await page.request.get(`/api/v1/episodes/${episodeId}`)).json();
     expect(detail.resting).toBe(true);
     expect(detail.jobs.filter((job: { status: string }) => job.status !== "succeeded")).toEqual([]);
     const spec = await (await page.request.get(`/api/v1/episodes/${episodeId}/spec`)).json();
-    expect(spec.spec.scenes[1].title).toBe("THE SAME HILL");
+    expect(spec.spec.spec_version).toBe("2.1");
+    expect(spec.spec.theme).toBe("plain");
+    expect(spec.spec.scenes[4].text[0].content).toBe("Small steps count");
+    // One picture was made for each shot, from the bundled samples.
+    const pictures = await (await page.request.get(`/api/v1/episodes/${episodeId}/assets`)).json();
+    expect(pictures.assets).toHaveLength(5);
+    expect(pictures.assets.every((picture: { resolved: boolean }) => picture.resolved)).toBe(true);
 
     const folder = path.join(testInfo.project.testDir, ".demo");
     mkdirSync(folder, { recursive: true });
