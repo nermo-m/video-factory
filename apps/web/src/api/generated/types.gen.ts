@@ -257,6 +257,7 @@ export type EpisodeCreate = {
      * Idea
      */
     idea: string;
+    options?: OptionsIn | null;
     /**
      * Start
      *
@@ -302,6 +303,14 @@ export type EpisodeDetail = {
      */
     jobs: Array<JobOut>;
     /**
+     * Options
+     *
+     * What the owner switched on or off for this video: research, captions, music.
+     */
+    options: {
+        [key: string]: boolean;
+    };
+    /**
      * Resting
      *
      * True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.
@@ -323,6 +332,8 @@ export type EpisodeDetail = {
     state: EpisodeState;
     /**
      * Target Duration S
+     *
+     * How long the video is planned to be. A plan of shots is as long as its scenes need.
      */
     target_duration_s: number;
     /**
@@ -380,6 +391,14 @@ export type EpisodeOut = {
      */
     idea: string;
     /**
+     * Options
+     *
+     * What the owner switched on or off for this video: research, captions, music.
+     */
+    options: {
+        [key: string]: boolean;
+    };
+    /**
      * Resting
      *
      * True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.
@@ -401,6 +420,8 @@ export type EpisodeOut = {
     state: EpisodeState;
     /**
      * Target Duration S
+     *
+     * How long the video is planned to be. A plan of shots is as long as its scenes need.
      */
     target_duration_s: number;
     /**
@@ -569,6 +590,33 @@ export type MatchRequest = {
      * The names of the files the owner chose.
      */
     filenames: Array<string>;
+};
+
+/**
+ * OptionsIn
+ *
+ * What the owner switches on or off for one video. A switch that is left out has
+ * its default: no research, captions on, music on.
+ */
+export type OptionsIn = {
+    /**
+     * Captions
+     *
+     * Show the spoken words as captions.
+     */
+    captions?: boolean | null;
+    /**
+     * Music
+     *
+     * Play the studio's music bed under the video.
+     */
+    music?: boolean | null;
+    /**
+     * Research
+     *
+     * Look facts up, with sources, before the plan is written.
+     */
+    research?: boolean | null;
 };
 
 /**

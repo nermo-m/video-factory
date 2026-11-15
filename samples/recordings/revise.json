@@ -2,10 +2,10 @@
   "skill": "revise",
   "skill_version": "1.0",
   "output": {
-    "summary": "The hook now ends with a hard cut instead of smoke.",
+    "summary": "The first scene now ends with a hard cut.",
     "patch": [
       {
-        "op": "replace",
+        "op": "add",
         "path": "/scenes/0/transition_out",
         "value": "cut"
       }

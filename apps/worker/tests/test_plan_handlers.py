@@ -105,7 +105,7 @@ def test_fr16_the_three_planning_jobs_run_in_demo_mode_and_build_on_each_other(
     asked_brief, asked_research, asked_script = llm.requests
     assert "A keeper who climbs a hill." in asked_brief.prompt
     assert "The Baker" in asked_brief.prompt, "past episodes are named so they are not repeated"
-    assert "Small steps still count, even when nobody sees them." in asked_research.prompt
+    assert "A keeper who climbs a hill." in asked_research.prompt, "research reads the prompt"
     assert '"target_duration_s": 45' in asked_script.prompt
     assert "made-up keeper" in asked_script.prompt, "the script sees what research found"
 
@@ -129,7 +129,7 @@ def test_a_skill_that_needs_an_earlier_result_says_which_one_is_missing(
     sessions: sessionmaker[Session], episode_id: uuid.UUID
 ) -> None:
     with pytest.raises(JobError, match="result of 'plan") as raised:
-        run_job(sessions, Spy(), "plan.research", episode_id)
+        run_job(sessions, Spy(), "plan.script", episode_id)
 
     assert raised.value.error_class is ErrorClass.BUG
 

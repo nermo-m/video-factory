@@ -448,15 +448,15 @@
       "id": "VFS-83",
       "order": 316.4,
       "title": "The shot list skill and the code that builds the plan from it",
-      "status": "review",
-      "note": "One skill, shotlist, reads the owner's prompt and writes the shot list: the scenes, a full picture prompt and a motion prompt for each, the characters described once, and the list of everything it added, changed or could not do. Code checks that the owner's lines are spoken word for word and that nothing the owner marked was dropped, then builds the plan. Lines that need more than 180 seconds stop with a message, they are never cut. Board card: https://app.notion.com/418474b94ace81149c39da7de88788dc"
+      "status": "done",
+      "note": "One skill, shotlist, reads the owner's prompt and writes the shot list: the scenes, a full picture prompt and a motion prompt for each, the characters described once, and the list of everything it added, changed or could not do. Code checks that the owner's lines are spoken word for word and that nothing the owner marked was dropped, then builds the plan. Lines that need more than 180 seconds stop with a message, they are never cut. Merged in pull request #63. Board card: https://app.notion.com/418474b94ace81149c39da7de88788dc"
     },
     {
       "id": "VFS-84",
       "order": 316.5,
       "title": "The pipeline runs the shot list in place of the seven-step chain",
-      "status": "ready",
-      "note": "Director mode, part 1, task 5. Board card: https://app.notion.com/418474b94ace8136b85ede22cc04833c"
+      "status": "review",
+      "note": "A new video is planned by one job, the shot list, straight from the owner's prompt. Research runs only when the video asks for it, and captions and music are switches of the video. Pictures are made from the style, the characters and the scene. A plan is as long as its lines need. The four skills of the old chain are no longer run and are removed by VFS-87. Board card: https://app.notion.com/418474b94ace8136b85ede22cc04833c"
     },
     {
       "id": "VFS-85",
@@ -473,6 +473,13 @@
       "note": "Director mode, part 1, task 7. Board card: https://app.notion.com/418474b94ace818691e2c023f7070fd9"
     },
     {
+      "id": "VFS-87",
+      "order": 316.8,
+      "title": "Remove the four skills of the old planning chain",
+      "status": "ready",
+      "note": "brief, script, direct and assets are no longer run since VFS-84. Their folders, recordings, rules, handlers and tests are removed in one cleanup, and plans of the first design become read-only as the design says."
+    },
+    {
       "id": "VFS-28",
       "order": 320,
       "title": "Uploads, filename matching and library",
@@ -482,7 +489,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-84: the pipeline runs the shot list in place of the seven-step chain, task 5 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-85, the screens."
+    "next": "VFS-85: the screens of Director mode (Write your video with its options, what the studio changed, the characters, the style and an editable card per shot), task 6 of docs/superpowers/plans/2026-11-14-director-mode-part-1.md. Then VFS-86, the first live video."
   },
   "checklist": [
     {
@@ -517,7 +524,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1707 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 311 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
+      "value": "1734 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 343 integration (Python), 19 Node, 213 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -708,6 +715,10 @@
     {
       "date": "2026-11-15",
       "text": "A plain look: the picture on the whole frame with a slow camera move, in place of the scroll. A spoken line now always wins over a given length."
+    },
+    {
+      "date": "2026-11-15",
+      "text": "Director mode plans a video: one step reads the owner's prompt, keeps every line word for word and lists whatever it added. The seven-step chain is no longer run."
     }
   ]
 }

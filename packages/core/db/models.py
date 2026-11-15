@@ -126,6 +126,11 @@ class Episode(Base):
         )
     )
     total_cost_usd: Mapped[Decimal] = mapped_column(default=ZERO, server_default="0")
+    # What the owner switched on or off for this video: research, captions, music.
+    # Read it through `packages.core.options.options_of`, which fills in the defaults.
+    options: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, server_default=EMPTY_OBJECT
+    )
     # Set when the owner deleted the video. From then on it is hidden everywhere, and its
     # rows and files are removed as soon as no job of it is running (`core/removal.py`).
     deleted_at: Mapped[datetime | None] = mapped_column(index=True)

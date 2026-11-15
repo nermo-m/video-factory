@@ -94,6 +94,7 @@ function planOf(spec: { scenes: Scene[] } | null, fits: boolean | null): Json {
     scenes,
     estimated_total_s: spec ? Math.round(total * 10) / 10 : null,
     target_duration_s: 45,
+    options: { research: false, captions: true, music: true },
     shortest_s: 41,
     longest_s: 49.4,
     fits: spec ? (fits ?? true) : null,

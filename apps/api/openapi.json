@@ -434,6 +434,16 @@
             "title": "Idea",
             "type": "string"
           },
+          "options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OptionsIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "start": {
             "default": true,
             "description": "Start planning at once.",
@@ -496,6 +506,14 @@
             "title": "Jobs",
             "type": "array"
           },
+          "options": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "What the owner switched on or off for this video: research, captions, music.",
+            "title": "Options",
+            "type": "object"
+          },
           "resting": {
             "description": "True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.",
             "title": "Resting",
@@ -537,6 +555,7 @@
             "$ref": "#/components/schemas/EpisodeState"
           },
           "target_duration_s": {
+            "description": "How long the video is planned to be. A plan of shots is as long as its scenes need.",
             "title": "Target Duration S",
             "type": "integer"
           },
@@ -562,6 +581,7 @@
           "stale_from_state",
           "stale_scenes",
           "target_duration_s",
+          "options",
           "spec_version",
           "resting",
           "created_at",
@@ -633,6 +653,14 @@
             "title": "Idea",
             "type": "string"
           },
+          "options": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "What the owner switched on or off for this video: research, captions, music.",
+            "title": "Options",
+            "type": "object"
+          },
           "resting": {
             "description": "True when everything that is built so far is done: the video is rendered, and the states after the render do not exist yet.",
             "title": "Resting",
@@ -674,6 +702,7 @@
             "$ref": "#/components/schemas/EpisodeState"
           },
           "target_duration_s": {
+            "description": "How long the video is planned to be. A plan of shots is as long as its scenes need.",
             "title": "Target Duration S",
             "type": "integer"
           },
@@ -699,6 +728,7 @@
           "stale_from_state",
           "stale_scenes",
           "target_duration_s",
+          "options",
           "spec_version",
           "resting",
           "created_at"
@@ -996,6 +1026,50 @@
           "filenames"
         ],
         "title": "MatchRequest",
+        "type": "object"
+      },
+      "OptionsIn": {
+        "additionalProperties": false,
+        "description": "What the owner switches on or off for one video. A switch that is left out has\nits default: no research, captions on, music on.",
+        "properties": {
+          "captions": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Show the spoken words as captions.",
+            "title": "Captions"
+          },
+          "music": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Play the studio's music bed under the video.",
+            "title": "Music"
+          },
+          "research": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Look facts up, with sources, before the plan is written.",
+            "title": "Research"
+          }
+        },
+        "title": "OptionsIn",
         "type": "object"
       },
       "PlanOut": {

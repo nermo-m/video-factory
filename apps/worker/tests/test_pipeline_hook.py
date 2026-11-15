@@ -6,7 +6,6 @@ never has a finished state and nothing queued after it.
 
 from __future__ import annotations
 
-import json
 import time
 import uuid
 from collections.abc import Callable
@@ -18,9 +17,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from apps.worker.runner import Handler, JobContext
 from apps.worker.tests.test_worker import running_worker
-from packages.core import pipeline, schemas
+from packages.core import pipeline
 from packages.core.db import models
-from packages.core.enums import EpisodeState, JobStatus, SpecAuthor, SpecKind
+from packages.core.enums import EpisodeState, JobStatus
 
 pytestmark = pytest.mark.integration
 
@@ -47,9 +46,7 @@ def done(_context: JobContext) -> dict[str, Any]:
 
 
 def planning_handlers() -> dict[str, Handler]:
-    return dict.fromkeys(
-        ("plan.brief", "plan.research", "plan.script", "plan.direct", "plan.assets"), done
-    )
+    return dict.fromkeys(("plan.research", "plan.shotlist"), done)
 
 
 def wait_until(
@@ -86,51 +83,42 @@ def test_an_episode_runs_from_the_idea_to_the_plan_gate_by_itself(
         episode = wait_until(sessions, episode_id, lambda found: found.awaiting_approval)
 
     assert episode.state is EpisodeState.DIRECTION
-    assert job_types(sessions, episode_id) == dict.fromkeys(
-        ("plan.brief", "plan.research", "plan.script", "plan.direct"), JobStatus.SUCCEEDED
-    )
+    # One job plans a video. Research is not run unless the episode asks for it.
+    assert job_types(sessions, episode_id) == {"plan.shotlist": JobStatus.SUCCEEDED}
 
 
 def test_a_job_keeps_its_result_when_the_pipeline_cannot_move_on(
-    sessions: sessionmaker[Session], episode_id: uuid.UUID
+    sessions: sessionmaker[Session], episode_id: uuid.UUID, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # The plan is approved although no spec was ever stored. After the asset plan the
-    # next state needs the spec and cannot start.
+    # The pipeline refuses to move on after the job, as it does when the next state needs
+    # something that is not there.
+    tell_the_pipeline = pipeline.job_succeeded
+
+    def refuses(_session: Session, _job_id: uuid.UUID, **_options: Any) -> None:
+        raise pipeline.PipelineError("no_spec", "The next state needs the episode's spec.")
+
+    monkeypatch.setattr(pipeline, "job_succeeded", refuses)
     with sessions.begin() as session:
         pipeline.advance(session, episode_id)
     with running_worker(sessions, planning_handlers()):
-        wait_until(sessions, episode_id, lambda found: found.awaiting_approval)
-        with sessions.begin() as session:
-            pipeline.approve(session, episode_id)
         deadline = time.monotonic() + 15
-        while job_types(sessions, episode_id).get("plan.assets") is not JobStatus.SUCCEEDED:
-            assert time.monotonic() < deadline, "the asset plan job did not finish"
+        while job_types(sessions, episode_id).get("plan.shotlist") is not JobStatus.SUCCEEDED:
+            assert time.monotonic() < deadline, "the shot list job did not finish"
             time.sleep(0.02)
 
     with sessions() as session:
         episode = session.get(models.Episode, episode_id)
-        assert episode is not None
-        assert episode.state is EpisodeState.ASSET_PLAN
+        job = session.scalars(select(models.Job).where(models.Job.episode_id == episode_id)).one()
+    assert episode is not None
+    assert (episode.state, episode.awaiting_approval) == (EpisodeState.DIRECTION, False)
+    assert job.output == {"ok": True}
 
-    # Once the spec is there, advancing by hand picks up where the pipeline stopped.
-    path = schemas.SCHEMA_DIR / "fixtures" / "episode_spec" / "valid" / "all_scene_kinds.json"
-    with sessions.begin() as session:
-        version = models.SpecVersion(
-            episode_id=episode_id,
-            version=1,
-            kind=SpecKind.AUTHORED,
-            body=json.loads(path.read_text(encoding="utf-8")),
-            author=SpecAuthor.MODEL,
-        )
-        session.add(version)
-        session.flush()
-        episode = session.get(models.Episode, episode_id)
-        assert episode is not None
-        episode.current_spec_id = version.id
+    # Once the pipeline can move again, advancing by hand picks up where it stopped.
+    monkeypatch.setattr(pipeline, "job_succeeded", tell_the_pipeline)
     with sessions.begin() as session:
         moved = pipeline.advance(session, episode_id)
 
-    assert moved.state is EpisodeState.ASSET_GEN
+    assert (moved.state, moved.awaiting_approval) == (EpisodeState.DIRECTION, True)
 
 
 def test_the_worker_passes_on_whether_the_critic_is_switched_on(

@@ -149,10 +149,11 @@ def _brief(session: Session, episode: Episode, channel: Channel, _job: JobContex
     )
 
 
-def _research(session: Session, episode: Episode, _channel_: Channel, _job: JobContext) -> Prepared:
-    return Prepared(
-        {"brief": document_of(session, episode.id, BRIEF_JOB)}, repair=rules.keep_sourced_claims
-    )
+def _research(
+    _session: Session, episode: Episode, _channel_: Channel, _job: JobContext
+) -> Prepared:
+    # Research reads the owner's own prompt. It no longer waits for a brief.
+    return Prepared({"idea": episode.idea}, repair=rules.keep_sourced_claims)
 
 
 def _script(session: Session, episode: Episode, channel: Channel, _job: JobContext) -> Prepared:
@@ -229,11 +230,14 @@ def _revise(session: Session, episode: Episode, channel: Channel, job: JobContex
     comment = job.job.input.get("comment")
     if not isinstance(comment, str) or not comment.strip():
         raise JobError("A revision needs the owner's comment.", error_class=ErrorClass.BUG)
+    spec = current_spec(session, episode)
     return Prepared(
         {
-            "spec": current_spec(session, episode),
+            "spec": spec,
             "comment": comment,
-            "capabilities": load_theme(channel.theme).capabilities,
+            # What the plan's own look can draw. A plan of shots is drawn by the plain
+            # look, whatever the channel's look is.
+            "capabilities": load_theme(str(spec["theme"])).capabilities,
         },
         check=rules.patch_leaves_a_valid_spec,
     )

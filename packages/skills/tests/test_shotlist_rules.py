@@ -25,7 +25,7 @@ def example(part: str) -> dict[str, Any]:
 
 
 def problems(output: dict[str, Any], inputs: dict[str, Any] | None = None) -> list[str]:
-    return rules.shotlist_follows_the_owner(inputs or example("input"), output, None)  # type: ignore[arg-type]
+    return rules.shotlist_follows_the_owner(inputs or example("input"), output, None)
 
 
 def scene(scene_id: str, narration: str, **fields: Any) -> dict[str, Any]:

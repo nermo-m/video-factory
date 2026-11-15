@@ -24,10 +24,20 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from packages.core import prompts
+
 _TIMING_FIELDS = ("pad_before_s", "pad_after_s", "duration_s", "hold_s")
 # Not part of the picture or the sound. `id` is how scenes are matched.
-_NOT_RENDERED = ("id", "narration", "retention_device", "transition_out", *_TIMING_FIELDS)
-_EVERY_SCENE_DRAWN_AGAIN = ("seed", "theme", "format")
+_NOT_RENDERED = (
+    "id",
+    "narration",
+    "narration_from",
+    "retention_device",
+    "transition_out",
+    *_TIMING_FIELDS,
+)
+# `captions` and `music` are the switches of a plan of shots. A plan without them has both.
+_EVERY_SCENE_DRAWN_AGAIN = ("seed", "theme", "format", "captions", "music")
 
 
 @dataclass(frozen=True)
@@ -60,11 +70,25 @@ def _ordered(ids: Iterable[str], order: Sequence[str]) -> tuple[str, ...]:
     return tuple(scene_id for scene_id in order if scene_id in wanted)
 
 
-def _shown(scene: Mapping[str, Any], assets: Mapping[str, Any]) -> dict[str, Any]:
-    """Everything a scene shows or plays, with the asset entry of its picture."""
+def _shown(
+    scene: Mapping[str, Any], assets: Mapping[str, Any], spec: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Everything a scene shows or plays, with the asset entry of its picture.
+
+    In a plan of shots a picture is made from more than its own entry: the style and the
+    description of each character in it are written once for the whole plan. So the
+    picture counts as changed when the prompt it would be made from has changed, and a
+    character that is only given another id changes nothing.
+    """
     shown = {key: value for key, value in scene.items() if key not in _NOT_RENDERED}
     if "visual" in scene:
-        shown["asset"] = assets.get(scene["visual"]["asset_id"])
+        asset = assets.get(scene["visual"]["asset_id"])
+        if asset is not None and spec.get("spec_version") != "2.0":
+            asset = {
+                **{key: value for key, value in asset.items() if key != "characters"},
+                "made_from": prompts.compose(spec, asset),
+            }
+        shown["asset"] = asset
     return shown
 
 
@@ -78,7 +102,7 @@ def affected_scenes(old: Mapping[str, Any], new: Mapping[str, Any]) -> StaleScen
     if old["voice"] != new["voice"]:
         voice.update(spoken)
         render.update(order)
-    if any(old[field] != new[field] for field in _EVERY_SCENE_DRAWN_AGAIN):
+    if any(old.get(field, True) != new.get(field, True) for field in _EVERY_SCENE_DRAWN_AGAIN):
         render.update(order)
 
     before = {scene["id"]: scene for scene in old["scenes"]}
@@ -100,7 +124,7 @@ def affected_scenes(old: Mapping[str, Any], new: Mapping[str, Any]) -> StaleScen
             render.add(scene_id)
         if moved or any(earlier.get(field) != scene.get(field) for field in _TIMING_FIELDS):
             render.update(order[index:])
-        if _shown(earlier, old_assets) != _shown(scene, new_assets):
+        if _shown(earlier, old_assets, old) != _shown(scene, new_assets, new):
             render.add(scene_id)
         if earlier.get("transition_out") != scene.get("transition_out"):
             render.update(order[index : index + 2])

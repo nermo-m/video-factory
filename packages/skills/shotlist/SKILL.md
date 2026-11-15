@@ -71,6 +71,10 @@ words, and `why`. The owner reads this list to see that nothing was changed quie
 leave nothing out of it and put nothing in it that did not happen. When you added nothing
 and changed nothing, the list is empty.
 
+When the input has a `comment`, the owner has seen an earlier plan of this prompt and
+sent it back. The comment is the owner's too: follow it as you follow the prompt, and
+where the two disagree the comment is the newer word.
+
 When `claims` holds facts with sources, a fact you write into narration of your own must
 be one of them. The owner's own lines are never checked against them.
 

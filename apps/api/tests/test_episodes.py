@@ -40,7 +40,7 @@ def test_an_episode_is_created_from_an_idea_and_can_be_read_back(client: TestCli
     assert (body["idea"], body["target_duration_s"], body["state"]) == (
         "A baker who gets up at four.",
         45,
-        "brief",
+        "direction",
     )
     assert client.get(f"/api/v1/episodes/{body['id']}").json() == body
     assert client.get("/api/v1/episodes").json()["total"] == 1

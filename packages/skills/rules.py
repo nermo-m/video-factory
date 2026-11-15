@@ -19,8 +19,12 @@ from urllib.parse import unquote, urlsplit
 
 from packages.adapters.llm.base import LLMResponse
 from packages.core import json_patch, schemas
+from packages.core.enums import Provider
 from packages.core.lengths import (
+    LONGEST_S,
     PAUSE_PER_SCENE_S,
+    SHORTEST_S,
+    SILENT_SHOT_S,
     SLACK,
     TOLERANCE_S,
     WORDS_PER_SECOND,
@@ -79,8 +83,6 @@ def word_budget(target_duration_s: float, scenes: int, speed: float = 1.0) -> in
 
 # A line this short is found in almost any text, so it does not show whose line it is.
 MIN_WORDS_OF_A_LINE = 3
-# The longest and shortest video a spec may ask for (the episode's own length, section 9).
-SHORTEST_S, LONGEST_S = 15, 180
 _SAME_SIGN = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'", "\u2019": "'"})
 
 
@@ -297,8 +299,6 @@ def patch_leaves_a_valid_spec(
 
 # --- Director mode: the owner's prompt is the plan ------------------------------------------
 
-# A silent shot that was given no length.
-SILENT_SHOT_S = 3.0
 # Labels in front of a line that is meant to be spoken.
 _SPOKEN_LABEL = re.compile(
     r"(?:^|[\s.;,(])(?:VO|V\.O\.?|Voice[\s-]?over|Narration|Narrator)[\s]*:[ \t]*([^\n]+)",
@@ -371,7 +371,7 @@ def _quote(text: str) -> str:
 
 
 def shotlist_follows_the_owner(
-    inputs: Mapping[str, Any], output: dict[str, Any], _response: LLMResponse
+    inputs: Mapping[str, Any], output: dict[str, Any], response: LLMResponse | None
 ) -> list[str]:
     """What a shot list does that the owner's prompt does not allow. Empty means it
     follows the prompt, as far as code can tell.
@@ -381,6 +381,10 @@ def shotlist_follows_the_owner(
     on the change list, and what the owner marked as exact words must be in the plan.
     """
     idea = _bare(str(inputs["idea"]))
+    # Demo mode replays one recording, the sample story, whatever was typed. That plan
+    # cannot be held against the typed idea, and the screens say that it is recorded.
+    # What it points at and what the look can do is still checked.
+    recorded = response is not None and response.provider is Provider.DEMO
     scenes: list[dict[str, Any]] = output["scenes"]
     changed_scenes = {change.get("scene") for change in output["changes"]}
     problems: list[str] = []
@@ -402,7 +406,9 @@ def shotlist_follows_the_owner(
         name = f"scene {scene['id']}"
         narration = str(scene["narration"]).strip()
         whose = scene.get("narration_from")
-        if narration and whose == "owner" and not _stands_in(narration, idea):
+        if recorded:
+            pass
+        elif narration and whose == "owner" and not _stands_in(narration, idea):
             problems.append(
                 f"{name}: the narration is marked as the owner's line, but it does not "
                 "stand in the owner's prompt word for word. Use the owner's words, or mark "
@@ -449,7 +455,7 @@ def shotlist_follows_the_owner(
         for scene in scenes
     ]
     last_scene, last_line = -1, ""
-    for marked in marked_lines(str(inputs["idea"])):
+    for marked in [] if recorded else marked_lines(str(inputs["idea"])):
         wanted = _bare(marked.text)
         spoken_in = next((i for i, text in enumerate(narrations) if wanted in text), None)
         if spoken_in is None:

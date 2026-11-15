@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session
 from packages.core import queue, stages
 from packages.core.db.models import Episode, Job, SpecVersion
 from packages.core.enums import EpisodeState, JobStatus
+from packages.core.options import options_of
 from packages.core.stages import (
     GATES,
     REJECT_RETURNS_TO,
@@ -311,6 +312,17 @@ def _first_with_outputs(
     return None
 
 
+def _runnable(state: EpisodeState) -> EpisodeState:
+    """The state itself, or the first state after it that can have a job when it is one
+    of the planning states that are passed over."""
+    while state in stages.PASSED_OVER:
+        following = next_state(state)
+        if following is None:
+            break
+        state = following
+    return state
+
+
 def _spec(session: Session, episode: Episode) -> dict[str, Any] | None:
     if episode.current_spec_id is None:
         return None
@@ -358,6 +370,7 @@ def _start_stage(
                 spec=_spec(session, episode),
                 critic_enabled=critic_enabled,
                 scope=scope,
+                research=options_of(episode.options).research,
             )
         except ValueError as error:
             raise PipelineError("no_spec", str(error)) from error
@@ -412,11 +425,14 @@ def _run_again(
     comment: str | None,
     critic_enabled: bool,
 ) -> None:
+    # A planning state of the first design has no job any more. Running it again runs
+    # what follows it, so an episode that stopped there is planned by the shot list step.
+    state = _runnable(state)
     if stage_count(state) == 0:
         raise PipelineError(
             "invalid_state", f"The state '{state.value}' has no jobs, so it cannot be run again."
         )
-    if index_of(state) > index_of(episode.state):
+    if index_of(state) > index_of(_runnable(episode.state)):
         raise PipelineError(
             "invalid_state",
             f"The episode is in '{episode.state.value}' and has not reached '{state.value}' yet.",

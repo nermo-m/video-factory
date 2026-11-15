@@ -20,6 +20,7 @@ from apps.api.main import create_app
 from apps.api.providers import MemoryProviderService
 from apps.api.settings import MemorySettingStore
 from apps.worker.handlers.plan import plan_handlers
+from apps.worker.handlers.shotlist import shotlist_handlers
 from apps.worker.tests.test_worker import running_worker
 from packages.adapters.llm import RecordedLLM
 from packages.core import queue
@@ -58,7 +59,11 @@ def client(sessions: sessionmaker[Session], database_url: str) -> TestClient:
 @pytest.fixture
 def worker(sessions: sessionmaker[Session]) -> Iterator[None]:
     """A worker that plans with the demo recordings."""
-    handlers = plan_handlers(sessions, lambda: RecordedLLM(RECORDINGS))
+    recorded = RecordedLLM(RECORDINGS)
+    handlers = {
+        **plan_handlers(sessions, lambda: recorded),
+        **shotlist_handlers(sessions, lambda: recorded),
+    }
     with running_worker(sessions, handlers):
         yield
 
@@ -89,9 +94,11 @@ def test_creating_an_episode_starts_its_plan(
 
     body = response.json()
     assert response.status_code == 201
-    assert (body["idea"], body["state"], body["target_duration_s"]) == (IDEA, "brief", 60)
+    # One job plans a video: the shot list. The steps before it have no job any more.
+    assert (body["idea"], body["state"], body["target_duration_s"]) == (IDEA, "direction", 60)
     assert (body["awaiting_approval"], body["gate"], body["spec_version"]) == (False, None, None)
-    assert [(job["type"], job["status"]) for job in body["jobs"]] == [("plan.brief", "queued")]
+    assert [(job["type"], job["status"]) for job in body["jobs"]] == [("plan.shotlist", "queued")]
+    assert body["options"] == {"research": False, "captions": True, "music": True}
     with sessions() as session:
         channel = session.scalars(select(models.Channel)).one()
     assert (channel.theme, channel.voice_id) == ("night_scrolls", "bm_george")
@@ -103,7 +110,7 @@ def test_an_episode_can_be_created_without_starting_it(client: TestClient) -> No
     assert (body["state"], body["jobs"]) == ("idea", [])
 
     advanced = client.post(f"/api/v1/episodes/{body['id']}/advance").json()
-    assert advanced["state"] == "brief"
+    assert advanced["state"] == "direction"
 
 
 def test_every_episode_shares_the_one_default_channel(
@@ -138,16 +145,13 @@ def test_fr16_in_demo_mode_an_idea_reaches_the_plan_gate_by_itself(client: TestC
     body = episode(client, episode_id)
     assert (body["state"], body["gate"], body["spec_version"]) == ("direction", "plan", 1)
     finished = {job["type"]: job["status"] for job in body["jobs"]}
-    assert finished == {
-        "plan.brief": "succeeded",
-        "plan.research": "succeeded",
-        "plan.script": "succeeded",
-        "plan.direct": "succeeded",
-    }
+    assert finished == {"plan.shotlist": "succeeded"}
     spec = client.get(f"/api/v1/episodes/{episode_id}/spec").json()
-    assert (spec["version"], spec["author"], spec["skill_version"]) == (1, "model", "1.2")
+    assert (spec["version"], spec["author"], spec["skill_version"]) == (1, "model", "1.0")
     assert spec["spec"]["episode_id"] == episode_id
-    assert spec["spec"]["scenes"][0]["id"] == "s01_hook"
+    assert (spec["spec"]["spec_version"], spec["spec"]["theme"]) == ("2.1", "plain")
+    assert spec["spec"]["scenes"][0]["id"] == "hill_dawn"
+    assert body["title"] == "The Keeper's Hill"
 
 
 @pytest.mark.usefixtures("worker")
@@ -172,9 +176,7 @@ def test_fr03_the_owner_edits_the_spec_and_sees_what_changed(client: TestClient)
     assert diff == {
         "from_version": 1,
         "to_version": 2,
-        "changes": [
-            {"op": "replace", "path": "/scenes/0/transition_out", "old": "smoke", "new": "cut"}
-        ],
+        "changes": [{"op": "add", "path": "/scenes/0/transition_out", "old": None, "new": "cut"}],
     }
 
 
@@ -224,9 +226,9 @@ def test_fr03_a_revision_is_proposed_shown_and_then_applied(client: TestClient) 
         False,
     )
     assert (proposal["comment"], proposal["base_version"]) == ("End the hook with a cut.", 1)
-    assert proposal["summary"] == "The hook now ends with a hard cut instead of smoke."
+    assert proposal["summary"] == "The first scene now ends with a hard cut."
     assert proposal["changes"] == [
-        {"op": "replace", "path": "/scenes/0/transition_out", "old": "smoke", "new": "cut"}
+        {"op": "add", "path": "/scenes/0/transition_out", "old": None, "new": "cut"}
     ]
     assert proposal["can_apply"] is True
     assert before["version"] == 1, "looking at a proposal changes nothing"
@@ -267,8 +269,11 @@ def test_the_gate_is_passed_by_approving_and_only_then(client: TestClient) -> No
     again = client.post(f"/api/v1/episodes/{episode_id}/approve")
 
     assert (held.status_code, held.json()["error"]["code"]) == (409, "awaiting_approval")
-    assert (approved.status_code, approved.json()["state"]) == (200, "asset_plan")
+    # The asset plan of the first design has no job any more: the pictures come next.
+    assert (approved.status_code, approved.json()["state"]) == (200, "asset_gen")
     assert approved.json()["awaiting_approval"] is False
+    queued = {job["type"] for job in approved.json()["jobs"] if job["status"] == "queued"}
+    assert queued == {"gen.image"}
     assert (again.status_code, again.json()["error"]["code"]) == (409, "not_awaiting_approval")
 
 
@@ -298,11 +303,12 @@ def test_a_rejection_runs_the_plan_again_with_the_owners_comment(
 def test_a_state_can_be_run_again(client: TestClient) -> None:
     episode_id = planned(client)
 
+    # "script" is a step of the first design. Running it again plans the video again.
     rerun = client.post(f"/api/v1/episodes/{episode_id}/rerun", json={"state": "script"})
 
-    assert (rerun.status_code, rerun.json()["state"]) == (200, "script")
+    assert (rerun.status_code, rerun.json()["state"]) == (200, "direction")
     wait_for(lambda: episode(client, episode_id)["awaiting_approval"])
-    assert episode(client, episode_id)["spec_version"] == 2, "directed again, as a new version"
+    assert episode(client, episode_id)["spec_version"] == 2, "planned again, as a new version"
 
 
 def test_before_the_plan_is_directed_there_is_no_spec(client: TestClient) -> None:
@@ -364,16 +370,19 @@ def test_the_plan_shows_the_brief_and_how_long_each_scene_is_estimated_to_take(
 
     body = answer.json()
     assert answer.status_code == 200
-    assert set(body["brief"]) >= {"angle", "lesson", "audience", "titles"}
+    assert body["brief"] is None, "Director mode writes no brief: the prompt is the plan"
     spec = client.get(f"/api/v1/episodes/{episode_id}/spec").json()["spec"]
     assert [scene["id"] for scene in body["scenes"]] == [scene["id"] for scene in spec["scenes"]]
-    assert all(scene["estimated_s"] > 0 and scene["words"] > 0 for scene in body["scenes"])
+    assert all(scene["estimated_s"] > 0 for scene in body["scenes"])
+    assert [scene["words"] for scene in body["scenes"]] == [12, 20, 16, 19, 0]
     assert body["estimated_total_s"] == pytest.approx(
         sum(scene["estimated_s"] for scene in body["scenes"]), abs=0.5
     )
-    assert body["target_duration_s"] == 45
-    assert body["shortest_s"] < 45 < body["longest_s"]
+    # A plan of shots is as long as its scenes need, anywhere from 15 to 180 seconds.
+    assert body["target_duration_s"] == 35
+    assert (body["shortest_s"], body["longest_s"]) == (15, 180)
     assert body["fits"] is True
+    assert episode(client, episode_id)["target_duration_s"] == 35
 
 
 @pytest.mark.usefixtures("worker")
@@ -390,7 +399,99 @@ def test_the_plan_estimate_follows_an_edit_of_the_narration(client: TestClient) 
     assert after["scenes"][1]["estimated_s"] == pytest.approx(
         before["scenes"][1]["estimated_s"] + 20, abs=0.11
     )
-    assert after["fits"] is False
+    # The video takes the length its lines need. Nothing is cut and nothing is refused.
+    assert after["target_duration_s"] == before["target_duration_s"] + 20
+    assert after["fits"] is True
+    assert episode(client, episode_id)["target_duration_s"] == after["target_duration_s"]
+
+
+@pytest.mark.usefixtures("worker")
+def test_a_plan_whose_lines_need_more_than_180_seconds_does_not_fit(client: TestClient) -> None:
+    episode_id = planned(client)
+    spec = client.get(f"/api/v1/episodes/{episode_id}/spec").json()["spec"]
+    for scene in spec["scenes"][:4]:
+        scene["narration"] = " ".join(["word"] * 110)
+
+    assert client.put(f"/api/v1/episodes/{episode_id}/spec", json=spec).status_code == 200
+
+    after = client.get(f"/api/v1/episodes/{episode_id}/plan").json()
+    assert after["estimated_total_s"] > 180
+    assert (after["target_duration_s"], after["fits"]) == (180, False)
+
+
+@pytest.mark.usefixtures("worker")
+def test_a_scene_added_to_the_plan_gets_its_picture_a_row(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    episode_id = planned(client)
+    spec = client.get(f"/api/v1/episodes/{episode_id}/spec").json()["spec"]
+    spec["scenes"].append(
+        {
+            "id": "one_more",
+            "kind": "shot",
+            "narration": "",
+            "duration_s": 3,
+            "visual": {"asset_id": "a_one_more", "camera": "none"},
+        }
+    )
+    spec["assets"].append(
+        {
+            "id": "a_one_more",
+            "kind": "image",
+            "origin": "generated",
+            "prompt": "The lighthouse from far away, a small light on a dark coast, wide lens.",
+            "characters": [],
+            "contains_third_party_ip": False,
+            "rights_status": "needs_review",
+        }
+    )
+
+    assert client.put(f"/api/v1/episodes/{episode_id}/spec", json=spec).status_code == 200
+
+    listed = client.get(f"/api/v1/episodes/{episode_id}/assets").json()
+    assert "a_one_more" in [picture["id"] for picture in listed["assets"]]
+    with sessions() as session:
+        keys = session.scalars(select(models.Asset.key)).all()
+    assert f"{episode_id}:a_one_more" in keys
+
+
+def test_the_owner_chooses_research_captions_and_music_for_a_video(client: TestClient) -> None:
+    created = client.post(
+        "/api/v1/episodes",
+        json={"idea": IDEA, "options": {"research": True, "music": False}},
+    )
+
+    body = created.json()
+    assert created.status_code == 201
+    assert body["options"] == {"research": True, "captions": True, "music": False}
+    # Research was asked for, so it runs first.
+    assert (body["state"], [job["type"] for job in body["jobs"]]) == ("research", ["plan.research"])
+    assert episode(client, body["id"])["options"] == body["options"]
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"theme": "night_scrolls"}, {"research": "yes"}, {"captions": 1}, ["music"]],
+)
+def test_a_switch_that_does_not_exist_or_is_not_true_or_false_is_refused(
+    client: TestClient, options: Any
+) -> None:
+    refused = client.post("/api/v1/episodes", json={"idea": IDEA, "options": options})
+
+    assert refused.status_code == 422
+    assert client.get("/api/v1/episodes").json()["total"] == 0
+
+
+@pytest.mark.usefixtures("worker")
+def test_the_switches_of_a_video_reach_its_plan(client: TestClient) -> None:
+    created = client.post(
+        "/api/v1/episodes", json={"idea": IDEA, "options": {"captions": False}}
+    ).json()
+    wait_for(lambda: episode(client, created["id"])["awaiting_approval"])
+
+    spec = client.get(f"/api/v1/episodes/{created['id']}/spec").json()["spec"]
+
+    assert (spec["captions"], spec["music"]) == (False, True)
 
 
 def test_before_the_plan_is_written_the_plan_is_empty_and_says_nothing_about_fit(

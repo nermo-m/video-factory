@@ -78,3 +78,19 @@ def test_rn12_a_preview_is_checked_against_the_preview_format() -> None:
 def test_a_file_that_is_not_there_cannot_be_probed(tmp_path: Path) -> None:
     with pytest.raises(ProbeError, match=r"video\.mp4"):
         probe_video(tmp_path / "video.mp4")
+
+
+def test_a_plan_of_shots_is_not_held_to_a_target_length() -> None:
+    """A plan of shots is as long as its lines need. The voice decides, and a video that
+    is shorter or longer than the estimate is still the right video."""
+    long = replace(GOOD, frames=1500, duration_s=50.0)
+
+    assert format_problems(long, FORMAT, 50.0, held_to_target=False) == []
+
+
+def test_a_plan_of_shots_is_still_checked_for_everything_else() -> None:
+    wrong = replace(GOOD, frames=1500, duration_s=50.0, pixel_format="yuv444p")
+
+    assert format_problems(wrong, FORMAT, 50.0, held_to_target=False) == [
+        "The pixel format is yuv444p, not yuv420p."
+    ]

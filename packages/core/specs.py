@@ -142,6 +142,12 @@ def store_spec(
     return stored
 
 
+def is_owners_plan(body: Mapping[str, Any]) -> bool:
+    """True for a plan of shots (schema 2.1), which Director mode builds from the owner's
+    prompt. False for a plan of the first design."""
+    return body.get("spec_version") != "2.0"
+
+
 def _twice(items: Sequence[Mapping[str, Any]], folder: str, what: str) -> list[str]:
     """A problem for every item whose id an earlier item already has."""
     seen: set[str] = set()

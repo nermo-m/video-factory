@@ -17,6 +17,7 @@ function episode(number: number, fields: Partial<EpisodeOut>): EpisodeOut {
     stale_scenes: {},
     resting: false,
     target_duration_s: 45,
+    options: { research: false, captions: true, music: true },
     created_at: "2026-11-12T08:00:00Z",
     ...fields,
   };

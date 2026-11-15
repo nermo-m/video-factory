@@ -14,7 +14,7 @@ import uuid
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from packages.core.lengths import scene_seconds
+from packages.core.lengths import LONGEST_S, SHORTEST_S, SILENT_SHOT_S, scene_seconds
 from packages.skills import rules
 
 SPEC_VERSION = "2.1"
@@ -33,7 +33,7 @@ class TooLongError(Exception):
     def __init__(self, needed_s: int) -> None:
         super().__init__(
             f"Your lines need about {needed_s} seconds and a video can be "
-            f"{rules.LONGEST_S} at most. Shorten the prompt or split it into two videos."
+            f"{LONGEST_S} at most. Shorten the prompt or split it into two videos."
         )
         self.needed_s = needed_s
 
@@ -58,7 +58,7 @@ def _shot(scene: Mapping[str, Any], speed: float, changes: list[dict[str, Any]])
 
     given = scene.get("duration_s")
     if not narration:
-        shot["duration_s"] = given if given is not None else rules.SILENT_SHOT_S
+        shot["duration_s"] = given if given is not None else SILENT_SHOT_S
     elif given is not None:
         needed = scene_seconds(narration, speed)
         if given >= needed:
@@ -98,7 +98,7 @@ def build_spec(
     shots = [_shot(scene, voice_speed, changes) for scene in scenes]
 
     needed = round(rules.needed_seconds(scenes, voice_speed))
-    if needed > rules.LONGEST_S:
+    if needed > LONGEST_S:
         raise TooLongError(needed)
     stated = shotlist.get("target_duration_s")
     if stated is not None and needed - stated > WORTH_SAYING_S:
@@ -117,7 +117,7 @@ def build_spec(
             "width": WIDTH,
             "height": HEIGHT,
             "fps": FPS,
-            "target_duration_s": max(rules.SHORTEST_S, needed),
+            "target_duration_s": max(SHORTEST_S, needed),
         },
         "theme": THEME,
         "voice": {"voice_id": voice_id, "speed": voice_speed},

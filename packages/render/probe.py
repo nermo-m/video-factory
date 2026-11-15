@@ -103,12 +103,17 @@ def probe_video(path: Path) -> VideoFacts:
 
 
 def format_problems(
-    facts: VideoFacts, video_format: Mapping[str, Any], duration_s: float
+    facts: VideoFacts,
+    video_format: Mapping[str, Any],
+    duration_s: float,
+    *,
+    held_to_target: bool = True,
 ) -> list[str]:
     """Everything about a file that is not what RN-01 and the spec's format ask for.
 
     `video_format` is the format of the resolved spec that was rendered (the preview
-    format for a preview) and `duration_s` the length that spec resolved to.
+    format for a preview) and `duration_s` the length that spec resolved to. A plan of
+    shots is as long as its lines need, so it is not `held_to_target`.
     """
     problems: list[str] = []
     wanted_size = (video_format["width"], video_format["height"])
@@ -148,7 +153,7 @@ def format_problems(
             f"The file is {facts.duration_s:.2f} seconds long, not {duration_s:.2f} seconds."
         )
     target = video_format.get("target_duration_s")
-    if target is not None and abs(duration_s - target) > 2.0:
+    if held_to_target and target is not None and abs(duration_s - target) > 2.0:
         problems.append(
             f"The video is {duration_s:.1f} seconds long, more than 2 seconds away from the "
             f"target of {target} seconds."

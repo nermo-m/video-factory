@@ -65,3 +65,37 @@ def test_a_hold_after_the_narration_is_added() -> None:
         pytest.approx(spoken + 2)
     )
     assert lengths.estimate({"narration": "Small steps still count."}) == pytest.approx(spoken)
+
+
+# --- shots (plan schema 2.1): a spoken line always wins over a length ---------------------
+
+
+def test_a_shot_lasts_as_long_as_its_line() -> None:
+    shot = {"kind": "shot", "narration": "one two three four five six"}
+
+    assert lengths.estimate(shot) == lengths.scene_seconds("one two three four five six")
+
+
+def test_a_shot_given_more_seconds_than_its_line_takes_keeps_them() -> None:
+    assert lengths.estimate({"kind": "shot", "narration": "one two three", "duration_s": 9}) == 9
+
+
+def test_a_shot_given_fewer_seconds_than_its_line_takes_is_as_long_as_the_line() -> None:
+    line = "one two three four five six seven eight nine ten"
+
+    assert lengths.estimate(
+        {"kind": "shot", "narration": line, "duration_s": 1}
+    ) == lengths.scene_seconds(line)
+
+
+def test_a_plan_of_shots_is_as_long_as_its_scenes_need_between_15_and_180_seconds() -> None:
+    short = {"spec_version": "2.1", "scenes": [{"kind": "shot", "narration": "", "duration_s": 4}]}
+    long = {
+        "spec_version": "2.1",
+        "scenes": [{"kind": "shot", "narration": "", "duration_s": 60}] * 4,
+    }
+
+    assert lengths.plan_seconds(short) == 4
+    assert lengths.shown_length(short) == 15
+    assert lengths.plan_seconds(long) == 240
+    assert lengths.shown_length(long) == 180
