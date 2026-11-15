@@ -25,8 +25,9 @@ Prerequisite: Docker with Compose. No keys, no GPU, no accounts and no model dow
 make up   # then open http://127.0.0.1:3000
 ```
 
-Choose New episode, type any idea and press Start. When the plan needs you, read it,
-change a title if you like, and approve it. Approve the pictures, and a few minutes
+Choose New episode, write anything and press Start. Demo mode always plans the same
+sample story. When the plan needs you, read it, change a line of on-screen text if you
+like, and approve it. Approve the pictures, and a few minutes
 later the Render tab plays the video. Leave the narration as it is unless you have run
 `make models`: without the voice model, the bundled voice only knows the sample's words,
 and the episode page tells you so if you change them.
@@ -55,12 +56,19 @@ Elsewhere, set `PROVIDER_MODE=subscription` in `.env`, then:
 make up       # starts the stack and the bridge to the two tools on this PC
 ```
 
-Open http://127.0.0.1:3000 and choose New episode. Type your idea and press Start. An
-idea can be one sentence, or your own finished plan: a list of pictures with the line
-spoken over each, and a description of the characters. What you wrote is kept: your lines
-word for word, one picture for each of yours, and your characters as you described them. After
-about two minutes the plan needs you: read it, edit a scene or ask for a change in
-words, and approve it. The pictures are then made one by one, about 40 seconds each. Look
+Open http://127.0.0.1:3000 and choose New episode. Write your video and press Start.
+Write it the way you want it, as long as you need: the story, the characters, the look,
+each scene, the line spoken over it, text on screen, music, the length. The studio
+follows what you write. A line after `VO:` or `Narration:` is spoken word for word, one
+picture is planned for each of your scenes, and your characters are described once and
+used in every picture that shows them. What you left open is filled in, and everything
+that was filled in, changed or could not be done is listed at the top of the plan under
+"What the studio changed". Under Options you choose whether facts are looked up, and
+whether the video has captions and music.
+
+After a minute or two the plan needs you: read it, edit any field of any shot, the look
+or a character, or ask for a change in words, and approve it. Nothing is generated before
+that. The pictures are then made one by one, about 40 seconds each. Look
 at them in the Assets tab, make one again if you like, and approve them. A few minutes
 later the Render tab plays the video and offers it as a download.
 

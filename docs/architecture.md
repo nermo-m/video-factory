@@ -102,12 +102,12 @@ stateDiagram-v2
 | State | Jobs | Tag | Output |
 | --- | --- | --- | --- |
 | `idea` | none | | Idea text saved |
-| `brief` | `plan.brief` | cpu | Angle, lesson, three titles |
-| `research` | `plan.research` | cpu | Claims with opened sources |
-| `script` | `plan.script` | cpu | Narration lines per scene |
-| `direction` | `plan.direct` | cpu | Episode Spec draft. Gate: plan approval |
-| `asset_plan` | `plan.assets` | cpu | Asset manifest and prompts |
-| `asset_gen` | `gen.image`, then `gen.clip` | cpu, gpu | Images, then clips. Gate: asset approval |
+| `brief` | none | | Passed over. It had a job in the first design (ADR 11) |
+| `research` | `plan.research`, only when the video asks for it | cpu | Claims with opened sources |
+| `script` | none | | Passed over (ADR 11) |
+| `direction` | `plan.shotlist` | cpu | The shot list from the owner's prompt, and the plan built from it. Gate: plan approval |
+| `asset_plan` | none | | Passed over (ADR 11) |
+| `asset_gen` | `gen.image` | cpu | One picture per shot. Clips follow with VFS-29. Gate: asset approval |
 | `voice` | `gen.voice` | cpu | One audio file per scene plus word timings |
 | `render` | `render.scene` per scene, then `render.join` | cpu | Scene files, draft video, contact sheet |
 | `qc` | `qc.run` | cpu | QC report |

@@ -1725,3 +1725,33 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   code (VFS-87), which was moved out of VFS-84 (D-057).
 - **Left for VFS-87:** the step list beside the workspace and the progress strip on the
   Board still name Brief, Research and Script, which a new video passes over at once.
+
+## D-059: Director mode part 1, checked live on the owner's plan
+
+- **Date:** 2026-11-15. **Card:** VFS-86. Live calls on the owner's plans were approved by
+  the owner on 2026-11-12. This check used one Claude call and no picture.
+- **What was run:** the owner's own shot list of 2026-11-13 (a table of 11 pictures with a
+  camera move, a motion and a line for each, two described characters, sound cues and a
+  target of 45 seconds), typed into New episode as it was. The plan was stopped at the
+  plan gate and left there for the owner.
+- **What came back, compared with the prompt line by line:**
+  - 11 shots, in the owner's order, one for each row of the table.
+  - 11 of 11 spoken lines stand in the prompt word for word.
+  - The two characters keep the owner's descriptions and names, each written once. A
+    third character the prompt names in one row was described and listed as added.
+  - Every picture prompt carries its row's framing and subject and is 71 to 111 words long.
+  - 22 entries on the change list: the look (the prompt named none), the filled-in
+    character details, the nearest camera move where the look has none (slide, whip zoom),
+    shake, flash and the sound cues as not possible, and the length: 56 seconds, not 45,
+    because the lines take that long to speak.
+  - The answer was accepted on the first try. No corrective retry was needed.
+- **One flaw found and fixed:** a change entry read "the line takes about 2 seconds to
+  speak and the scene was given 2". The line needed 2.4 seconds. The number is now given
+  in tenths, with a test.
+- **What the check does not show:** the pictures. None was made, so that the owner's
+  picture budget is theirs to spend. Whether the image model keeps the two characters the
+  same across 11 pictures from the written descriptions alone is the open question of
+  part 3 (reference pictures).
+- **What the owner will notice:** the scene lengths in the prompt (2 to 5 seconds) were
+  shorter than the lines take to speak, so eight scenes were lengthened and the video is
+  11 seconds longer than asked. Shorter lines, or a faster voice, are the owner's choice.

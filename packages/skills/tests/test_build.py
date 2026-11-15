@@ -146,7 +146,7 @@ def test_a_scene_shorter_than_its_line_is_lengthened_and_listed() -> None:
             "scene": "s1",
             "kind": "changed",
             "what": "The scene lasts as long as its line.",
-            "why": "The line takes about 7 seconds to speak and the scene was given 2.",
+            "why": "The line takes about 6.8 seconds to speak and the scene was given 2.",
         }
     ]
 
@@ -236,3 +236,13 @@ def test_exactly_at_the_limit_is_built() -> None:
         scene.update(narration="", duration_s=180 / len(made["scenes"]))
 
     assert built(made)["format"]["target_duration_s"] == 180
+
+
+def test_a_scene_a_fraction_of_a_second_short_says_so_in_tenths() -> None:
+    """Seen in the first live plan: "takes about 2 seconds and the scene was given 2".
+    Rounded to whole seconds the two numbers looked the same."""
+    spec = built(one("one two three four", duration_s=2))
+
+    assert spec["changes"][0]["why"] == (
+        "The line takes about 2.4 seconds to speak and the scene was given 2."
+    )

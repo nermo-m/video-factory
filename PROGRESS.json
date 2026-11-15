@@ -462,15 +462,15 @@
       "id": "VFS-85",
       "order": 316.6,
       "title": "Write your video, the change list and the editable shot list on the screens",
-      "status": "review",
-      "note": "New episode asks for one thing, the whole prompt, up to 20 000 characters, with research, captions and music as options. The Plan tab of a shot list shows what the studio changed in three groups, the look and the characters written once, and a card per shot whose every field can be edited before anything is generated. Board card: https://app.notion.com/418474b94ace81c8a62af37efff24623"
+      "status": "done",
+      "note": "New episode asks for one thing, the whole prompt, up to 20 000 characters, with research, captions and music as options. The Plan tab of a shot list shows what the studio changed in three groups, the look and the characters written once, and a card per shot whose every field can be edited before anything is generated. Merged in pull request #65. Board card: https://app.notion.com/418474b94ace81c8a62af37efff24623"
     },
     {
       "id": "VFS-86",
       "order": 316.7,
       "title": "Director mode part 1: records and the first live video",
-      "status": "ready",
-      "note": "Director mode, part 1, task 7. Board card: https://app.notion.com/418474b94ace818691e2c023f7070fd9"
+      "status": "review",
+      "note": "ADR 11 records Director mode, and the architecture notes and the README describe it. Live check on the owner's Claude plan on 2026-11-15: the owner's own shot list of 11 pictures came back as 11 shots in the owner's order with every line word for word, picture prompts of 71 to 111 words, and 22 entries on the change list. It waits at the plan gate for the owner. No picture was made. Board card: https://app.notion.com/418474b94ace818691e2c023f7070fd9"
     },
     {
       "id": "VFS-87",
@@ -489,7 +489,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-86: the records of Director mode part 1 (ADR 11, the design document's changelog) and the first live video from one of the owner's own shot lists, compared with the prompt line by line. Then VFS-87 (remove the old chain's skills) and VFS-29 (Wan clips)."
+    "next": "Director mode part 1 is built. The owner's live plan waits at the plan gate. Next by Order: VFS-87 (remove the old chain's skills and its steps from the progress strips), then VFS-29 (Wan 2.2 clips through ComfyUI, part 2 of Director mode)."
   },
   "checklist": [
     {
@@ -524,7 +524,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1736 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 343 integration (Python), 19 Node, 238 browser tests with axe and screenshots"
+      "value": "1738 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 343 integration (Python), 19 Node, 238 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -723,6 +723,10 @@
     {
       "date": "2026-11-15",
       "text": "The screens of Director mode: write the whole video in one box, see what the studio changed, and edit every field of every shot before anything is made."
+    },
+    {
+      "date": "2026-11-15",
+      "text": "First live Director plan on the owner's Claude plan: 11 of 11 scenes, every line word for word, and everything the studio added or could not do on the change list."
     }
   ]
 }
