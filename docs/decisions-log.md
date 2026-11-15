@@ -1658,3 +1658,44 @@ to reverse it. Questions about the design itself are in [questions.md](questions
   of a picture that the model left out is not detected. The change list and the editable
   shot list are there for the owner to catch it before anything is generated.
 - **Not wired in yet:** the pipeline still runs the old chain. VFS-84 switches it over.
+
+## D-057: The pipeline runs the shot list. The old chain's code leaves in its own card
+
+- **Date:** 2026-11-15. **Card:** VFS-84 (Director mode, part 1).
+- **Choice:**
+  - **One planning job.** The state `direction` runs `plan.shotlist`, and the plan gate
+    follows it as before. `brief`, `script` and `asset_plan` keep their place in the order
+    of states and have no job: an episode passes over them. `research` has its job only
+    when the episode asks for it.
+  - **Running an old planning state again runs what follows it** (`pipeline._runnable`).
+    So an episode that stopped in `brief` or `script` before this change is not a dead
+    end: "Run this step again" plans it with the shot list.
+  - **The switches live on the episode** (`episode.options`, migration 0006, read through
+    `packages/core/options.py`): research off, captions on, music on unless the owner says
+    otherwise. An option that does not exist is refused by the API.
+  - **No clip job for a plan of shots.** The plan stores which scenes are to move. Clips
+    are made once the ComfyUI adapter exists (VFS-29). A plan of the first design keeps
+    its clip jobs as they were.
+  - **A picture's prompt is put together when it is made** (`packages/core/prompts.py`):
+    the style, each character in the picture, the scene. The channel's style block is not
+    added to a plan of shots. A picture that is meant to show written words is made
+    without the no-text rule. Editing a character or the style marks the scenes that show
+    it, and a character that is only given another id changes nothing.
+  - **A plan of shots is as long as its scenes need,** from 15 to 180 seconds. The Plan
+    tab's "fits" only says whether that is within what a video can be. An edit that makes
+    the lines longer makes the video longer. It never fails a target.
+  - **A change asked for in words is checked against the plan's own look,** not the
+    channel's.
+  - **Demo mode replays one recorded shot list** whatever was typed, and that plan is not
+    held against the typed idea. It speaks the sample episode's lines and names its
+    scenes after the sample pictures, so the demo has a voice and a picture for each.
+- **Deviation from the plan of this work:** the plan removed the skills `brief`, `script`,
+  `direct` and `assets` in this card. About forty-five files name them, most of them tests
+  of other parts (adapters, limits, usage) that use them as examples. Taking them out
+  here would have doubled the card. They are no longer run by anything, and card VFS-87
+  removes them. Until then a plan of the first design stays editable, because the code
+  that keeps such a plan and its pictures in step is still there.
+- **Found on the way:** two property-based tests in `apps/api/tests/test_contract.py`
+  sometimes fail on a generated string that fits the documented pattern `\S` by one regex
+  engine's rules and not by the server's. They pass on a second run. Not caused by this
+  card. It needs a card of its own.
