@@ -99,8 +99,9 @@ euler, scheduler simple, shift 5. These are the settings of ComfyUI's own templa
   the video.
 - The render brings the clip from 16 to 30 frames a second, with the frames in between
   worked out from the motion, and scales it to the full frame.
-- ComfyUI does not answer while it reads a model file into memory. The worker waits up
-  to three minutes of silence before it reports ComfyUI as stopped.
+- ComfyUI does not answer while the two models take turns in the card's memory: more
+  than three minutes of silence was seen. The worker waits up to fifteen minutes of
+  silence before it reports ComfyUI as stopped.
 - After the last clip that waits, the worker asks ComfyUI to give the card's memory back.
 - ComfyUI keeps its own copy of every clip in `E:\ComfyUI\output\video` and of every
   start picture in `E:\ComfyUI\input`. The studio never deletes there. Empty those
