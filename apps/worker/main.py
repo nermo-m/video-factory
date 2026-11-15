@@ -25,6 +25,7 @@ from packages.adapters.llm.base import LLMAdapter
 from packages.core import app_settings
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.logs import configure_logging
+from packages.core.options import Writer
 from packages.core.settings import Settings, SettingsError, load_settings
 
 logger = logging.getLogger("apps.worker")
@@ -41,11 +42,12 @@ def heartbeat_path() -> Path:
 def build_handlers(settings: Settings, sessions: sessionmaker[Session]) -> dict[str, Handler]:
     """Every job type this worker can run."""
 
-    def language_model() -> LLMAdapter:
-        """The model of the configured mode, with the owner's paid API switch as it is now."""
+    def language_model(writer: Writer | None = None) -> LLMAdapter:
+        """The model of the configured mode, with the owner's paid API switch as it is now.
+        `writer` is the owner's choice of who writes a plan, when they made one."""
         with sessions() as session:
             confirmed = app_settings.paid_apis_confirmed(session)
-        return Adapters(settings, paid_apis_confirmed=confirmed).llm()
+        return Adapters(settings, paid_apis_confirmed=confirmed).llm(writer)
 
     local = Adapters(settings)
     return {

@@ -215,3 +215,20 @@ def test_fr34_the_workers_check_lifts_a_limit_and_the_waiting_job_runs(
         wait_for(lambda: job(sessions, job_id).status is JobStatus.SUCCEEDED)
 
     assert probe.called == [CLAUDE]
+
+
+def test_a_plan_written_on_the_chatgpt_plan_does_not_wait_for_the_claude_plan(
+    sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    pause_claude(sessions)
+    with sessions.begin() as session:
+        episode = session.get(models.Episode, episode_id)
+        assert episode is not None
+        episode.options = {"writer": "chatgpt"}
+    handler = Counter()
+    job_id = add(sessions, "plan.shotlist", episode_id)
+
+    with running_worker(sessions, {"plan.shotlist": handler}, provider_mode="subscription"):
+        wait_for(lambda: job(sessions, job_id).status is JobStatus.SUCCEEDED)
+
+    assert handler.calls == 1

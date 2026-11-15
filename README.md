@@ -63,7 +63,8 @@ follows what you write. A line after `VO:` or `Narration:` is spoken word for wo
 picture is planned for each of your scenes, and your characters are described once and
 used in every picture that shows them. What you left open is filled in, and everything
 that was filled in, changed or could not be done is listed at the top of the plan under
-"What the studio changed". Under Options you choose whether facts are looked up, and
+"What the studio changed". Under "Plan written by" you choose the model that writes the
+plan: a Claude model or ChatGPT, on your own plans. Under Options you choose whether facts are looked up, and
 whether the video has captions and music.
 
 After a minute or two the plan needs you: read it, edit any field of any shot, the look

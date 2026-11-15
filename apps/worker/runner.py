@@ -24,7 +24,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from packages.core import limits, pipeline, queue, removal
+from packages.core.db.models import Episode
 from packages.core.enums import ErrorClass, JobTag, Provider
+from packages.core.options import writer_of
 from packages.core.storage import StorageAdapter, StorageError
 
 logger = logging.getLogger("apps.worker")
@@ -168,7 +170,13 @@ class Worker:
 
     def _provider(self, claim: queue.ClaimedJob) -> Provider | None:
         """The provider this job calls, when it calls one that can be limited."""
-        provider = limits.provider_for_job(claim.type, self._provider_mode)
+        writer_tool = ""
+        if claim.type == limits.SHOTLIST_JOB and claim.episode_id is not None:
+            # The owner may have this plan written on the other plan.
+            with self._sessions() as session:
+                episode = session.get(Episode, claim.episode_id)
+                writer_tool = writer_of(episode.options).tool if episode is not None else ""
+        provider = limits.provider_for_job(claim.type, self._provider_mode, writer_tool=writer_tool)
         return None if provider in (None, Provider.DEMO) else provider
 
     def _waits_for_its_provider(self, claim: queue.ClaimedJob, ids: dict[str, Any]) -> bool:

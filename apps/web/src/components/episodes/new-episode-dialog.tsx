@@ -9,8 +9,10 @@ import { postEpisode } from "@/api/client";
 import { API_NOT_ANSWERING, failureMessage } from "@/lib/api-error";
 import { primaryAction, quietAction } from "@/lib/styles";
 import { cn } from "@/lib/utils";
+import { writerText } from "@/lib/writer";
 
 import { useEpisodes } from "./episodes-provider";
+import { WriterField } from "./writer-field";
 
 const BOARD = "/";
 /** The longest prompt the API takes. */
@@ -41,8 +43,8 @@ function CloseIcon() {
 }
 
 /**
- * New episode (Director mode): one large text area for the whole prompt, the options
- * that are a choice of this video, and Start. Nothing is forced: the studio follows what
+ * New episode (Director mode): one large text area for the whole prompt, who writes
+ * the plan, the options that are a choice of this video, and Start. Nothing is forced: the studio follows what
  * is written. A full-screen sheet on a phone, a centred 560 px dialog from tablet
  * up. It is open whenever the address is /episodes/new, so the New episode buttons are
  * plain links, the Back button closes it, and closing it leads to the Board.
@@ -59,6 +61,9 @@ export function NewEpisodeDialog() {
     captions: true,
     music: true,
   });
+  const [writer, setWriter] = useState("");
+  const [model, setModel] = useState("");
+  const [badModel, setBadModel] = useState(false);
   const [missing, setMissing] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -72,12 +77,19 @@ export function NewEpisodeDialog() {
       field.current?.focus();
       return;
     }
+    const chosen = writerText(writer, model);
+    if (chosen === null) {
+      setBadModel(true);
+      document.getElementById("new-episode-writer-model")?.focus();
+      return;
+    }
     setStarting(true);
     setFailure(null);
     let created: string;
     try {
       const result = await postEpisode({
-        body: { idea: text, options, start: true },
+        // No writer is sent when the choice is left to the studio.
+        body: { idea: text, options, ...(chosen ? { writer: chosen } : {}), start: true },
       });
       if (!result.data) {
         setFailure(
@@ -164,6 +176,21 @@ export function NewEpisodeDialog() {
                 )}
               </p>
             </div>
+
+            <WriterField
+              id="new-episode-writer"
+              choice={writer}
+              typed={model}
+              invalid={badModel}
+              onChoice={(choice) => {
+                setWriter(choice);
+                setBadModel(false);
+              }}
+              onTyped={(typed) => {
+                setModel(typed);
+                setBadModel(false);
+              }}
+            />
 
             <details className="rounded-lg border">
               <summary className="flex min-h-11 cursor-pointer items-center px-3.5 font-semibold">

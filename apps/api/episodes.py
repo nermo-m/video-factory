@@ -63,7 +63,7 @@ from packages.core.enums import (
     RightsStatus,
     SpecAuthor,
 )
-from packages.core.options import options_of
+from packages.core.options import WRITER_PATTERN, options_of, stored_options, writer_of
 from packages.core.stages import GATES
 from packages.core.storage import StorageAdapter
 from packages.render.theme import check_capabilities, load_theme
@@ -109,6 +109,11 @@ class EpisodeOut(BaseModel):
     )
     options: dict[str, bool] = Field(
         description="What the owner switched on or off for this video: research, captions, music."
+    )
+    writer: str = Field(
+        description="Who writes this video's plan in subscription mode: `claude` or "
+        "`chatgpt`, with a model after a colon when the owner named one "
+        "(`claude:claude-fable-5-2`). Empty leaves the choice to the studio."
     )
     spec_version: int | None = Field(description="The current version of its spec, if it has one.")
     resting: bool = Field(
@@ -218,6 +223,20 @@ class OptionsIn(BaseModel):
     )
 
 
+# Who writes a plan: one of the two tools, and optionally a model name after a colon.
+WriterIn = Annotated[
+    str,
+    Field(
+        strict=True,
+        max_length=90,
+        pattern=WRITER_PATTERN,
+        description="Who writes the plan in subscription mode: `claude` or `chatgpt`, with "
+        "a model after a colon when one is chosen (`claude:claude-fable-5-2`). Left out, "
+        "the studio chooses. Demo mode and API mode have one answer and ignore it.",
+    ),
+]
+
+
 class EpisodeCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -231,6 +250,7 @@ class EpisodeCreate(BaseModel):
         ),
     ]
     options: OptionsIn | None = None
+    writer: WriterIn | None = None
     start: StrictBool = Field(default=True, description="Start planning at once.")
 
 
@@ -239,6 +259,11 @@ class RejectRequest(BaseModel):
 
     comment: Annotated[str, Field(min_length=1, max_length=4000, pattern=r"\S")]
     return_to_state: EpisodeState | None = None
+    writer: WriterIn | None = Field(
+        default=None,
+        description="Have the plan written by this tool and model from now on. Left out, "
+        "the video keeps the writer it has.",
+    )
 
 
 class RerunRequest(BaseModel):
@@ -448,6 +473,7 @@ class DatabaseEpisodeService:
             "stale_scenes": dict(episode.stale_scenes or {}),
             "target_duration_s": _length(episode, channel, version),
             "options": options_of(episode.options).to_json(),
+            "writer": writer_of(episode.options).text,
             "spec_version": version.version if version else None,
             "resting": episode.state is stages.LAST_BUILT_STATE
             and pipeline.is_resting(episode, pipeline.current_jobs(session, episode)),
@@ -524,7 +550,7 @@ class DatabaseEpisodeService:
             episode = Episode(
                 channel_id=channel.id,
                 idea=body.idea.strip(),
-                options=options_of(chosen).to_json(),
+                options=stored_options(options_of(chosen), body.writer or ""),
             )
             session.add(episode)
             session.flush()
@@ -555,16 +581,20 @@ class DatabaseEpisodeService:
         )
 
     def reject(self, episode_id: uuid.UUID, body: RejectRequest) -> EpisodeDetail:
-        return self._step(
-            episode_id,
-            lambda s: pipeline.reject(
-                s,
+        def send_back(session: Session) -> Episode:
+            episode = pipeline.reject(
+                session,
                 episode_id,
                 comment=body.comment,
                 return_to_state=body.return_to_state,
                 critic_enabled=self._critic,
-            ),
-        )
+            )
+            if body.writer is not None:
+                # The rejection went through, so the plan is written again: by this writer.
+                episode.options = stored_options(options_of(episode.options), body.writer)
+            return episode
+
+        return self._step(episode_id, send_back)
 
     def rerun(self, episode_id: uuid.UUID, state: EpisodeState) -> EpisodeDetail:
         return self._step(
@@ -983,6 +1013,7 @@ class MemoryEpisodeService:
             options=options_of(
                 body.options.model_dump(exclude_none=True) if body.options else {}
             ).to_json(),
+            writer=body.writer or "",
             spec_version=None,
             resting=False,
             created_at=datetime.now(UTC),

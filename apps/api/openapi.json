@@ -450,6 +450,20 @@
             "description": "Start planning at once.",
             "title": "Start",
             "type": "boolean"
+          },
+          "writer": {
+            "anyOf": [
+              {
+                "description": "Who writes the plan in subscription mode: `claude` or `chatgpt`, with a model after a colon when one is chosen (`claude:claude-fable-5-2`). Left out, the studio chooses. Demo mode and API mode have one answer and ignore it.",
+                "maxLength": 90,
+                "pattern": "^(claude|chatgpt)(:[A-Za-z0-9][A-Za-z0-9._:\\[\\]-]{0,79})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Writer"
           }
         },
         "required": [
@@ -561,6 +575,11 @@
               }
             ],
             "title": "Title"
+          },
+          "writer": {
+            "description": "Who writes this video's plan in subscription mode: `claude` or `chatgpt`, with a model after a colon when the owner named one (`claude:claude-fable-5-2`). Empty leaves the choice to the studio.",
+            "title": "Writer",
+            "type": "string"
           }
         },
         "required": [
@@ -574,6 +593,7 @@
           "stale_scenes",
           "target_duration_s",
           "options",
+          "writer",
           "spec_version",
           "resting",
           "created_at",
@@ -708,6 +728,11 @@
               }
             ],
             "title": "Title"
+          },
+          "writer": {
+            "description": "Who writes this video's plan in subscription mode: `claude` or `chatgpt`, with a model after a colon when the owner named one (`claude:claude-fable-5-2`). Empty leaves the choice to the studio.",
+            "title": "Writer",
+            "type": "string"
           }
         },
         "required": [
@@ -721,6 +746,7 @@
           "stale_scenes",
           "target_duration_s",
           "options",
+          "writer",
           "spec_version",
           "resting",
           "created_at"
@@ -1310,6 +1336,21 @@
                 "type": "null"
               }
             ]
+          },
+          "writer": {
+            "anyOf": [
+              {
+                "description": "Who writes the plan in subscription mode: `claude` or `chatgpt`, with a model after a colon when one is chosen (`claude:claude-fable-5-2`). Left out, the studio chooses. Demo mode and API mode have one answer and ignore it.",
+                "maxLength": 90,
+                "pattern": "^(claude|chatgpt)(:[A-Za-z0-9][A-Za-z0-9._:\\[\\]-]{0,79})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Have the plan written by this tool and model from now on. Left out, the video keeps the writer it has.",
+            "title": "Writer"
           }
         },
         "required": [

@@ -25,6 +25,7 @@ from packages.adapters.llm import (
 from packages.adapters.llm.anthropic_api import DEFAULT_MODEL
 from packages.adapters.storage import LocalStorage
 from packages.adapters.tts import TTSAdapter, create_tts_adapter
+from packages.core.options import Writer
 from packages.core.providers import (
     ModeProviders,
     PaidApiRefusedError,
@@ -52,19 +53,30 @@ class Adapters:
         """Raise PaidApiRefusedError unless paid APIs are switched on twice (FR-28)."""
         ensure_paid_apis_allowed(self.settings.provider_mode, confirmed=self.paid_apis_confirmed)
 
-    def llm(self) -> LLMAdapter:
+    def llm(self, writer: Writer | None = None) -> LLMAdapter:
         """The language model of the configured mode. Raises NeedsOwnerError when that
-        mode cannot be served, and never reaches for another mode instead."""
+        mode cannot be served, and never reaches for another mode instead.
+
+        `writer` is the owner's choice of who writes a plan. It picks between the two
+        plans of subscription mode and names the model. The other modes have one answer.
+        """
         mode = self.settings.provider_mode
         if mode == "demo":
             return RecordedLLM(RECORDINGS_DIR)
         if mode == "subscription":
+            chosen = writer or Writer()
+            if chosen.tool == "chatgpt":
+                return CodexCliLLM(
+                    mode=mode,
+                    bridge_url=self.settings.cli_bridge_url,
+                    model=chosen.model or self.settings.codex_cli_model or None,
+                )
             # The owner's Claude plan, through the host bridge. A usage limit makes the
             # job wait. Nothing in this branch can reach the paid API.
             return ClaudeCliLLM(
                 mode=mode,
                 bridge_url=self.settings.cli_bridge_url,
-                model=self.settings.claude_cli_model or None,
+                model=chosen.model or self.settings.claude_cli_model or None,
             )
         try:
             return AnthropicLLM(

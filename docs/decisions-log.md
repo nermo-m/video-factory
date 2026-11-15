@@ -1755,3 +1755,29 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **What the owner will notice:** the scene lengths in the prompt (2 to 5 seconds) were
   shorter than the lines take to speak, so eight scenes were lengthened and the video is
   11 seconds longer than asked. Shorter lines, or a faster voice, are the owner's choice.
+
+## D-060: The owner chooses who writes a plan
+
+- **Date:** 2026-11-15. **Card:** VFS-88. Asked for by the owner on 2026-11-15: "I want to
+  have the option to choose which model of Claude should be used. For example, would it be
+  Opus, would it be Fable 5.2 ... or GPT."
+- **What is chosen:** the tool (Claude Code or Codex, on the owner's own plans) and,
+  optionally, the model. It is one text, `claude`, `claude:claude-fable-5-2` or
+  `chatgpt:<model>`, stored with the video's switches. Nothing chosen leaves the tool to
+  the studio (Claude) and the model to `CLAUDE_CLI_MODEL` or `CODEX_CLI_MODEL`, and then
+  to the tool itself.
+- **What it reaches:** the shot list job only. Research keeps the planner's own tool,
+  because only that one has web search here. Pictures are always made by the ChatGPT plan.
+- **Budgets:** a plan written by ChatGPT is counted against the ChatGPT plan, and waits
+  for that plan's budget and limit, not the Claude plan's.
+- **Modes:** the choice is between the two plans of subscription mode. Demo mode answers
+  from its recording and API mode from its one paid model. Neither changes its mode
+  because of the choice (FR-28).
+- **The model names in the list** are the ones Claude Code takes today (Fable 5.2,
+  Opus 5.5, Sonnet 5.5, Haiku 5.5). A model that is not on the list is typed by name. A
+  name is letters, digits, dots and dashes, the same rule the host bridge applies, so it
+  can never be read as an option of the command line tool.
+- **Sending a plan back** may name another writer. Without one the video keeps its own.
+- **Not checked live:** no plan was written with a model other than the default in this
+  card. A model name the owner's plan does not have comes back as the tool's own error
+  on the plan step.

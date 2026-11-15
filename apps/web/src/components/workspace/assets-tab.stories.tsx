@@ -17,6 +17,7 @@ const EPISODE: EpisodeDetail = {
   resting: false,
   target_duration_s: 45,
   options: { research: false, captions: true, music: true },
+  writer: "",
   created_at: "2026-11-13T08:00:00Z",
   jobs: [],
 };

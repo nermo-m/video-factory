@@ -479,6 +479,73 @@ test.describe("New episode", () => {
     ).toBeVisible();
   });
 
+  test("the owner chooses the model that writes the plan", async ({ page }) => {
+    await mockEpisodes(page, () => []);
+    const sent = await mockCreate(page, () => ({
+      status: 201,
+      json: { ...episode(51, { idea: "A clock" }), jobs: [] },
+    }));
+    await page.setViewportSize(SIZES.desktop);
+    await open(page, "/episodes/new");
+    const writer = dialog(page).getByRole("combobox", { name: "Plan written by" });
+
+    // Nothing is chosen at first: the studio decides, and no writer is sent.
+    await expect(writer).toHaveValue("");
+    await expect(writer.locator("option")).toHaveText([
+      "Studio's choice (Claude)",
+      "Claude Fable 5.2",
+      "Claude Opus 5.5",
+      "Claude Sonnet 5.5",
+      "Claude Haiku 5.5",
+      "ChatGPT (your plan's own model)",
+      "Another Claude model…",
+      "Another ChatGPT model…",
+    ]);
+    await expect(dialog(page).getByRole("textbox", { name: "Model name" })).toBeHidden();
+
+    await idea(page).fill("A clock");
+    await writer.selectOption({ label: "Claude Fable 5.2" });
+    await start(page).click();
+
+    await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000051$/);
+    expect(sent).toEqual([
+      {
+        idea: "A clock",
+        options: { research: false, captions: true, music: true },
+        writer: "claude:claude-fable-5-2",
+        start: true,
+      },
+    ]);
+  });
+
+  test("another model is named by hand, and a name that is not one is not sent", async ({ page }) => {
+    await mockEpisodes(page, () => []);
+    const sent = await mockCreate(page, () => ({
+      status: 201,
+      json: { ...episode(52, { idea: "A clock" }), jobs: [] },
+    }));
+    await page.setViewportSize(SIZES.desktop);
+    await open(page, "/episodes/new");
+
+    await idea(page).fill("A clock");
+    await dialog(page)
+      .getByRole("combobox", { name: "Plan written by" })
+      .selectOption({ label: "Another ChatGPT model…" });
+    const model = dialog(page).getByRole("textbox", { name: "Model name" });
+    await model.fill("--not a model");
+    await start(page).click();
+
+    await expect(dialog(page).getByText("Type the model's name the way its tool takes it")).toBeVisible();
+    await expect(model).toBeFocused();
+    expect(sent).toHaveLength(0);
+
+    await model.fill(" gpt-5.5 ");
+    await start(page).click();
+
+    await expect(page).toHaveURL(/\/episodes\/00000000-0000-4000-8000-000000000052$/);
+    expect(sent[0]).toMatchObject({ writer: "chatgpt:gpt-5.5" });
+  });
+
   test("Start without an idea asks for one and sends nothing", async ({ page }) => {
     await mockEpisodes(page, () => []);
     const sent = await mockCreate(page, () => ({ status: 500, json: {} }));
@@ -613,6 +680,8 @@ test.describe("New episode", () => {
 
     await expect(idea(page)).toBeFocused();
     await page.keyboard.type("Typed with the keyboard");
+    await page.keyboard.press("Tab");
+    await expect(dialog(page).getByRole("combobox", { name: "Plan written by" })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(dialog(page).getByText("Options", { exact: true })).toBeFocused();
     await page.keyboard.press("Enter");

@@ -469,8 +469,15 @@
       "id": "VFS-86",
       "order": 316.7,
       "title": "Director mode part 1: records and the first live video",
+      "status": "done",
+      "note": "ADR 11 records Director mode, and the architecture notes and the README describe it. Live check on the owner's Claude plan on 2026-11-15: the owner's own shot list of 11 pictures came back as 11 shots in the owner's order with every line word for word, picture prompts of 71 to 111 words, and 22 entries on the change list. It waits at the plan gate for the owner. No picture was made. Merged in pull request #66. Board card: https://app.notion.com/418474b94ace818691e2c023f7070fd9"
+    },
+    {
+      "id": "VFS-88",
+      "order": 316.75,
+      "title": "Choose the model that writes the plan",
       "status": "review",
-      "note": "ADR 11 records Director mode, and the architecture notes and the README describe it. Live check on the owner's Claude plan on 2026-11-15: the owner's own shot list of 11 pictures came back as 11 shots in the owner's order with every line word for word, picture prompts of 71 to 111 words, and 22 entries on the change list. It waits at the plan gate for the owner. No picture was made. Board card: https://app.notion.com/418474b94ace818691e2c023f7070fd9"
+      "note": "New episode has a list \"Plan written by\": Claude Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5, ChatGPT, or another model by name, on the owner's own plans. A plan that is sent back can be written again by another model, and a plan written by ChatGPT counts against the ChatGPT plan. Board card: https://app.notion.com/p/419474b94ace8179b5c5dbfa675b7121"
     },
     {
       "id": "VFS-87",
@@ -489,7 +496,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "Director mode part 1 is built. The owner's live plan waits at the plan gate. Next by Order: VFS-87 (remove the old chain's skills and its steps from the progress strips), then VFS-29 (Wan 2.2 clips through ComfyUI, part 2 of Director mode)."
+    "next": "VFS-29: Wan 2.2 clips through ComfyUI, so that the pictures of a plan of shots move (part 2 of Director mode). Then VFS-87, the cleanup of the old chain."
   },
   "checklist": [
     {
@@ -524,7 +531,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1738 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 343 integration (Python), 19 Node, 238 browser tests with axe and screenshots"
+      "value": "1750 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 354 integration (Python), 19 Node, 241 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -727,6 +734,10 @@
     {
       "date": "2026-11-15",
       "text": "First live Director plan on the owner's Claude plan: 11 of 11 scenes, every line word for word, and everything the studio added or could not do on the change list."
+    },
+    {
+      "date": "2026-11-15",
+      "text": "The owner chooses the model that writes each plan: a Claude model or ChatGPT, on their own plans."
     }
   ]
 }

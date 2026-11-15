@@ -62,7 +62,7 @@ def worker(sessions: sessionmaker[Session]) -> Iterator[None]:
     recorded = RecordedLLM(RECORDINGS)
     handlers = {
         **plan_handlers(sessions, lambda: recorded),
-        **shotlist_handlers(sessions, lambda: recorded),
+        **shotlist_handlers(sessions, lambda *_writer: recorded),
     }
     with running_worker(sessions, handlers):
         yield
@@ -562,3 +562,76 @@ def test_a_deleted_episode_answers_404_everywhere(
             404,
             "episode_not_found",
         ), path
+
+
+# --- who writes the plan -------------------------------------------------------------------
+
+
+def test_the_studio_chooses_who_writes_the_plan_unless_the_owner_did(client: TestClient) -> None:
+    created = client.post("/api/v1/episodes", json={"idea": IDEA, "start": False}).json()
+
+    assert created["writer"] == ""
+    assert created["options"] == {"research": False, "captions": True, "music": True}
+
+
+def test_the_owner_chooses_the_tool_and_the_model_that_write_the_plan(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    created = client.post(
+        "/api/v1/episodes",
+        json={"idea": IDEA, "writer": "claude:claude-fable-5-2", "start": False},
+    )
+
+    body = created.json()
+    assert (created.status_code, body["writer"]) == (201, "claude:claude-fable-5-2")
+    assert episode(client, body["id"])["writer"] == "claude:claude-fable-5-2"
+    listed = client.get("/api/v1/episodes").json()["episodes"]
+    assert [item["writer"] for item in listed] == ["claude:claude-fable-5-2"]
+    with sessions() as session:
+        stored = session.get(models.Episode, uuid.UUID(body["id"]))
+        assert stored is not None
+        assert stored.options["writer"] == "claude:claude-fable-5-2"
+
+
+@pytest.mark.parametrize("writer", ["gemini", "claude:", "chatgpt:--model", "claude: x", 5])
+def test_a_writer_that_is_not_one_is_refused(client: TestClient, writer: Any) -> None:
+    refused = client.post("/api/v1/episodes", json={"idea": IDEA, "writer": writer})
+
+    assert refused.status_code == 422
+    assert client.get("/api/v1/episodes").json()["total"] == 0
+
+
+@pytest.mark.usefixtures("worker")
+def test_a_plan_can_be_sent_back_to_be_written_by_another_model(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    episode_id = planned(client)
+
+    rejected = client.post(
+        f"/api/v1/episodes/{episode_id}/reject",
+        json={"comment": "Write it again.", "writer": "chatgpt"},
+    )
+
+    assert (rejected.status_code, rejected.json()["writer"]) == (200, "chatgpt")
+    with sessions() as session:
+        stored = session.get(models.Episode, uuid.UUID(episode_id))
+        assert stored is not None
+        # The switches of the video are kept.
+        assert stored.options == {
+            "research": False,
+            "captions": True,
+            "music": True,
+            "writer": "chatgpt",
+        }
+
+
+@pytest.mark.usefixtures("worker")
+def test_a_rejection_without_a_writer_keeps_the_one_the_video_has(client: TestClient) -> None:
+    created = client.post(
+        "/api/v1/episodes", json={"idea": IDEA, "writer": "claude:claude-opus-5-5"}
+    ).json()
+    wait_for(lambda: episode(client, created["id"])["awaiting_approval"])
+
+    rejected = client.post(f"/api/v1/episodes/{created['id']}/reject", json={"comment": "Shorter."})
+
+    assert rejected.json()["writer"] == "claude:claude-opus-5-5"
