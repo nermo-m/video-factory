@@ -201,18 +201,33 @@ def test_research_runs_only_when_asked() -> None:
     assert (asked.job_type, asked.tag) == ("plan.research", JobTag.CPU)
 
 
-def test_no_clip_job_is_queued_for_a_clip_scene() -> None:
-    """Clips arrive with the ComfyUI adapter. Until then a clip scene shows its still
-    picture with its camera move, and no job waits for a graphics card."""
+def _shots() -> dict[str, Any]:
     path = schemas.SCHEMA_DIR / "fixtures" / "episode_spec" / "valid" / "shots.json"
-    shots = json.loads(path.read_text(encoding="utf-8"))
-    assert shots["scenes"][0]["visual"]["clip"] is True
+    loaded: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    return loaded
 
-    pictures = plan_stage(EpisodeState.ASSET_GEN, 0, spec=shots)
+
+def test_fr07_a_plan_of_shots_queues_one_clip_for_each_picture_that_is_to_move() -> None:
+    shots = _shots()
+    assert shots["scenes"][0]["visual"]["clip"] is True
+    assert not shots["scenes"][1]["visual"].get("clip")
+
     clips = plan_stage(EpisodeState.ASSET_GEN, 1, spec=shots)
 
-    assert [request.payload["asset_id"] for request in pictures] == ["a_s01_hill", "a_s02_lamp"]
-    assert clips == []
+    assert [(job.job_type, job.tag, job.payload) for job in clips] == [
+        ("gen.clip", JobTag.GPU, {"scene_id": "s01_hill", "asset_id": "a_s01_hill"})
+    ]
+
+
+def test_a_picture_that_two_scenes_show_moving_gets_one_clip() -> None:
+    shots = _shots()
+    again = json.loads(json.dumps(shots["scenes"][0]))
+    again["id"] = "s03_hill_again"
+    shots["scenes"].append(again)
+
+    clips = plan_stage(EpisodeState.ASSET_GEN, 1, spec=shots)
+
+    assert [job.payload["asset_id"] for job in clips] == ["a_s01_hill"]
 
 
 def test_a_plan_of_shots_speaks_and_encodes_its_scenes() -> None:

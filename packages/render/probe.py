@@ -108,12 +108,18 @@ def format_problems(
     duration_s: float,
     *,
     held_to_target: bool = True,
+    with_music: bool = True,
 ) -> list[str]:
     """Everything about a file that is not what RN-01 and the spec's format ask for.
 
     `video_format` is the format of the resolved spec that was rendered (the preview
     format for a preview) and `duration_s` the length that spec resolved to. A plan of
     shots is as long as its lines need, so it is not `held_to_target`.
+
+    The encoder is asked for 192 kbps and uses fewer bits when the sound is simple. With
+    the music bed the mix is busy enough to come out near 192. Without it (`with_music`
+    false) a voice alone, or silence, comes out lower, so only too many bits are a
+    problem then.
     """
     problems: list[str] = []
     wanted_size = (video_format["width"], video_format["height"])
@@ -131,7 +137,9 @@ def format_problems(
         problems.append(f"The pixel format is {facts.pixel_format}, not {PIXEL_FORMAT}.")
     if facts.audio_codec != AUDIO_CODEC:
         problems.append(f"The audio codec is {facts.audio_codec or 'missing'}, not {AUDIO_CODEC}.")
-    elif abs(facts.audio_bitrate - AUDIO_BITRATE) > AUDIO_BITRATE * _BITRATE_TOLERANCE:
+    elif facts.audio_bitrate - AUDIO_BITRATE > AUDIO_BITRATE * _BITRATE_TOLERANCE or (
+        with_music and AUDIO_BITRATE - facts.audio_bitrate > AUDIO_BITRATE * _BITRATE_TOLERANCE
+    ):
         problems.append(
             f"The audio bitrate is {facts.audio_bitrate // 1000} kbps, not "
             f"{AUDIO_BITRATE // 1000} kbps."

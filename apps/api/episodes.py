@@ -17,6 +17,7 @@
     GET  /episodes/{id}/renders            its videos, newest first, paged
     GET  /episodes/{id}/assets             its pictures: where each comes from and its file
     POST /episodes/{id}/assets/{asset}/regenerate   make one generated picture again
+    POST /episodes/{id}/assets/{asset}/clip         make the clip of one picture again
     POST /episodes/{id}/assets/{asset}/upload       the owner's own picture, as a new version
     POST /episodes/{id}/assets/match                which file names belong to which picture
 
@@ -72,6 +73,7 @@ router = APIRouter(tags=["episodes"])
 
 REVISE_JOB = "plan.revise"
 IMAGE_JOB = "gen.image"
+CLIP_JOB = "gen.clip"
 BRIEF_JOB = "plan.brief"
 DEFAULT_CHANNEL = {"name": "My channel", "voice_id": "bm_george", "theme": "night_scrolls"}
 JOBS_SHOWN = 50
@@ -108,7 +110,8 @@ class EpisodeOut(BaseModel):
         "its scenes need."
     )
     options: dict[str, bool] = Field(
-        description="What the owner switched on or off for this video: research, captions, music."
+        description="What the owner switched on or off for this video: research, captions, "
+        "music, animate."
     )
     writer: str = Field(
         description="Who writes this video's plan in subscription mode: `claude` or "
@@ -153,6 +156,11 @@ class AssetOut(BaseModel):
     resolved: bool = Field(description="True when it has a file. A render needs all of them.")
     generating: bool = Field(description="True while a job is making it, or waits to.")
     image_url: str | None = Field(description="Where its active file is served.")
+    clip_url: str | None = Field(
+        description="Where the clip made from the picture as it is now is served, if any."
+    )
+    clip_seconds: float | None = Field(description="How long that clip is.")
+    clip_generating: bool = Field(description="True while a job makes its clip, or waits to.")
     model: str | None = Field(description="What made the active file, when it was generated.")
     uploaded: bool = Field(description="True when the active file is one the owner uploaded.")
     versions: int = Field(description="How many files it has had.")
@@ -208,7 +216,7 @@ class EpisodeList(BaseModel):
 
 class OptionsIn(BaseModel):
     """What the owner switches on or off for one video. A switch that is left out has
-    its default: no research, captions on, music on."""
+    its default: no research, captions on, music on, moving pictures on."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -220,6 +228,11 @@ class OptionsIn(BaseModel):
     )
     music: StrictBool | None = Field(
         default=None, description="Play the studio's music bed under the video."
+    )
+    animate: StrictBool | None = Field(
+        default=None,
+        description="Make every picture a moving clip, with the open video model on the "
+        "owner's graphics card. Each shot can still be switched in the plan.",
     )
 
 
@@ -374,6 +387,7 @@ class EpisodeService(Protocol):
     def renders(self, episode_id: uuid.UUID, limit: int, offset: int) -> RenderList: ...
     def assets(self, episode_id: uuid.UUID) -> AssetList: ...
     def regenerate(self, episode_id: uuid.UUID, asset_id: str, note: str | None) -> AssetList: ...
+    def clip(self, episode_id: uuid.UUID, asset_id: str) -> AssetList: ...
     def upload(self, episode_id: uuid.UUID, asset_id: str, data: bytes) -> AssetList: ...
     def match(self, episode_id: uuid.UUID, filenames: list[str]) -> MatchList: ...
 
@@ -797,6 +811,7 @@ class DatabaseEpisodeService:
             spec = self._current(session, episode_id).body
             pictures = assets.resolve(session, episode, spec)
             being_made = self._being_made(session, episode_id)
+            clips_being_made = self._being_made(session, episode_id, CLIP_JOB)
             counts = {
                 picture.asset.id: len(assets.versions(session, picture.asset))
                 for picture in pictures
@@ -815,6 +830,11 @@ class DatabaseEpisodeService:
                         resolved=picture.file is not None,
                         generating=picture.id in being_made,
                         image_url=file_url(picture.file),
+                        clip_url=file_url(picture.clip),
+                        clip_seconds=picture.version.clip_s
+                        if picture.version and picture.clip
+                        else None,
+                        clip_generating=picture.id in clips_being_made,
                         model=picture.version.model if picture.version else None,
                         uploaded=_is_upload(picture),
                         versions=counts.get(picture.asset.id, 0) if picture.asset else 0,
@@ -830,12 +850,15 @@ class DatabaseEpisodeService:
                 rights_problems=assets.rights_problems(pictures),
             )
 
-    def _being_made(self, session: Session, episode_id: uuid.UUID) -> set[str]:
-        """The pictures a job is making, or waits to make."""
+    def _being_made(
+        self, session: Session, episode_id: uuid.UUID, job_type: str = IMAGE_JOB
+    ) -> set[str]:
+        """The pictures a job is making, or waits to make. With the clip job's type, the
+        pictures whose clip is being made."""
         inputs = session.scalars(
             select(Job.input).where(
                 Job.episode_id == episode_id,
-                Job.type == IMAGE_JOB,
+                Job.type == job_type,
                 Job.status.in_((JobStatus.QUEUED, JobStatus.RUNNING)),
             )
         )
@@ -867,6 +890,46 @@ class DatabaseEpisodeService:
                 payload["note"] = note.strip()
             queue.enqueue(
                 session, job_type=IMAGE_JOB, tag=JobTag.CPU, payload=payload, episode_id=episode_id
+            )
+        return self.assets(episode_id)
+
+    def clip(self, episode_id: uuid.UUID, asset_id: str) -> AssetList:
+        with self._sessions.begin() as session:
+            episode = session.get(Episode, episode_id, with_for_update=True)
+            if episode is None or episode.deleted_at is not None:
+                raise _not_found()
+            spec = self._current(session, episode_id).body
+            picture = next(
+                (item for item in assets.resolve(session, episode, spec) if item.id == asset_id),
+                None,
+            )
+            if picture is None:
+                raise ApiError(404, "asset_not_found", "This episode has no such picture.")
+            moving = [
+                scene["id"]
+                for scene in spec["scenes"]
+                if scene.get("visual", {}).get("asset_id") == asset_id
+                and scene["visual"].get("clip")
+            ]
+            if not moving:
+                raise ApiError(
+                    409,
+                    "not_a_clip",
+                    "No scene shows this picture moving. Switch its scene to a moving clip "
+                    "in the plan first.",
+                )
+            if picture.file is None:
+                raise ApiError(
+                    409, "no_picture", "This picture has no file yet, so nothing can move."
+                )
+            if asset_id in self._being_made(session, episode_id, CLIP_JOB):
+                raise ApiError(409, "already_generating", "This clip is already being made.")
+            queue.enqueue(
+                session,
+                job_type=CLIP_JOB,
+                tag=JobTag.GPU,
+                payload={"asset_id": asset_id, "scene_id": moving[0], "regenerate": True},
+                episode_id=episode_id,
             )
         return self.assets(episode_id)
 
@@ -1035,6 +1098,7 @@ class MemoryEpisodeService:
 
     advance = approve = reject = rerun = spec = replace_spec = plan = _missing
     versions = diff = revise = revision = apply = renders = assets = regenerate = _missing
+    clip = _missing
     upload = match = _missing
 
 
@@ -1250,6 +1314,20 @@ def post_episode_asset_regenerate(
     request: Request,
 ) -> AssetList:
     return _service(request).regenerate(episode_id, asset_id, body.note)
+
+
+@router.post(
+    "/episodes/{episode_id}/assets/{asset_id}/clip",
+    summary="Make the clip of one picture again, on the graphics card",
+    status_code=202,
+    responses={**NOT_FOUND, **CONFLICT},
+)
+def post_episode_asset_clip(
+    episode_id: uuid.UUID,
+    asset_id: Annotated[str, Path(pattern=r"^a_[a-z0-9_]{1,60}$")],
+    request: Request,
+) -> AssetList:
+    return _service(request).clip(episode_id, asset_id)
 
 
 PICTURE_BODY = {

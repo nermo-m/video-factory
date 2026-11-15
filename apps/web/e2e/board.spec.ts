@@ -457,6 +457,7 @@ test.describe("New episode", () => {
     await expect(dialog(page).getByRole("checkbox", { name: "Check facts with sources" })).not.toBeChecked();
     await expect(dialog(page).getByRole("checkbox", { name: "Captions" })).toBeChecked();
     await expect(dialog(page).getByRole("checkbox", { name: "Music" })).toBeChecked();
+    await expect(dialog(page).getByRole("checkbox", { name: "Animate the pictures" })).toBeChecked();
     await dialog(page).getByRole("checkbox", { name: "Check facts with sources" }).check();
     await dialog(page).getByRole("checkbox", { name: "Music" }).uncheck();
     await start(page).click();
@@ -466,7 +467,7 @@ test.describe("New episode", () => {
     expect(sent).toEqual([
       {
         idea: "A clock that only runs when someone is kind",
-        options: { research: true, captions: true, music: false },
+        options: { research: true, captions: true, music: false, animate: true },
         start: true,
       },
     ]);
@@ -511,7 +512,7 @@ test.describe("New episode", () => {
     expect(sent).toEqual([
       {
         idea: "A clock",
-        options: { research: false, captions: true, music: true },
+        options: { research: false, captions: true, music: true, animate: true },
         writer: "claude:claude-fable-5-2",
         start: true,
       },
@@ -694,6 +695,8 @@ test.describe("New episode", () => {
     await page.keyboard.press("Tab");
     await expect(dialog(page).getByRole("checkbox", { name: "Music" })).toBeFocused();
     await page.keyboard.press("Tab");
+    await expect(dialog(page).getByRole("checkbox", { name: "Animate the pictures" })).toBeFocused();
+    await page.keyboard.press("Tab");
     await expect(dialog(page).getByRole("link", { name: "Cancel" })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(start(page)).toBeFocused();
@@ -705,7 +708,7 @@ test.describe("New episode", () => {
     expect(sent).toEqual([
       {
         idea: "Typed with the keyboard",
-        options: { research: false, captions: false, music: true },
+        options: { research: false, captions: false, music: true, animate: true },
         start: true,
       },
     ]);
@@ -724,8 +727,8 @@ test.describe("New episode", () => {
       const targets = dialog(page).locator(
         "a:visible, button:visible, summary:visible, label:has(input[type=checkbox])",
       );
-      // Close, Options, the three switches, Cancel and Start.
-      expect(await targets.count()).toBe(7);
+      // Close, Options, the four switches, Cancel and Start.
+      expect(await targets.count()).toBe(8);
       for (const target of await targets.all()) {
         const box = await target.boundingBox();
         const name = (await target.innerText()).trim() || (await target.getAttribute("aria-label"));

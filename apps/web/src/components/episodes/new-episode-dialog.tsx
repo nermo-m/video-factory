@@ -23,6 +23,11 @@ const SWITCHES = [
   ["research", "Check facts with sources", "Looks facts up on the web before the plan is written."],
   ["captions", "Captions", "Shows the spoken words on screen."],
   ["music", "Music", "Plays a soft music bed under the video."],
+  [
+    "animate",
+    "Animate the pictures",
+    "Every picture becomes a moving clip, made on your graphics card. About 6 minutes for each 5 seconds.",
+  ],
 ] as const;
 type Switch = (typeof SWITCHES)[number][0];
 
@@ -60,6 +65,7 @@ export function NewEpisodeDialog() {
     research: false,
     captions: true,
     music: true,
+    animate: true,
   });
   const [writer, setWriter] = useState("");
   const [model, setModel] = useState("");

@@ -14,6 +14,7 @@ from types import FrameType
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.worker.handlers import HANDLERS
+from apps.worker.handlers.clips import clip_handlers
 from apps.worker.handlers.pictures import picture_handlers
 from apps.worker.handlers.plan import plan_handlers
 from apps.worker.handlers.produce import cached_voice, produce_handlers
@@ -27,6 +28,7 @@ from packages.core.db.session import make_engine, make_session_factory
 from packages.core.logs import configure_logging
 from packages.core.options import Writer
 from packages.core.settings import Settings, SettingsError, load_settings
+from packages.render.encode import join_clips
 
 logger = logging.getLogger("apps.worker")
 
@@ -55,6 +57,13 @@ def build_handlers(settings: Settings, sessions: sessionmaker[Session]) -> dict[
         **plan_handlers(sessions, language_model, local.storage()),
         **shotlist_handlers(sessions, language_model),
         **picture_handlers(sessions, storage=local.storage(), image=local.image),
+        **clip_handlers(
+            sessions,
+            storage=local.storage(),
+            data_dir=Path(settings.data_dir),
+            clips=local.clip,
+            join=join_clips,
+        ),
         **produce_handlers(
             sessions,
             storage=local.storage(),

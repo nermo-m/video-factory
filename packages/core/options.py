@@ -1,7 +1,8 @@
 """What the owner switched on or off for one video (Director mode).
 
-Nothing here is forced on a video. Research is off unless the owner asks for it, and
-captions and music are on unless the owner turns them off. The choices are stored on the
+Nothing here is forced on a video. Research is off unless the owner asks for it.
+Captions, music and moving pictures are on unless the owner turns them off. The choices
+are stored on the
 episode as `options` and read through `options_of`, so an episode that was made before a
 switch existed gets that switch's default.
 """
@@ -22,6 +23,8 @@ class EpisodeOptions:
     captions: bool = True
     # Play the studio's music bed under the video.
     music: bool = True
+    # Make every picture a moving clip, with the open video model on the graphics card.
+    animate: bool = True
 
     def to_json(self) -> dict[str, bool]:
         return asdict(self)

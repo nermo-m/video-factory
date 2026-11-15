@@ -3,9 +3,8 @@
 * `gen.image` makes one picture and stores it as a new version of its asset, with the
   prompt and what made it. One picture per job, so a plan's image budget is asked before
   each one (section 3.5).
-* `gen.clip` turns a picture into a short moving clip. Its adapter, ComfyUI with Wan 2.2,
-  is not built yet (VFS-29). Until then the job finishes without a clip and says so, and
-  the scene shows its still picture.
+
+The clip that is made from a picture has its own job (`handlers/clips.py`).
 
 A picture that already has a file is kept. Making it again costs the owner's plan an
 image, so that only happens when the job says `regenerate`, which is what the owner's
@@ -23,13 +22,13 @@ from sqlalchemy.orm import Session, sessionmaker
 from apps.worker.handlers.plan import current_spec
 from apps.worker.runner import Handler, JobContext
 from packages.adapters.image import ImageAdapter, ImageRequest
-from packages.core import assets, limits, pipeline, prompts
+from packages.core import assets, limits, pipeline, prompts, queue
 from packages.core.db.models import Episode
-from packages.core.enums import AssetOrigin, ErrorClass, UsageKind
+from packages.core.enums import AssetOrigin, ErrorClass, JobTag, UsageKind
 from packages.core.queue import JobError
 from packages.core.storage import StorageAdapter
 
-IMAGE_JOB, CLIP_JOB = "gen.image", "gen.clip"
+IMAGE_JOB = "gen.image"
 # All words on screen are drawn by the render engine (section 8), so a picture must not
 # carry any of its own.
 NO_TEXT = "No text, letters, numbers, captions, logos or watermarks anywhere in the picture."
@@ -162,6 +161,22 @@ def picture_handlers(
                 cost_usd=result.cost_usd,
                 job_id=context.job.id,
             )
+            if context.job.input.get("regenerate") and picture.becomes_clip:
+                # The clip showed the old picture. The first picture of a video is
+                # followed by the clips step, so only a picture made again asks here.
+                moving = next(
+                    scene["id"]
+                    for scene in spec["scenes"]
+                    if scene.get("visual", {}).get("asset_id") == asset_id
+                    and scene["visual"].get("clip")
+                )
+                queue.enqueue(
+                    session,
+                    job_type="gen.clip",
+                    tag=JobTag.GPU,
+                    payload={"asset_id": asset_id, "scene_id": moving, "regenerate": True},
+                    episode_id=episode.id,
+                )
             return {
                 "asset_id": asset_id,
                 "made": True,
@@ -173,13 +188,4 @@ def picture_handlers(
                 "latency_ms": result.latency_ms,
             }
 
-    def gen_clip(context: JobContext) -> Mapping[str, Any]:
-        return {
-            "asset_id": _asset_id(context),
-            "scene_id": context.job.input.get("scene_id"),
-            "made": False,
-            "why": "Clips are not built yet (ComfyUI and Wan 2.2 arrive with VFS-29). "
-            "The scene shows its still picture.",
-        }
-
-    return {IMAGE_JOB: gen_image, CLIP_JOB: gen_clip}
+    return {IMAGE_JOB: gen_image}

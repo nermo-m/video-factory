@@ -98,7 +98,12 @@ def test_creating_an_episode_starts_its_plan(
     assert (body["idea"], body["state"]) == (IDEA, "direction")
     assert (body["awaiting_approval"], body["gate"], body["spec_version"]) == (False, None, None)
     assert [(job["type"], job["status"]) for job in body["jobs"]] == [("plan.shotlist", "queued")]
-    assert body["options"] == {"research": False, "captions": True, "music": True}
+    assert body["options"] == {
+        "research": False,
+        "captions": True,
+        "music": True,
+        "animate": True,
+    }
     with sessions() as session:
         channel = session.scalars(select(models.Channel)).one()
     assert (channel.theme, channel.voice_id) == ("night_scrolls", "bm_george")
@@ -463,7 +468,12 @@ def test_the_owner_chooses_research_captions_and_music_for_a_video(client: TestC
 
     body = created.json()
     assert created.status_code == 201
-    assert body["options"] == {"research": True, "captions": True, "music": False}
+    assert body["options"] == {
+        "research": True,
+        "captions": True,
+        "music": False,
+        "animate": True,
+    }
     # Research was asked for, so it runs first.
     assert (body["state"], [job["type"] for job in body["jobs"]]) == ("research", ["plan.research"])
     assert episode(client, body["id"])["options"] == body["options"]
@@ -571,7 +581,12 @@ def test_the_studio_chooses_who_writes_the_plan_unless_the_owner_did(client: Tes
     created = client.post("/api/v1/episodes", json={"idea": IDEA, "start": False}).json()
 
     assert created["writer"] == ""
-    assert created["options"] == {"research": False, "captions": True, "music": True}
+    assert created["options"] == {
+        "research": False,
+        "captions": True,
+        "music": True,
+        "animate": True,
+    }
 
 
 def test_the_owner_chooses_the_tool_and_the_model_that_write_the_plan(
@@ -621,6 +636,7 @@ def test_a_plan_can_be_sent_back_to_be_written_by_another_model(
             "research": False,
             "captions": True,
             "music": True,
+            "animate": True,
             "writer": "chatgpt",
         }
 
@@ -635,3 +651,12 @@ def test_a_rejection_without_a_writer_keeps_the_one_the_video_has(client: TestCl
     rejected = client.post(f"/api/v1/episodes/{created['id']}/reject", json={"comment": "Shorter."})
 
     assert rejected.json()["writer"] == "claude:claude-opus-5-5"
+
+
+def test_the_owner_switches_the_moving_pictures_off_for_a_video(client: TestClient) -> None:
+    created = client.post(
+        "/api/v1/episodes", json={"idea": IDEA, "options": {"animate": False}, "start": False}
+    )
+
+    assert created.status_code == 201
+    assert created.json()["options"]["animate"] is False

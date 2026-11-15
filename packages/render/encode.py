@@ -283,7 +283,9 @@ def encode_scene(
         asset_id = scene["visual"]["asset_id"]
         asset = next(item for item in resolved["assets"] if item["id"] == asset_id)
         if asset.get("clip_file") and storage_root is not None:
-            clips[asset_id] = load_clip(storage_root / asset["clip_file"])
+            clips[asset_id] = load_clip(
+                storage_root / asset["clip_file"], fps=resolved["format"]["fps"]
+            )
     drawing = Compositor(resolved, theme, storage_root=storage_root, clips=clips)
     width, height = drawing.size
     command = [
@@ -375,8 +377,66 @@ def join_scenes(scenes: Sequence[SceneFile], fps: int, audio: Path, video: Path)
         listing.unlink(missing_ok=True)
 
 
-def load_clip(path: Path) -> ClipFrames:
-    """Decode a generated clip into frames for the compositor (RN-08)."""
+# Works the frames in between out of the motion, so a clip made at 16 frames a second
+# moves smoothly at the frame rate of the video instead of stepping.
+_SMOOTH = "minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1"
+
+
+def join_clips(data_dir: Path, pieces: list[Path], target: Path) -> None:
+    """Join the pieces of a clip into one file (FR-07). Each piece after the first starts
+    with the last frame of the one before, so that frame is dropped from it.
+
+    `data_dir` is the folder the pieces live in. Nothing outside it is read or written.
+    """
+    root = data_dir.resolve()
+    for path in (*pieces, target):
+        if root not in path.resolve().parents:
+            raise EncodeError(f"The clip file {path.name} is outside the data folder.")
+    if not pieces:
+        raise EncodeError("A clip needs at least one piece.")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    inputs: list[str] = []
+    for piece in pieces:
+        if not piece.is_file():
+            raise EncodeError(f"The clip file is missing: {piece.name}")
+        inputs += ["-i", str(piece)]
+    chain = "".join(
+        f"[{number}:v]{'trim=start_frame=1,' if number else ''}setpts=PTS-STARTPTS[v{number}];"
+        for number in range(len(pieces))
+    )
+    chain += "".join(f"[v{number}]" for number in range(len(pieces)))
+    chain += f"concat=n={len(pieces)}:v=1:a=0[out]"
+    _run(
+        [
+            FFMPEG,
+            *_QUIET,
+            "-y",
+            *inputs,
+            "-filter_complex",
+            chain,
+            "-map",
+            "[out]",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "14",
+            "-pix_fmt",
+            "yuv420p",
+            "-an",
+            str(target),
+        ],
+        what=f"join the pieces of the clip {target.name}",
+    )
+
+
+def load_clip(path: Path, *, fps: float | None = None) -> ClipFrames:
+    """Decode a generated clip into frames for the compositor (RN-08).
+
+    With `fps`, a clip that has fewer frames a second than that is brought up to it, the
+    frames in between worked out from the motion (FR-07).
+    """
     if not path.is_file():
         raise EncodeError(f"The clip file is missing: {path.name}")
     probed = _run(
@@ -397,13 +457,15 @@ def load_clip(path: Path) -> ClipFrames:
     stream = json.loads(probed.stdout)["streams"][0]
     width, height = int(stream["width"]), int(stream["height"])
     above, _, below = str(stream["r_frame_rate"]).partition("/")
-    fps = float(above) / float(below or 1)
+    own_fps = float(above) / float(below or 1)
+    smooth = fps is not None and fps > own_fps + 0.5
     decoded = _run(
         [
             FFMPEG,
             *_QUIET,
             "-i",
             str(path),
+            *(["-vf", _SMOOTH.format(fps=f"{fps:g}")] if smooth else []),
             "-frames:v",
             str(_MAX_CLIP_FRAMES),
             "-f",
@@ -421,7 +483,7 @@ def load_clip(path: Path) -> ClipFrames:
     ]
     if not frames:
         raise EncodeError(f"The clip {path.name} has no frames.")
-    return ClipFrames(frames, fps=fps)
+    return ClipFrames(frames, fps=float(fps) if smooth and fps is not None else own_fps)
 
 
 # --- the whole video ---------------------------------------------------------------------

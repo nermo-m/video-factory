@@ -87,16 +87,25 @@ def build_spec(
     captions: bool,
     music: bool,
     claims: Sequence[Mapping[str, Any]],
+    animate: bool | None = None,
 ) -> dict[str, Any]:
     """The plan for a shot list: one shot and one generated picture per scene.
 
     The length is what the scenes need. A length the owner stated that the lines do not
     fit into is listed as a change, never met by cutting. Raises TooLongError when the
     scenes need more than a video can have.
+
+    `animate` is the owner's choice to have every picture made into a moving clip, or
+    none. Without it each shot moves as the shot list says.
     """
     scenes: Sequence[Mapping[str, Any]] = shotlist["scenes"]
     changes: list[dict[str, Any]] = [dict(change) for change in shotlist["changes"]]
     shots = [_shot(scene, voice_speed, changes) for scene in scenes]
+    if animate is not None:
+        # The owner's switch for the whole video: every picture moves, or none does. Each
+        # shot can still be switched in the plan afterwards.
+        for shot in shots:
+            shot["visual"]["clip"] = animate
 
     needed = round(rules.needed_seconds(scenes, voice_speed))
     if needed > LONGEST_S:

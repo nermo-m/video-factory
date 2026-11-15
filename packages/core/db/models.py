@@ -226,6 +226,12 @@ class AssetVersion(Base):
     duration_s: Mapped[float | None] = mapped_column(Float)
     cost_usd: Mapped[Decimal] = mapped_column(default=ZERO, server_default="0")
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    # The clip made from this version of the picture, with the words about its motion,
+    # what made it and how long it is. A picture that is made again starts without one.
+    clip_path: Mapped[str | None] = mapped_column(Text)
+    clip_prompt: Mapped[str | None] = mapped_column(Text)
+    clip_model: Mapped[str | None] = mapped_column(String(120))
+    clip_s: Mapped[float | None] = mapped_column(Float)
 
 
 class Job(Base):

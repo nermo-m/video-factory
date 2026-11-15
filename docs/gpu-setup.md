@@ -6,9 +6,9 @@ D3). The worker reaches it at `COMFYUI_URL`, by default
 `http://host.docker.internal:8188`. Nothing else in the studio uses the graphics card:
 the plan, the pictures, the voice and the render work without it.
 
-**State on 2026-11-13:** ComfyUI and the model files are installed and one clip was made
-by hand through ComfyUI's HTTP API (below). The studio's own clip job is not built yet
-(board card VFS-29), so a clip scene still shows its still picture.
+**State on 2026-11-15:** the studio makes its clips itself (board card VFS-29). After
+the pictures of a video are made, the worker sends each picture that is to move to
+ComfyUI, one at a time, and stores the clip with the picture. The render plays it.
 
 ## What is needed
 
@@ -83,7 +83,28 @@ euler, scheduler simple, shift 5. These are the settings of ComfyUI's own templa
 
 - The first clip took 374 seconds, including reading 36 GB of model files from disk.
 - The picture's subject moved the way the prompt asked and stayed recognisable.
-- Later clips have not been timed yet. That is part of VFS-29 (risk R3).
+- On 2026-11-15, through the studio's own adapter: 382 seconds for the first clip, then
+  352 and 284 seconds for the next two, each 81 frames at 480 by 832. The four sampling
+  steps take about 80 seconds of that. The rest is the two 14 GB models taking turns in
+  the card's memory, read from disk again each time, because both do not fit at once.
+- So count on 5 to 6 minutes for each 5 seconds of moving picture (risk R3). A video of
+  eleven shots with lines of 5 to 8 seconds takes about an hour and a half of clips.
+
+## How the studio uses it
+
+- A clip is 16 frames a second and at most 81 frames (5 seconds) a piece. A longer scene
+  is made in up to three pieces: each starts from the last frame of the one before, and
+  FFmpeg joins them in the worker. A scene longer than 15 seconds holds its last frame.
+- The words sent with a picture are the scene's motion, its camera move and the look of
+  the video.
+- The render brings the clip from 16 to 30 frames a second, with the frames in between
+  worked out from the motion, and scales it to the full frame.
+- ComfyUI does not answer while it reads a model file into memory. The worker waits up
+  to three minutes of silence before it reports ComfyUI as stopped.
+- After the last clip that waits, the worker asks ComfyUI to give the card's memory back.
+- ComfyUI keeps its own copy of every clip in `E:\ComfyUI\output\video` and of every
+  start picture in `E:\ComfyUI\input`. The studio never deletes there. Empty those
+  folders by hand when they grow.
 
 The HTTP calls that worked on ComfyUI 0.45.0, for the client of VFS-29 (design section 8
 asks to confirm them against the installed version):

@@ -17,9 +17,9 @@ from apps.api.main import create_app
 from apps.api.providers import MemoryProviderService
 from apps.api.settings import MemorySettingStore
 from packages.adapters.storage import LocalStorage
-from packages.core import assets
+from packages.core import assets, specs
 from packages.core.db import models
-from packages.core.enums import SpecAuthor
+from packages.core.enums import JobTag, SpecAuthor
 from packages.core.settings import Settings
 from packages.core.specs import store_spec
 from packages.core.tests.test_assets import own_spec, sample
@@ -110,6 +110,9 @@ def test_the_pictures_of_an_episode_are_listed_with_where_they_come_from_and_the
         "resolved": True,
         "generating": False,
         "image_url": "/api/v1/files/library/a_hill_dawn/v1.png",
+        "clip_url": None,
+        "clip_seconds": None,
+        "clip_generating": False,
         "model": None,
         "uploaded": False,
         "versions": 1,
@@ -221,3 +224,81 @@ def test_a_request_that_is_not_right_is_refused(
     response = client.post(f"/api/v1/episodes/{episode_id}/assets/a_harbour/regenerate", json=body)
 
     assert response.status_code == 422
+
+
+# --- FR-07: the clip made from a picture -------------------------------------------------------
+
+
+def _give_harbour_a_picture(sessions: sessionmaker[Session], episode_id: uuid.UUID) -> Any:
+    with sessions.begin() as session:
+        episode = session.get(models.Episode, episode_id)
+        assert episode is not None
+        spec = specs.current(session, episode_id)
+        assert spec is not None
+        harbour = next(
+            item for item in assets.resolve(session, episode, spec.body) if item.id == "a_harbour"
+        )
+        assert harbour.asset is not None
+        return assets.add_version(session, harbour.asset, file_path="episodes/x/a_harbour.png")
+
+
+def test_fr07_a_picture_says_where_its_clip_is_served(
+    client: TestClient, sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    version = _give_harbour_a_picture(sessions, episode_id)
+    before = client.get(f"/api/v1/episodes/{episode_id}/assets").json()["assets"]
+    with sessions.begin() as session:
+        assets.set_clip(
+            session,
+            version,
+            file_path="episodes/x/jobs/gen.clip/a_harbour.mp4",
+            prompt="Waves roll in.",
+            model="wan test",
+            seconds=5.0,
+        )
+
+    after = client.get(f"/api/v1/episodes/{episode_id}/assets").json()["assets"]
+
+    harbour = next(item for item in after if item["id"] == "a_harbour")
+    assert next(item for item in before if item["id"] == "a_harbour")["clip_url"] is None
+    assert harbour["clip_url"] == "/api/v1/files/episodes/x/jobs/gen.clip/a_harbour.mp4"
+    assert (harbour["clip_seconds"], harbour["clip_generating"]) == (5.0, False)
+
+
+def test_fr07_make_clip_again_queues_one_clip_job_on_the_graphics_card(
+    client: TestClient, sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    _give_harbour_a_picture(sessions, episode_id)
+
+    response = client.post(f"/api/v1/episodes/{episode_id}/assets/a_harbour/clip")
+
+    listed = {item["id"]: item for item in response.json()["assets"]}
+    with sessions() as session:
+        job = session.scalars(select(models.Job)).one()
+    assert response.status_code == 202
+    assert listed["a_harbour"]["clip_generating"] is True
+    assert (job.type, job.tag, job.episode_id) == ("gen.clip", JobTag.GPU, episode_id)
+    assert job.input["asset_id"] == "a_harbour"
+    assert job.input["regenerate"] is True
+    assert job.input["scene_id"] in listed["a_harbour"]["used_in"]
+
+
+def test_a_clip_that_is_already_being_made_is_not_queued_twice(
+    client: TestClient, sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    _give_harbour_a_picture(sessions, episode_id)
+    client.post(f"/api/v1/episodes/{episode_id}/assets/a_harbour/clip")
+
+    again = client.post(f"/api/v1/episodes/{episode_id}/assets/a_harbour/clip")
+
+    assert (again.status_code, again.json()["error"]["code"]) == (409, "already_generating")
+
+
+def test_a_picture_without_a_file_or_that_is_not_to_move_gets_no_clip(
+    client: TestClient, episode_id: uuid.UUID
+) -> None:
+    no_file = client.post(f"/api/v1/episodes/{episode_id}/assets/a_harbour/clip")
+    still = client.post(f"/api/v1/episodes/{episode_id}/assets/a_hill_dawn/clip")
+
+    assert (no_file.status_code, no_file.json()["error"]["code"]) == (409, "no_picture")
+    assert (still.status_code, still.json()["error"]["code"]) == (409, "not_a_clip")

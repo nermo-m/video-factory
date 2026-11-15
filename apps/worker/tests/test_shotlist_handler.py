@@ -400,3 +400,22 @@ def test_the_plan_is_written_by_the_tool_and_the_model_the_owner_chose(
 
     assert asked == [Writer(tool="chatgpt", model="gpt-5.5")]
     assert len(model.requests) == 1
+
+
+def test_fr07_the_shots_of_a_new_plan_move_unless_the_owner_switched_that_off(
+    sessions: sessionmaker[Session],
+) -> None:
+    moving = new_episode(sessions)
+    still = new_episode(sessions, options={"animate": False})
+
+    run(sessions, Model(example("output")), moving)
+    run(sessions, Model(example("output")), still)
+
+    def clips(episode_id: uuid.UUID) -> set[bool]:
+        with sessions() as session:
+            current = specs.current(session, episode_id)
+            assert current is not None
+            return {bool(scene["visual"].get("clip")) for scene in current.body["scenes"]}
+
+    assert clips(moving) == {True}
+    assert clips(still) == {False}

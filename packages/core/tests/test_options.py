@@ -13,7 +13,9 @@ from packages.core.options import (
 
 
 def test_nothing_is_forced_by_default() -> None:
-    assert options_of(None) == EpisodeOptions(research=False, captions=True, music=True)
+    assert options_of(None) == EpisodeOptions(
+        research=False, captions=True, music=True, animate=True
+    )
     assert options_of({}) == EpisodeOptions()
 
 
@@ -21,7 +23,12 @@ def test_what_the_owner_chose_is_kept() -> None:
     chosen = options_of({"research": True, "captions": False, "music": False})
 
     assert chosen == EpisodeOptions(research=True, captions=False, music=False)
-    assert chosen.to_json() == {"research": True, "captions": False, "music": False}
+    assert chosen.to_json() == {
+        "research": True,
+        "captions": False,
+        "music": False,
+        "animate": True,
+    }
 
 
 def test_a_switch_that_is_missing_has_its_default() -> None:
@@ -37,7 +44,7 @@ def test_what_is_not_a_switch_is_ignored() -> None:
 
 
 def test_the_names_of_the_switches() -> None:
-    assert NAMES == ("research", "captions", "music")
+    assert NAMES == ("research", "captions", "music", "animate")
 
 
 # --- who writes the plan -------------------------------------------------------------------
@@ -69,7 +76,13 @@ def test_the_writer_is_stored_next_to_the_switches() -> None:
         "research": False,
         "captions": True,
         "music": False,
+        "animate": True,
         "writer": "chatgpt:gpt-5.5",
     }
     assert options_of(stored) == EpisodeOptions(music=False)
     assert stored_options(EpisodeOptions(), "") == EpisodeOptions().to_json()
+
+
+def test_the_pictures_move_unless_the_owner_switched_that_off() -> None:
+    assert options_of({}).animate is True
+    assert options_of({"animate": False}).animate is False
