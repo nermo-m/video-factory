@@ -47,7 +47,7 @@ flowchart LR
 | `api` | `apps/api` | REST API under `/api/v1`, validation, pipeline state machine, enqueues jobs, serves files | Health endpoint, error shape, OpenAPI |
 | `worker` | `apps/worker` | Claims jobs and runs them: planner calls, images, voice, render, QC, export, and the client side of ComfyUI | Job loops, the planning jobs, and the voice and render jobs. An episode rests after the render until quality checks exist (M4) |
 | `db` | Postgres 16 | All state: episodes, specs, assets, jobs, renders, reviews, usage | All 15 tables |
-| ComfyUI | on the host | Wan 2.2 image-to-video inference, driven over HTTP by the worker | Reachability probe only (clip adapter in M3) |
+| ComfyUI | on the host | Wan 2.2 image-to-video inference, driven over HTTP by the worker | Clip adapter (`packages/adapters/clip`), since VFS-29 |
 | CLI bridge | `tools/cli_bridge`, on the host | Lets the worker use the owner's Claude and ChatGPT plans through the official command line tools | Not yet. Built in M2: `/health`, `/claude` and `/codex` on `127.0.0.1:8189` ([ADR 8](adr/0008-host-bridge-for-the-command-line-tools.md)) |
 
 Shared code lives in `packages/`:
@@ -107,7 +107,7 @@ stateDiagram-v2
 | `script` | none | | Passed over (ADR 11) |
 | `direction` | `plan.shotlist` | cpu | The shot list from the owner's prompt, and the plan built from it. Gate: plan approval |
 | `asset_plan` | none | | Passed over (ADR 11) |
-| `asset_gen` | `gen.image` | cpu | One picture per shot. Clips follow with VFS-29. Gate: asset approval |
+| `asset_gen` | `gen.image`, then `gen.clip` for each picture that is to move | cpu, then gpu | One picture per shot, then its clip from Wan 2.2 on the owner's graphics card, one at a time. Gate: asset approval |
 | `voice` | `gen.voice` | cpu | One audio file per scene plus word timings |
 | `render` | `render.scene` per scene, then `render.join` | cpu | Scene files, draft video, contact sheet |
 | `qc` | `qc.run` | cpu | QC report |

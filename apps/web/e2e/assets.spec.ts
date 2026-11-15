@@ -191,6 +191,53 @@ test.describe("Assets tab", () => {
 });
 
 test.describe("Download", () => {
+  test("FR-07 a picture that is to move shows its clip, and one without says when it comes", async ({
+    page,
+  }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = atPictures();
+    fake.assets = [
+      picture("a_garden_dawn", {
+        becomes_clip: true,
+        clip_url: "/api/v1/files/jobs/gen.clip/ab/abcdef/a_garden_dawn.mp4",
+        clip_seconds: 5.0625,
+      }),
+      picture("a_watering_can", { becomes_clip: true }),
+      picture("a_gate", { becomes_clip: true, clip_generating: true }),
+      picture("a_still_life"),
+    ];
+    await openWorkspace(page, fake);
+    await assetsTab(page);
+
+    const dawn = card(page, "Garden dawn");
+    await expect(dawn.locator("video")).toHaveAttribute(
+      "src",
+      "/api/v1/files/jobs/gen.clip/ab/abcdef/a_garden_dawn.mp4",
+    );
+    await expect(dawn).toContainText("Moving clip, 5 seconds");
+    await expect(card(page, "Watering can")).toContainText("No clip yet. It is made after the pictures");
+    await expect(card(page, "Gate")).toContainText("Clip being made on the graphics card");
+    await expect(card(page, "Gate").getByRole("button", { name: "Make clip again" })).toHaveCount(0);
+    // A picture that stays still says nothing about clips.
+    await expect(card(page, "Still life")).not.toContainText("clip");
+    await expect(card(page, "Still life").locator("video")).toHaveCount(0);
+  });
+
+  test("FR-07 Make clip again queues one clip and shows that it is being made", async ({ page }) => {
+    await page.setViewportSize(SIZES.desktop);
+    const fake = atPictures();
+    fake.assets = [picture("a_garden_dawn", { becomes_clip: true })];
+    await openWorkspace(page, fake);
+    await assetsTab(page);
+    const dawn = card(page, "Garden dawn");
+
+    await dawn.getByRole("button", { name: "Make clip again" }).click();
+
+    await expect(dawn).toContainText("Clip being made on the graphics card");
+    await expect(dawn.getByRole("button", { name: "Make clip again" })).toHaveCount(0);
+    expect(sent(fake, "POST", "/assets/a_garden_dawn/clip")).toHaveLength(1);
+  });
+
   test("the Render tab offers the finished video as a file", async ({ page }) => {
     await page.setViewportSize(SIZES.desktop);
     const fake = fakeEpisode({ state: "render", awaiting_approval: false, gate: null, resting: true });

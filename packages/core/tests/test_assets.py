@@ -391,3 +391,63 @@ def test_fr08_a_picture_without_a_row_fails_closed(
 
     assert len(problems) == 4
     assert problems[0] == "a_hill_dawn has no asset yet, so its rights are unknown."
+
+
+# --- FR-07: the clip made from a picture -------------------------------------------------------
+
+
+def test_fr07_a_clip_belongs_to_the_version_of_the_picture_it_was_made_from(
+    sessions: sessionmaker[Session], storage: LocalStorage, sample: dict[str, Any]
+) -> None:
+    spec = own_spec(sample)
+    made = prepared(sessions, storage, spec)
+
+    with sessions.begin() as session:
+        harbour = by_id(assets.resolve(session, made, spec))["a_harbour"].asset
+        assert harbour is not None
+        first = assets.add_version(session, harbour, file_path="one.png")
+        assets.set_clip(
+            session,
+            first,
+            file_path="jobs/gen.clip/aa/one/a_harbour.mp4",
+            prompt="Waves roll in.",
+            model="wan2.2",
+            seconds=5.0,
+        )
+        with_clip = by_id(assets.resolve(session, made, spec))["a_harbour"]
+        stored, _unresolved = assets.files([with_clip])
+    # The picture is made again: its clip showed the old picture and is not used any more.
+    with sessions.begin() as session:
+        assets.add_version(session, harbour, file_path="two.png")
+        without = by_id(assets.resolve(session, made, spec))["a_harbour"]
+        stored_after, _unresolved = assets.files([without])
+
+    assert with_clip.clip == "jobs/gen.clip/aa/one/a_harbour.mp4"
+    assert stored["a_harbour"] == assets.StoredFile(
+        "one.png", None, clip_file="jobs/gen.clip/aa/one/a_harbour.mp4"
+    )
+    assert without.clip is None
+    assert stored_after["a_harbour"] == assets.StoredFile("two.png", None)
+
+
+def test_fr07_a_clip_of_a_picture_that_is_not_to_move_is_not_shown(
+    sessions: sessionmaker[Session], storage: LocalStorage, sample: dict[str, Any]
+) -> None:
+    spec = own_spec(sample)
+    made = prepared(sessions, storage, spec)
+    with sessions.begin() as session:
+        harbour = by_id(assets.resolve(session, made, spec))["a_harbour"].asset
+        assert harbour is not None
+        version = assets.add_version(session, harbour, file_path="one.png")
+        assets.set_clip(session, version, file_path="one.mp4", prompt="", model="m", seconds=2.0)
+
+    # The owner switched the clip off for the scene that shows this picture.
+    still = copy.deepcopy(spec)
+    for scene in still["scenes"]:
+        scene.get("visual", {}).pop("clip", None)
+    with sessions() as session:
+        picture = by_id(assets.resolve(session, made, still))["a_harbour"]
+        stored, _unresolved = assets.files([picture])
+
+    assert picture.becomes_clip is False
+    assert stored["a_harbour"].clip_file is None

@@ -14,6 +14,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from packages.adapters.clip import ClipAdapter, ComfyClips
 from packages.adapters.image import CodexImages, ImageAdapter, SampleImages
 from packages.adapters.llm import (
     AnthropicLLM,
@@ -122,6 +123,15 @@ class Adapters:
             "API mode cannot make pictures yet: the OpenAI image adapter is not built. Use "
             "PROVIDER_MODE=subscription, where pictures are made on the ChatGPT plan."
         )
+
+    def clip(self) -> ClipAdapter | None:
+        """What makes a picture move: the open video model in ComfyUI on the owner's PC.
+        It costs nothing and belongs to no plan, so it is the same in subscription mode
+        and in API mode. Demo mode has no graphics card job and answers None: its
+        scenes show their still pictures."""
+        if self.settings.provider_mode == "demo":
+            return None
+        return ComfyClips(self.settings.comfyui_url)
 
     def storage(self) -> LocalStorage:
         return LocalStorage(self.settings.data_dir)

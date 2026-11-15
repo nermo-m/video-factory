@@ -73,9 +73,13 @@ that. The pictures are then made one by one, about 40 seconds each. Look
 at them in the Assets tab, make one again if you like, and approve them. A few minutes
 later the Render tab plays the video and offers it as a download.
 
-Moving clips are made on your own graphics card with Wan 2.2 through ComfyUI. Setting
-that up is described in [docs/gpu-setup.md](docs/gpu-setup.md). Without it a clip scene
-shows its still picture.
+Every picture then becomes a moving clip, made on your own graphics card with Wan 2.2
+through ComfyUI: about 5 to 6 minutes for each 5 seconds on an RTX 3090, one clip at a
+time. A scene longer than 5 seconds is made in pieces that go on from each other. The
+clip is shown under its picture in the Assets tab, where Make clip again makes a new
+one. Setting ComfyUI up is described in [docs/gpu-setup.md](docs/gpu-setup.md). Switch
+"Animate the pictures" off under Options, or "Make it a moving clip" off for a shot, and
+that picture stays still with its camera move.
 
 Your own pictures work too. In the Assets tab, Upload your own puts a PNG, JPEG or WebP
 file in the place of one picture. To place several at once, name each file after its

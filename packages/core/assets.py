@@ -57,11 +57,18 @@ class Picture:
     def file(self) -> str | None:
         return self.version.file_path if self.version is not None else None
 
+    @property
+    def clip(self) -> str | None:
+        """The clip made from the picture as it is now, if there is one."""
+        return self.version.clip_path if self.version is not None else None
+
 
 @dataclass(frozen=True)
 class StoredFile:
     file: str
     licence: str | None
+    # The clip made from this picture, when a scene shows the picture moving.
+    clip_file: str | None = None
 
 
 def episode_key(episode_id: uuid.UUID, asset_id: str) -> str:
@@ -238,6 +245,26 @@ def add_version(
     return version
 
 
+def set_clip(
+    session: Session,
+    version: AssetVersion,
+    *,
+    file_path: str,
+    prompt: str,
+    model: str,
+    seconds: float,
+) -> None:
+    """Store the clip that was made from this version of a picture (FR-07). A clip made
+    again replaces the one before: the file of the earlier one stays in its job's folder."""
+    # By id, so it also works for a version that was read in another session.
+    session.execute(
+        update(AssetVersion)
+        .where(AssetVersion.id == version.id)
+        .values(clip_path=file_path, clip_prompt=prompt, clip_model=model, clip_s=seconds)
+    )
+    session.expire(version) if version in session else None
+
+
 def activate(session: Session, version: AssetVersion) -> None:
     """Make an earlier version the active one again."""
     session.execute(
@@ -320,7 +347,12 @@ def files(pictures: list[Picture]) -> tuple[dict[str, StoredFile], list[Picture]
         if picture.asset is None or picture.file is None:
             unresolved.append(picture)
         else:
-            stored[picture.id] = StoredFile(picture.file, picture.asset.licence)
+            stored[picture.id] = StoredFile(
+                picture.file,
+                picture.asset.licence,
+                # A clip is only shown while a scene asks for the picture to move.
+                clip_file=picture.clip if picture.becomes_clip else None,
+            )
     return stored, unresolved
 
 

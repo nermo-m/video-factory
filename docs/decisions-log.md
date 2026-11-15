@@ -1781,3 +1781,47 @@ to reverse it. Questions about the design itself are in [questions.md](questions
 - **Not checked live:** no plan was written with a model other than the default in this
   card. A model name the owner's plan does not have comes back as the tool's own error
   on the plan step.
+
+## D-061: Pictures move: Wan 2.2 clips, part 2 of Director mode
+
+- **Date:** 2026-11-15. **Card:** VFS-29. The owner on 2026-11-15: "what will be created
+  with the open source model is to animate them fluidly. Like real animation, not just a
+  picture."
+- **Every picture moves unless the owner says no.** A video has the switch "Animate the
+  pictures", on by default. It sets the clip switch of every shot when the plan is built,
+  and each shot can still be switched in the plan. This replaces the shot list's own
+  choice of which scenes move.
+- **One clip per picture, stored with the version of the picture it was made from**
+  (migration 0007). A picture that is made again has no clip until one is made from the
+  new picture, and the picture job queues that clip itself.
+- **Length.** The voice is spoken after the pictures, so a clip is made for the scene's
+  expected length plus a tenth. In the render a clip that is still a little short plays
+  slower, down to three quarters of its pace, and then holds its last frame.
+- **Pieces.** The model makes 5 seconds at a time. A longer scene is made in up to three
+  pieces, each from the last frame of the one before (the owner's outline of 2026-11-14:
+  "clip chaining"). Three pieces are the most, to keep the picture from drifting.
+- **Smoothness.** Wan makes 16 frames a second. The render brings a clip to 30 with
+  FFmpeg's motion interpolation instead of showing each frame twice.
+- **Size.** 480 by 832, the model's small upright size, scaled to 1080 by 1920 in the
+  render. The larger 720 by 1280 was not tried: at 5 to 6 minutes for the small size it
+  would take three times as long on this card.
+- **Demo mode makes no clips.** It has no graphics card job. Its clip jobs finish at once
+  and say so, and its scenes show their still pictures.
+- **ComfyUI that is not running** stops the clip step with a task for the owner. It is
+  not passed over in silence: the owner asked for moving pictures.
+- **Tests first, with two lapses:** the adapter was written together with its tests and
+  first run green, and the clip job's test for a stale video needed its setup corrected
+  twice.
+- **Checked live on 2026-11-15**, on the owner's plans and card, with a test video of one
+  scene ("Paper Boat in the Rain"): the plan was written by `claude-fable-5-2` in 35
+  seconds (the owner's choice of model, D-060), one picture was made on the ChatGPT plan,
+  the clip was made in two pieces (9.1 seconds, 720 seconds on the card) and joined, and
+  the video rendered with voice and captions. In the frames the boat drifts toward the
+  viewer, the rain rings spread and the look of the picture is kept. Cost: one Claude
+  call and one picture.
+- **A flaw the live check found and this card fixes:** a video with music off was refused
+  by the format check, "The audio bitrate is 165 kbps, not 192 kbps". The encoder is asked
+  for 192 and uses fewer bits for a voice alone. Without the music bed only too many bits
+  are a problem now (RN-01 still holds for the setting).
+- **Not built in this card:** a larger clip size, a faster model file format, and a
+  second model for a better picture of faces. They are noted in Q-080.

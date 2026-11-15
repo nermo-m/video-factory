@@ -171,3 +171,27 @@ def test_an_unrolling_scroll_grows_from_the_top() -> None:
     assert heights[0] == 1
     assert heights == sorted(heights)
     assert heights[-2:] == [400, 400]
+
+
+def test_fr07_a_clip_that_is_a_little_short_for_its_scene_plays_a_little_slower() -> None:
+    # Two seconds of clip for a scene of two and a half: slowed to fit, not frozen.
+    clip = draw.ClipFrames(frames(10), fps=5)
+
+    assert channel(clip.within(0, 2.5), 0) == 0
+    assert channel(clip.within(1.25, 2.5), 0) == 5
+    assert channel(clip.within(2.49, 2.5), 0) == 9
+
+
+def test_fr07_a_clip_that_is_long_enough_plays_at_its_own_pace() -> None:
+    clip = draw.ClipFrames(frames(10), fps=5)
+
+    assert channel(clip.within(1.0, 2.0), 0) == 5
+    assert channel(clip.within(1.0, 1.5), 0) == 5
+
+
+def test_fr07_a_clip_is_never_slowed_below_three_quarters_of_its_pace() -> None:
+    # Two seconds of clip for a scene of eight: at three quarters pace, then its last frame.
+    clip = draw.ClipFrames(frames(10), fps=5)
+
+    assert channel(clip.within(1.0, 8.0), 0) == 3
+    assert channel(clip.within(6.0, 8.0), 0) == 9

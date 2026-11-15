@@ -55,6 +55,24 @@ export type AssetOut = {
      */
     becomes_clip: boolean;
     /**
+     * Clip Generating
+     *
+     * True while a job makes its clip, or waits to.
+     */
+    clip_generating: boolean;
+    /**
+     * Clip Seconds
+     *
+     * How long that clip is.
+     */
+    clip_seconds: number | null;
+    /**
+     * Clip Url
+     *
+     * Where the clip made from the picture as it is now is served, if any.
+     */
+    clip_url: string | null;
+    /**
      * Contains Third Party Ip
      */
     contains_third_party_ip: boolean | null;
@@ -307,7 +325,7 @@ export type EpisodeDetail = {
     /**
      * Options
      *
-     * What the owner switched on or off for this video: research, captions, music.
+     * What the owner switched on or off for this video: research, captions, music, animate.
      */
     options: {
         [key: string]: boolean;
@@ -401,7 +419,7 @@ export type EpisodeOut = {
     /**
      * Options
      *
-     * What the owner switched on or off for this video: research, captions, music.
+     * What the owner switched on or off for this video: research, captions, music, animate.
      */
     options: {
         [key: string]: boolean;
@@ -610,9 +628,15 @@ export type MatchRequest = {
  * OptionsIn
  *
  * What the owner switches on or off for one video. A switch that is left out has
- * its default: no research, captions on, music on.
+ * its default: no research, captions on, music on, moving pictures on.
  */
 export type OptionsIn = {
+    /**
+     * Animate
+     *
+     * Make every picture a moving clip, with the open video model on the owner's graphics card. Each shot can still be switched in the plan.
+     */
+    animate?: boolean | null;
     /**
      * Captions
      *
@@ -1420,6 +1444,52 @@ export type PostEpisodeAssetsMatchResponses = {
 };
 
 export type PostEpisodeAssetsMatchResponse = PostEpisodeAssetsMatchResponses[keyof PostEpisodeAssetsMatchResponses];
+
+export type PostEpisodeAssetClipData = {
+    body?: never;
+    path: {
+        /**
+         * Episode Id
+         */
+        episode_id: string;
+        /**
+         * Asset Id
+         */
+        asset_id: string;
+    };
+    query?: never;
+    url: '/api/v1/episodes/{episode_id}/assets/{asset_id}/clip';
+};
+
+export type PostEpisodeAssetClipErrors = {
+    /**
+     * The episode, or what was asked of it, does not exist.
+     */
+    404: ErrorResponse;
+    /**
+     * The episode cannot do this in its current state.
+     */
+    409: ErrorResponse;
+    /**
+     * The request is not valid.
+     */
+    422: ErrorResponse;
+    /**
+     * Unexpected server error.
+     */
+    500: ErrorResponse;
+};
+
+export type PostEpisodeAssetClipError = PostEpisodeAssetClipErrors[keyof PostEpisodeAssetClipErrors];
+
+export type PostEpisodeAssetClipResponses = {
+    /**
+     * Successful Response
+     */
+    202: AssetList;
+};
+
+export type PostEpisodeAssetClipResponse = PostEpisodeAssetClipResponses[keyof PostEpisodeAssetClipResponses];
 
 export type PostEpisodeAssetRegenerateData = {
     body: RegenerateRequest;

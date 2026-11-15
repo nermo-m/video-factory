@@ -35,3 +35,31 @@ def compose(spec: Mapping[str, Any], asset: Mapping[str, Any]) -> str | None:
             parts.append(f"{character['name']}: {character['description']}".strip())
     parts.append(prompt.strip())
     return SEPARATOR.join(parts)
+
+
+# What the open video model is told about each camera move of the plain look.
+CAMERA_WORDS: dict[str, str] = {
+    "none": "The camera stays still.",
+    "push_in": "The camera slowly pushes in.",
+    "pull_out": "The camera slowly pulls back.",
+    "pan_left": "The camera slowly pans left.",
+    "pan_right": "The camera slowly pans right.",
+    "tilt_up": "The camera slowly tilts up.",
+    "tilt_down": "The camera slowly tilts down.",
+}
+# Said when a scene is to move and its plan has no words about how.
+GENTLE_MOTION = "Gentle, natural motion in the scene."
+
+
+def motion(spec: Mapping[str, Any], scene: Mapping[str, Any]) -> str:
+    """What the video model is told about one scene: what moves, the camera move, and
+    the look of the video, so the clip keeps the style of its picture."""
+    visual: Mapping[str, Any] = scene.get("visual") or {}
+    parts = [str(visual.get("motion") or "").strip() or GENTLE_MOTION]
+    camera = CAMERA_WORDS.get(str(visual.get("camera") or ""))
+    if camera:
+        parts.append(camera)
+    style = str(spec.get("style") or "").strip()
+    if style:
+        parts.append(style)
+    return " ".join(parts)

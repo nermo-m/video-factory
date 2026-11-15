@@ -252,8 +252,8 @@ export function ShotCard({
               Make it a moving clip
             </label>
             <p className="text-xs text-muted-foreground">
-              Clips arrive with the next step. Until then this scene shows its picture with the
-              camera move.
+              The clip is made on your graphics card after the pictures. Without it this scene
+              shows its picture with the camera move.
             </p>
           </div>
           {failure && <Problems failure={failure} />}
@@ -307,8 +307,7 @@ export function ShotCard({
             {typeof visual.motion === "string" && <Fact label="Motion">{visual.motion}</Fact>}
             {visual.clip === true && (
               <p className="text-[0.8125rem] text-muted-foreground">
-                To be a moving clip. Clips arrive with the next step. Until then this scene shows
-                its picture with the camera move.
+                To be a moving clip, made on your graphics card after the pictures.
               </p>
             )}
           </div>

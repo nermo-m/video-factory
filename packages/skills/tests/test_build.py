@@ -246,3 +246,24 @@ def test_a_scene_a_fraction_of_a_second_short_says_so_in_tenths() -> None:
     assert spec["changes"][0]["why"] == (
         "The line takes about 2.4 seconds to speak and the scene was given 2."
     )
+
+
+def test_fr07_every_shot_moves_when_the_owner_wants_the_pictures_animated() -> None:
+    spec = built(shotlist(), animate=True)
+
+    assert [scene["visual"]["clip"] for scene in spec["scenes"]] == [True] * len(spec["scenes"])
+
+
+def test_fr07_no_shot_moves_when_the_owner_switched_that_off() -> None:
+    spec = built(shotlist(), animate=False)
+
+    assert not any(scene["visual"]["clip"] for scene in spec["scenes"])
+
+
+def test_without_a_choice_each_shot_moves_as_the_shot_list_says() -> None:
+    listed = shotlist()
+    spec = built(listed)
+
+    assert [scene["visual"]["clip"] for scene in spec["scenes"]] == [
+        scene["clip"] for scene in listed["scenes"]
+    ]

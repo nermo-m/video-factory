@@ -16,7 +16,7 @@ const EPISODE: EpisodeDetail = {
   stale_scenes: {},
   resting: false,
   target_duration_s: 45,
-  options: { research: false, captions: true, music: true },
+  options: { research: false, captions: true, music: true, animate: true },
   writer: "",
   created_at: "2026-11-13T08:00:00Z",
   jobs: [],
@@ -42,6 +42,9 @@ function picture(id: string, fields: Partial<AssetOut> = {}): AssetOut {
     generating: false,
     // No file is behind this address in Storybook: the picture shows its name instead.
     image_url: `/api/v1/files/jobs/gen.image/ab/abcdef/${id}.png`,
+    clip_url: null,
+    clip_seconds: null,
+    clip_generating: false,
     model: "codex image tool",
     uploaded: false,
     versions: 1,

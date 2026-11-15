@@ -220,6 +220,9 @@ export function picture(id: string, fields: Json = {}): Json {
     resolved: true,
     generating: false,
     image_url: `/api/v1/files/jobs/gen.image/ab/abcdef/${id}.png`,
+    clip_url: null,
+    clip_seconds: null,
+    clip_generating: false,
     model: "codex image tool",
     uploaded: false,
     versions: 1,
@@ -337,6 +340,13 @@ export async function mockEpisode(page: Page, fake: FakeEpisode) {
     if (method === "POST" && again) {
       fake.assets = fake.assets.map((asset) =>
         asset.id === again[1] ? { ...asset, generating: true } : asset,
+      );
+      return route.fulfill({ status: 202, json: assetList(fake) });
+    }
+    const clip = /^\/assets\/([a-z0-9_]+)\/clip$/.exec(path);
+    if (method === "POST" && clip) {
+      fake.assets = fake.assets.map((asset) =>
+        asset.id === clip[1] ? { ...asset, clip_generating: true } : asset,
       );
       return route.fulfill({ status: 202, json: assetList(fake) });
     }

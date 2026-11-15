@@ -215,7 +215,7 @@ class Compositor:
         duration: float = scene["duration_s"]
         clip = self.clips.get(visual["asset_id"]) if visual.get("clip") else None
         if clip is not None:
-            filled = draw.cover(clip.at(local), *self.size)
+            filled = draw.cover(clip.within(local, duration), *self.size)
         else:
             filled = draw.camera_frame(
                 self._asset_image(visual["asset_id"]),

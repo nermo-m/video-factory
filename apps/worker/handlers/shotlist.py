@@ -99,6 +99,7 @@ def shotlist_handlers(
                 captions=options.captions,
                 music=options.music,
                 claims=claims,
+                animate=options.animate,
             )
         except build.TooLongError as too_long:
             raise NeedsOwnerError(str(too_long)) from too_long

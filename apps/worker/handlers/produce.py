@@ -119,7 +119,10 @@ def speak(
 
 def asset_files(stored: Mapping[str, assets.StoredFile]) -> dict[str, AssetFile]:
     """The stored pictures in the form the resolver takes."""
-    return {key: AssetFile(file=file.file, licence=file.licence) for key, file in stored.items()}
+    return {
+        key: AssetFile(file=file.file, licence=file.licence, clip_file=file.clip_file)
+        for key, file in stored.items()
+    }
 
 
 def stored_pictures(
@@ -193,6 +196,8 @@ def join_video(
         # A plan of shots is as long as its lines need. Only a plan of the first design
         # was written to a target length.
         held_to_target=resolved["spec_version"] == "2.0",
+        # Without the music bed a voice alone needs fewer bits than it is given.
+        with_music=bool(resolved.get("music", True)),
     )
     return Joined(
         video=rendered.video,

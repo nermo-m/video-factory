@@ -246,10 +246,10 @@ test.describe("One card per shot", () => {
     await expect(first).toContainText("Tilt up");
     await expect(first).toContainText("She walks up the path, the grass moves in the wind.");
     await expect(first).toContainText(
-      "Clips arrive with the next step. Until then this scene shows its picture with the camera move.",
+      "To be a moving clip, made on your graphics card after the pictures.",
     );
     await expect(scene(page, 2)).toContainText("Written by the studio");
-    await expect(scene(page, 2)).not.toContainText("Clips arrive");
+    await expect(scene(page, 2)).not.toContainText("To be a moving clip");
     await expect(scene(page, 3)).toContainText("No spoken line.");
     await expect(scene(page, 3)).toContainText("Still");
   });

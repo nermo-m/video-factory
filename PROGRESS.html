@@ -619,8 +619,8 @@
       "id": "VFS-88",
       "order": 316.75,
       "title": "Choose the model that writes the plan",
-      "status": "review",
-      "note": "New episode has a list \"Plan written by\": Claude Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5, ChatGPT, or another model by name, on the owner's own plans. A plan that is sent back can be written again by another model, and a plan written by ChatGPT counts against the ChatGPT plan. Board card: https://app.notion.com/p/419474b94ace8179b5c5dbfa675b7121"
+      "status": "done",
+      "note": "New episode has a list \"Plan written by\": Claude Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5, ChatGPT, or another model by name, on the owner's own plans. A plan that is sent back can be written again by another model, and a plan written by ChatGPT counts against the ChatGPT plan. Merged in pull request #67. Board card: https://app.notion.com/p/419474b94ace8179b5c5dbfa675b7121"
     },
     {
       "id": "VFS-87",
@@ -628,6 +628,13 @@
       "title": "Remove the four skills of the old planning chain",
       "status": "ready",
       "note": "brief, script, direct and assets are no longer run since VFS-84. Their folders, recordings, rules, handlers and tests are removed in one cleanup, and plans of the first design become read-only as the design says."
+    },
+    {
+      "id": "VFS-29",
+      "order": 317,
+      "title": "Moving pictures: Wan 2.2 clips through ComfyUI",
+      "status": "review",
+      "note": "Every picture of a plan becomes a moving clip on the owner's graphics card: the clip adapter for ComfyUI, the clip job with pieces that go on from the last frame, clips stored with their picture, smooth playback at 30 frames a second in the render, the Animate the pictures switch, and the clip in the Assets tab with Make clip again. Measured on the RTX 3090: 284 to 352 seconds for 5 seconds. Board card: https://app.notion.com/p/415474b94ace81d69e84d32e19b07cc5"
     },
     {
       "id": "VFS-28",
@@ -639,7 +646,7 @@
   ],
   "now_building": {
     "status": "idle",
-    "next": "VFS-29: Wan 2.2 clips through ComfyUI, so that the pictures of a plan of shots move (part 2 of Director mode). Then VFS-87, the cleanup of the old chain."
+    "next": "VFS-87: remove the four skills of the old planning chain and its steps from the progress strips. Then part 3 of Director mode: character reference pictures and a local image model for pictures the ChatGPT plan refuses."
   },
   "checklist": [
     {
@@ -674,7 +681,7 @@
   "quality": [
     {
       "label": "Automated tests",
-      "value": "1750 unit, 46 render (19 golden frames, 27 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 354 integration (Python), 19 Node, 241 browser tests with axe and screenshots"
+      "value": "1778 unit, 49 render (19 golden frames, 30 with FFmpeg), 5 real-voice, 15 flag and schema checks against the installed command line tools and 380 integration (Python), 19 Node, 243 browser tests with axe and screenshots"
     },
     {
       "label": "Pre-commit hooks",
@@ -881,6 +888,10 @@
     {
       "date": "2026-11-15",
       "text": "The owner chooses the model that writes each plan: a Claude model or ChatGPT, on their own plans."
+    },
+    {
+      "date": "2026-11-15",
+      "text": "Pictures move: the studio makes a Wan 2.2 clip from every picture on the owner's own graphics card and plays it in the video."
     }
   ]
 }

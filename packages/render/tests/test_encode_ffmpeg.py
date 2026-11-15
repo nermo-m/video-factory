@@ -23,6 +23,7 @@ from packages.render.encode import (
     RenderResult,
     encode_scene,
     for_preview,
+    join_clips,
     load_clip,
     render_video,
 )
@@ -367,6 +368,70 @@ def test_rn08_a_scene_with_a_clip_plays_the_clip(
     middle = decoded_frame(path, 40, (540, 960))[420, 250]
     assert middle[0] > 180
     assert middle[1] < 90
+
+
+def _test_clip(path: Path, colour: str, seconds: float) -> None:
+    subprocess.run(  # noqa: S603
+        [  # noqa: S607
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"color=c={colour}:size=480x832:rate=16:duration={seconds}",
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
+        ],
+        check=True,
+    )
+
+
+def test_fr07_a_clip_is_decoded_at_the_frame_rate_of_the_video(tmp_path: Path) -> None:
+    clip = tmp_path / "clip.mp4"
+    _test_clip(clip, "red", 1.0)
+
+    smooth = load_clip(clip, fps=30)
+
+    # 16 frames a second become 30, with the frames in between worked out from the motion.
+    assert smooth.fps == pytest.approx(30.0)
+    # FFmpeg's filter ends on the last real frame: 15 sixteenths of a second at 30 a second.
+    assert 26 <= len(smooth.frames) <= 30
+    assert smooth.frames[0].size == (480, 832)
+
+
+def test_fr07_the_pieces_of_a_clip_are_joined_and_the_shared_frame_is_shown_once(
+    tmp_path: Path,
+) -> None:
+    first, second, target = tmp_path / "a.0.mp4", tmp_path / "a.1.mp4", tmp_path / "out" / "a.mp4"
+    _test_clip(first, "red", 1.0)
+    _test_clip(second, "blue", 0.5)
+
+    join_clips(tmp_path, [first, second], target)
+
+    joined = load_clip(target)
+    # 16 frames, then 8 less the one that repeats the last frame of the piece before.
+    assert len(joined.frames) == 16 + 7
+    assert joined.fps == pytest.approx(16.0)
+    first_frame = np.asarray(joined.frames[0].convert("RGB"))[400, 240]
+    last_frame = np.asarray(joined.frames[-1].convert("RGB"))[400, 240]
+    assert first_frame[0] > 180, "the first piece is red"
+    assert first_frame[2] < 90
+    assert last_frame[2] > 180, "the second piece is blue"
+    assert last_frame[0] < 90
+
+
+def test_fr07_a_clip_piece_outside_the_data_folder_is_refused(tmp_path: Path) -> None:
+    inside = tmp_path / "data"
+    inside.mkdir()
+    outside = tmp_path / "elsewhere.mp4"
+    _test_clip(outside, "red", 0.5)
+
+    with pytest.raises(EncodeError, match="outside the data folder"):
+        join_clips(inside, [outside], inside / "a.mp4")
 
 
 def test_a_missing_clip_file_is_named(tmp_path: Path) -> None:

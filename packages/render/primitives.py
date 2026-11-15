@@ -180,6 +180,10 @@ def camera_frame(
 # --- clips ---------------------------------------------------------------------------
 
 
+# The slowest a clip is played to fill its scene: below this, motion looks dragged.
+SLOWEST_PACE = 0.75
+
+
 @dataclass(frozen=True)
 class ClipFrames:
     """The decoded frames of a generated clip.
@@ -197,6 +201,16 @@ class ClipFrames:
         if index >= len(self.frames):
             index = index % len(self.frames) if self.mode == "loop" else len(self.frames) - 1
         return self.frames[index]
+
+    def within(self, seconds: float, scene_s: float) -> Image.Image:
+        """The frame at a time of a scene of the given length. A clip that is a little
+        short for its scene plays a little slower, so it ends with the scene instead of
+        standing still. It is never slowed below `SLOWEST_PACE`: after that it holds its
+        last frame."""
+        length = len(self.frames) / self.fps if self.fps else 0.0
+        if self.mode == "loop" or scene_s <= 0 or length >= scene_s:
+            return self.at(seconds)
+        return self.at(seconds * max(SLOWEST_PACE, length / scene_s))
 
 
 # --- ambience and effects ------------------------------------------------------------

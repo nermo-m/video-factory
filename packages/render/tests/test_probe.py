@@ -94,3 +94,20 @@ def test_a_plan_of_shots_is_still_checked_for_everything_else() -> None:
     assert format_problems(wrong, FORMAT, 50.0, held_to_target=False) == [
         "The pixel format is yuv444p, not yuv420p."
     ]
+
+
+def test_a_video_without_music_may_need_fewer_bits_than_it_was_given() -> None:
+    # Seen on the first live video with music off: a voice alone came out at 165 kbps.
+    # The encoder is asked for 192 and uses less when the sound is simple.
+    voice_only = replace(GOOD, audio_bitrate=165_000)
+    nearly_silent = replace(GOOD, audio_bitrate=9_000)
+
+    assert format_problems(voice_only, FORMAT, 44.7, with_music=False) == []
+    assert format_problems(nearly_silent, FORMAT, 44.7, with_music=False) == []
+    assert any("165 kbps" in problem for problem in format_problems(voice_only, FORMAT, 44.7))
+
+
+def test_a_video_without_music_still_may_not_have_more_bits_than_asked() -> None:
+    loud = replace(GOOD, audio_bitrate=256_000)
+
+    assert any("256 kbps" in p for p in format_problems(loud, FORMAT, 44.7, with_music=False))

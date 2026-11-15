@@ -125,19 +125,16 @@ def plan_stage(
                 for asset in spec["assets"]
                 if asset["kind"] == "image" and asset["origin"] == "generated"
             ]
-        if spec.get("spec_version") != "2.0":
-            # A plan of shots stores which scenes are to move. The clips themselves are
-            # made once the ComfyUI adapter exists (VFS-29). Until then nothing is queued
-            # and a clip scene shows its still picture with its camera move.
-            return []
+        # One clip for each picture that a scene shows moving. A picture that two scenes
+        # show gets one clip, named after the first of them.
+        clips: dict[str, str] = {}
+        for scene in scenes:
+            visual = scene.get("visual", {})
+            if visual.get("clip"):
+                clips.setdefault(visual["asset_id"], scene["id"])
         return [
-            JobRequest(
-                "gen.clip",
-                JobTag.GPU,
-                {"scene_id": scene["id"], "asset_id": scene["visual"]["asset_id"]},
-            )
-            for scene in scenes
-            if scene.get("visual", {}).get("clip")
+            JobRequest("gen.clip", JobTag.GPU, {"scene_id": scene_id, "asset_id": asset_id})
+            for asset_id, scene_id in clips.items()
         ]
     if state is EpisodeState.VOICE:
         only = set(scope.voice) if scope and scope.voice else None

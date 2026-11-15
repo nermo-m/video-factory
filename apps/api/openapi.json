@@ -72,6 +72,35 @@
             "title": "Becomes Clip",
             "type": "boolean"
           },
+          "clip_generating": {
+            "description": "True while a job makes its clip, or waits to.",
+            "title": "Clip Generating",
+            "type": "boolean"
+          },
+          "clip_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How long that clip is.",
+            "title": "Clip Seconds"
+          },
+          "clip_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the clip made from the picture as it is now is served, if any.",
+            "title": "Clip Url"
+          },
           "contains_third_party_ip": {
             "anyOf": [
               {
@@ -204,6 +233,9 @@
           "resolved",
           "generating",
           "image_url",
+          "clip_url",
+          "clip_seconds",
+          "clip_generating",
           "model",
           "uploaded",
           "versions",
@@ -516,7 +548,7 @@
             "additionalProperties": {
               "type": "boolean"
             },
-            "description": "What the owner switched on or off for this video: research, captions, music.",
+            "description": "What the owner switched on or off for this video: research, captions, music, animate.",
             "title": "Options",
             "type": "object"
           },
@@ -669,7 +701,7 @@
             "additionalProperties": {
               "type": "boolean"
             },
-            "description": "What the owner switched on or off for this video: research, captions, music.",
+            "description": "What the owner switched on or off for this video: research, captions, music, animate.",
             "title": "Options",
             "type": "object"
           },
@@ -1048,8 +1080,20 @@
       },
       "OptionsIn": {
         "additionalProperties": false,
-        "description": "What the owner switches on or off for one video. A switch that is left out has\nits default: no research, captions on, music on.",
+        "description": "What the owner switches on or off for one video. A switch that is left out has\nits default: no research, captions on, music on, moving pictures on.",
         "properties": {
+          "animate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Make every picture a moving clip, with the open video model on the owner's graphics card. Each shot can still be switched in the plan.",
+            "title": "Animate"
+          },
           "captions": {
             "anyOf": [
               {
@@ -2412,6 +2456,89 @@
           }
         },
         "summary": "Which of these file names belong to which picture. Nothing is stored",
+        "tags": [
+          "episodes"
+        ]
+      }
+    },
+    "/api/v1/episodes/{episode_id}/assets/{asset_id}/clip": {
+      "post": {
+        "operationId": "post_episode_asset_clip",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "episode_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Episode Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "pattern": "^a_[a-z0-9_]{1,60}$",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode, or what was asked of it, does not exist."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The episode cannot do this in its current state."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request is not valid."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error."
+          }
+        },
+        "summary": "Make the clip of one picture again, on the graphics card",
         "tags": [
           "episodes"
         ]

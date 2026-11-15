@@ -87,7 +87,7 @@ class Stage:
         )
 
     def run(self, job_type: str, episode_id: uuid.UUID, **payload: Any) -> dict[str, Any]:
-        tag = JobTag.GPU if job_type == "gen.clip" else JobTag.CPU
+        tag = JobTag.CPU
         with self.sessions.begin() as session:
             queue.enqueue(
                 session, job_type=job_type, tag=tag, payload=payload, episode_id=episode_id
@@ -233,17 +233,6 @@ def test_demo_mode_makes_a_picture_from_the_bundled_samples(
         "bundled samples",
     )
     assert picture(sessions, episode_id, spec, "a_harbour").file == output["file"]
-
-
-def test_a_clip_job_finishes_without_a_clip_and_says_why(
-    stage: Stage, episode_id: uuid.UUID
-) -> None:
-    output = stage.run("gen.clip", episode_id, asset_id="a_harbour", scene_id="s04_storm")
-
-    assert output["made"] is False
-    assert output["scene_id"] == "s04_storm"
-    assert "still picture" in output["why"]
-    assert stage.images.requests == []
 
 
 def test_a_generated_picture_records_where_it_came_from_and_keeps_its_rights_for_review(
@@ -408,3 +397,21 @@ def test_the_stored_version_keeps_the_prompt_as_it_was_sent(
     assert version.prompt == stage.images.requests[0].prompt
     assert version.prompt is not None
     assert version.prompt.startswith("Soft watercolour")
+
+
+def test_fr07_a_picture_that_is_made_again_gets_its_clip_made_again(
+    stage: Stage, sessions: sessionmaker[Session], episode_id: uuid.UUID
+) -> None:
+    # The first picture of a video is followed by the clips step. Only a picture that is
+    # made again on its own asks for its clip itself.
+    stage.run("gen.image", episode_id, asset_id="a_harbour")
+    with sessions() as session:
+        after_first = session.scalars(select(models.Job).where(models.Job.type == "gen.clip")).all()
+
+    stage.run("gen.image", episode_id, asset_id="a_harbour", regenerate=True)
+
+    with sessions() as session:
+        (clip,) = session.scalars(select(models.Job).where(models.Job.type == "gen.clip")).all()
+    assert after_first == []
+    assert (clip.tag, clip.episode_id) == (JobTag.GPU, episode_id)
+    assert clip.input == {"asset_id": "a_harbour", "scene_id": "s04_storm", "regenerate": True}

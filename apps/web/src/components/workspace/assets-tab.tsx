@@ -7,6 +7,7 @@ import {
   type AssetOut,
   type EpisodeDetail,
   type MatchOut,
+  postEpisodeAssetClip,
   postEpisodeAssetRegenerate,
   postEpisodeAssetUpload,
   postEpisodeAssetsMatch,
@@ -393,6 +394,80 @@ function MatchFiles({ episodeId, reload }: { episodeId: string; reload: () => Pr
   );
 }
 
+/**
+ * The clip of a picture that a scene shows moving (FR-07): the clip itself when it is
+ * made, what it waits for when it is not, and Make clip again. It is made on the owner's
+ * own graphics card, so it uses nothing of a plan.
+ */
+function Clip({
+  episodeId,
+  asset,
+  reload,
+}: {
+  episodeId: string;
+  asset: AssetOut;
+  reload: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  async function again() {
+    setBusy(true);
+    setFailure(null);
+    try {
+      unwrap(
+        await postEpisodeAssetClip({ path: { episode_id: episodeId, asset_id: asset.id } }),
+        "The clip could not be made again. Try again.",
+      );
+      await reload();
+    } catch (error) {
+      setFailure(failureOf(error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border bg-surface p-2.5">
+      {asset.clip_url && (
+        // Served by this app's own API. Muted, so it may play without a tap on a phone.
+        <video
+          src={asset.clip_url}
+          controls
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-label={`Clip of ${pictureName(asset.id)}`}
+          className="aspect-9/16 max-h-80 w-full rounded-md bg-black object-contain"
+        />
+      )}
+      <p className="text-xs text-muted-foreground">
+        {asset.clip_generating ? (
+          <span role="status" className="inline-flex items-center gap-2 font-semibold text-info">
+            <Spinner />
+            Clip being made on the graphics card
+          </span>
+        ) : asset.clip_url ? (
+          `Moving clip, ${Math.round(asset.clip_seconds ?? 0)} seconds`
+        ) : (
+          "No clip yet. It is made after the pictures, on your graphics card."
+        )}
+      </p>
+      {asset.resolved && !asset.clip_generating && !asset.generating && (
+        <button type="button" onClick={() => void again()} disabled={busy} className={quietAction}>
+          Make clip again
+        </button>
+      )}
+      {failure && (
+        <p role="alert" className="text-xs font-semibold text-danger wrap-anywhere">
+          {failure}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Picture({
   episodeId,
   asset,
@@ -449,6 +524,7 @@ function Picture({
       <p className="text-xs text-muted-foreground">{shownIn(asset.used_in, scenes)}</p>
       {asset.prompt && <p className="line-clamp-4 text-[0.8125rem] wrap-anywhere">{asset.prompt}</p>}
       {rights && <p className={cn("text-xs font-semibold", rights.look)}>{rights.label}</p>}
+      {asset.becomes_clip && <Clip episodeId={episodeId} asset={asset} reload={reload} />}
       {asset.origin === "generated" && !asset.generating && (
         <MakeAgain episodeId={episodeId} asset={asset} reload={reload} />
       )}
@@ -463,8 +539,8 @@ function Picture({
  * The Assets tab (design doc section 11.2): every picture of the episode with where it
  * comes from, its prompt and the scenes that show it. A generated picture can be made
  * again, and the owner's own file can take the place of any picture that is not from the
- * library, one at a time or several matched by file name (FR-07). The rights flag and
- * clips arrive with the rest of the asset library.
+ * library, one at a time or several matched by file name (FR-07). A picture that a scene
+ * shows moving has its clip below it. The rights flag arrives with the asset library.
  */
 export function AssetsTab({
   episode,
