@@ -24,6 +24,7 @@ EXPECTED_ADRS = {
     "0008-host-bridge-for-the-command-line-tools.md": "host bridge",
     "0009-the-bridge-reads-claude-codes-streaming-output.md": "streaming output",
     "0010-pictures-through-the-codex-image-tool.md": "Codex image tool",
+    "0011-one-shot-list-step-replaces-the-planning-chain.md": "shot list step",
 }
 REQUIRED_SECTIONS = [
     "## Status",
