@@ -46,7 +46,7 @@ dev = [
     "ruff==0.17.4",
     "schemathesis==4.33.2",
     "types-jsonschema==4.26.0.20261006",
-    "types-pyyaml==6.0.12.20261111",
+    "types-pyyaml==6.0.12.20261113",
 ]
 
 [tool.uv]
