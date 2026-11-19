@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Browser test runner. Build from the repository root (see docker-compose.e2e.yml).
 # The image tag must match the @playwright/test version in apps/web/package.json.
-FROM mcr.microsoft.com/playwright:v1.65.0-noble
+FROM mcr.microsoft.com/playwright:v1.65.1-noble
 
 ENV PNPM_HOME=/pnpm \
     PATH="/pnpm:$PATH" \
