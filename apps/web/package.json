@@ -19,7 +19,7 @@
     "@tailwindcss/postcss": "4.3.5",
     "class-variance-authority": "0.7.1",
     "cn": "0.5.2",
-    "lucide-react": "1.72.0",
+    "lucide-react": "1.73.0",
     "next": "16.4.6",
     "radix-ui": "1.8.1",
     "react": "19.3.1",
@@ -31,7 +31,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@hey-api/openapi-ts": "0.99.0",
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.65.1",
     "@storybook/nextjs-vite": "10.6.7",
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
