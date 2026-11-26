@@ -12,15 +12,15 @@ dependencies = []
 core = [
     "alembic==1.20.1",
     "jsonschema==4.26.0",
-    "psycopg[binary]==3.3.8",
+    "psycopg[binary]==3.3.9",
     "referencing==0.37.0",
     # Lets jsonschema check the date-time format.
     "rfc3339-validator==0.1.4",
-    "sqlalchemy==2.1.8",
+    "sqlalchemy==2.1.9",
 ]
 api = [
     { include-group = "core" },
-    "fastapi==0.162.4",
+    "fastapi==0.165.0",
     # An uploaded picture is checked and stored again as a plain PNG (packages/core/uploads).
     "pillow==13.0.0",
     "uvicorn==0.54.0",
@@ -29,22 +29,22 @@ worker = [
     { include-group = "core" },
     # The Kokoro voice model runs on ONNX Runtime (packages/adapters/tts).
     # The render engine: frames are drawn with Pillow and NumPy.
-    "anthropic==2.8.0",
-    "numpy==2.5.4",
-    "onnxruntime==1.31.1",
+    "anthropic==2.12.0",
+    "numpy==2.5.5",
+    "onnxruntime==1.32.0",
     "pillow==13.0.0",
 ]
 dev = [
     { include-group = "api" },
     { include-group = "worker" },
-    "httpx2==2.16.0",
+    "httpx2==2.16.2",
     "mypy==2.4.1",
     "pre-commit==4.7.0",
     "pytest==9.2.0",
     "pytest-cov==7.1.0",
-    "pyyaml==6.0.3",
-    "ruff==0.17.4",
-    "schemathesis==4.33.2",
+    "pyyaml==6.0.4",
+    "ruff==0.17.6",
+    "schemathesis==4.34.0",
     "types-jsonschema==4.26.0.20261006",
     "types-pyyaml==6.0.12.20261111",
 ]
